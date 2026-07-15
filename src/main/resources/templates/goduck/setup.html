@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GoDuck Setup</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>GoDuck Setup</h1>
+        <p class="desc" style="color: var(--success); font-weight: 500;">Thiết lập phòng chơi thành công!</p>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <div class="qr-container">
+            <img th:src="${image}" alt="QR Code" class="qr-image">
+        </div>
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+            <div class="item-row"><span>Tổng người chơi:</span> <strong th:text="${total}"></strong></div>
+            <div class="item-row"><span>Số lượng Spy:</span> <strong th:text="${spy}"></strong></div>
+        </div>
+        <a href="/gd/play" class="btn btn-primary" style="margin-top: 20px;">Vào Phòng Chơi</a>
+    </div>
+</div>
+</body>
+</html>
+

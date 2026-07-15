@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spyfall Setup</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>Spyfall Setup</h1>
+        <p class="desc" style="color: var(--success); font-weight: 500;">Khởi tạo ván chơi thành công!</p>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
+        <div class="qr-container">
+            <img th:src="${image}" alt="QR Code" class="qr-image">
+        </div>
+        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+            <div class="item-row"><span>Tổng người chơi:</span> <strong th:text="${total}"></strong></div>
+            <div class="item-row"><span>Số lượng Spy:</span> <strong th:text="${spy}"></strong></div>
+            <div class="item-row"><span>Chế độ chơi:</span> <strong th:text="${styleDesc}"></strong></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 14px; text-align: center; font-size: 1.1rem;">Danh sách địa điểm nghi vấn</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+            <div th:each="item : ${dataPlay}"
+                 style="padding: 8px 10px; background: rgba(15,23,42,0.45); border-radius: 8px; border: 1px solid var(--card-border); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <span th:text="${item.id + '. ' + item.location}"></span>
+            </div>
+        </div>
+    </div>
+
+    <a href="/sp" class="btn btn-primary">Vào Phòng Chơi</a>
+</div>
+</body>
+</html>
+

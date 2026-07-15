@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mô tả chức năng</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <style>
+        .role-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; }
+        .role-title { font-weight: 700; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>Tất cả chức năng Ma Sói</h1>
+        <p class="desc">Danh sách mô tả chi tiết bài phân vai</p>
+    </div>
+
+    <div class="card">
+        <div class="item-list">
+            <th:block th:each="item : ${datas}">
+                <div th:style="${#lists.contains(idSoi, item.id)} ? 'border-left: 4px solid var(--danger)' : (${#lists.contains(idOutsider, item.id)} ? 'border-left: 4px solid var(--warning)' : 'border-left: 4px solid var(--success)')"
+                     class="role-card">
+                    <span class="role-title"
+                          th:style="${#lists.contains(idSoi, item.id)} ? 'color: #f87171' : (${#lists.contains(idOutsider, item.id)} ? 'color: #fbbf24' : 'color: #34d399')"
+                          th:text="${item.id + '. ' + item.location}"></span>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
+                </div>
+            </th:block>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

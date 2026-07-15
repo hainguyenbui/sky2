@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ma Sói Play</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <style>
+        #cupid { color: #f59e0b; font-style: normal; font-weight: 500; font-size: 0.8rem; display: block; margin-top: 4px; }
+        .history-game-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; background: rgba(30,41,59,0.3); }
+        .role-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; }
+        .role-card-soi { border-left: 4px solid var(--danger); }
+        .role-card-dan { border-left: 4px solid var(--success); }
+        .role-card-other { border-left: 4px solid var(--warning); }
+        .role-title { font-weight: 700; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Not setup -->
+    <div th:if="${notSetup}" class="card" style="text-align: center;">
+        <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu chưa được setup</h2>
+        <p class="desc">Vui lòng liên hệ Admin để thiết lập phòng chơi mới.</p>
+        <a href="/" class="btn btn-primary" style="margin-top: 20px;">Về Trang Chủ</a>
+    </div>
+    <th:block th:unless="${notSetup}">
+        <div class="header-section">
+            <h1>Ma Sói</h1>
+            <p class="desc" th:text="'Ván đấu ' + ${gameNumber}"></p>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">CHỨC NĂNG CỦA BẠN:</h3>
+            <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
+                <div class="reveal-placeholder">Nhấp để ẩn/hiện chức năng</div>
+                <div class="reveal-content">
+                    <h2 id="location" style="font-size: 2rem; color: #f87171;" th:utext="${role}"></h2>
+                    <p class="desc" style="margin-top: 10px; font-size: 0.9rem;" th:text="${desc}"></p>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+
+    <div style="display: flex; gap: 10px;">
+        <button type="button" id="showHistory" class="btn btn-primary" style="flex: 1;">Xem Lịch Sử</button>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
+        <div class="item-list">
+            <th:block th:each="item : ${showRoles}">
+                <div th:classappend="${#lists.contains(idSoi, item.id)} ? 'role-card role-card-soi' : (${#lists.contains(idOutsider, item.id)} ? 'role-card role-card-other' : 'role-card role-card-dan')">
+                    <span class="role-title"
+                          th:classappend="${#lists.contains(idSoi, item.id)} ? '' : (${#lists.contains(idOutsider, item.id)} ? 'style=color:#fbbf24' : '')"
+                          th:text="${item.location + (item.id == '1' or item.id == '30' or item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
+                </div>
+            </th:block>
+        </div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
+        <div class="qr-container">
+            <img th:src="${image}" alt="QR Code" class="qr-image">
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="popupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background: rgba(9,13,22,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 20px;">
+        <div class="card" style="width: 100%; max-width: 450px; max-height: 85%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #131b2e;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                <h2 style="font-size: 1.3rem;">Lịch Sử Ván Đấu</h2>
+                <button id="closePopup" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <div id="popupContent" style="overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 16px;"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('showHistory').onclick = function() {
+            const popupModal = document.getElementById('popupModal');
+            const popupContent = document.getElementById('popupContent');
+            fetch('/ms/showHistory', { method: 'POST' })
+                .then(response => response.text())
+                .then(responseData => {
+                    popupContent.innerHTML = responseData;
+                    popupModal.style.display = 'flex';
+                })
+                .catch(error => console.error('Error:', error));
+        };
+        document.getElementById('closePopup').onclick = function() {
+            document.getElementById('popupModal').style.display = 'none';
+        };
+        window.onclick = function(event) {
+            const modal = document.getElementById('popupModal');
+            if (event.target == modal) { modal.style.display = 'none'; }
+        };
+    </script>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GoDuck Game</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>GoDuck</h1>
+        <p class="desc">Vai trò &amp; thông tin phòng chơi</p>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">THÔNG TIN MẬT DÀNH CHO BẠN:</h3>
+        <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
+            <div class="reveal-placeholder">Nhấp để ẩn/hiện thông tin</div>
+            <div class="reveal-content">
+                <h2 style="font-size: 1.5rem; color: #f87171;"
+                    th:text="${#strings.isEmpty(secretInfo)} ? 'Chưa có thông tin' : ${secretInfo}"></h2>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${totalPlay == 0}" class="card" style="text-align: center;">
+        <h3 style="color: var(--warning);">Đang chờ Admin khởi chạy ván đấu...</h3>
+    </div>
+    <div th:unless="${totalPlay == 0}" class="card" style="display: flex; justify-content: center; gap: 15px; padding: 12px;">
+        <span class="badge badge-green" style="font-size: 0.85rem;">Tổng: <span th:text="${totalPlay}"></span></span>
+        <span class="badge badge-red" style="font-size: 0.85rem;">Số Spy: <span th:text="${spyTotalPlay}"></span></span>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 12px; text-align: center; font-size: 1.1rem;">Danh sách người chơi</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+            <div th:each="player : ${members}"
+                 style="padding: 8px 10px; background: rgba(15,23,42,0.45); border-radius: 8px; border: 1px solid var(--card-border); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <strong th:text="${player.id + '.'} "></strong> <span th:text="${player.userName}"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
+        <div class="qr-container">
+            <img th:src="${image}" alt="QR Code" class="qr-image">
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

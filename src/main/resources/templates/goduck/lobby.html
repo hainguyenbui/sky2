@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GoDuck</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>GoDuck</h1>
+        <p class="desc">Trò chơi suy luận ẩn danh</p>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 16px;">Tham gia phòng chơi</h3>
+        <form id="dataForm" onsubmit="handleSubmit(event)">
+            <input type="text" id="nameId" class="input-text" placeholder="Nhập tên của bạn" required style="text-align: center; margin-bottom: 20px;"><br>
+            <button type="submit" class="btn btn-primary">Vào Chơi</button>
+        </form>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
+        <div class="qr-container">
+            <img th:src="${image}" alt="QR Code" class="qr-image">
+        </div>
+    </div>
+
+    <script>
+        function handleSubmit(event) {
+            event.preventDefault();
+            var input = document.getElementById("nameId");
+            if (input.value.trim() !== '') {
+                window.location.href = '/gd/play/' + encodeURIComponent(input.value.trim());
+            }
+        }
+    </script>
+</div>
+</body>
+</html>
+

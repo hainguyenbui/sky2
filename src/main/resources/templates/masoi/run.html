@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ma Sói Setup</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <style>
+        .role-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; transition: all 0.2s; }
+        .role-title { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em; }
+        .role-card-soi { border-left: 4px solid var(--danger); }
+        .role-card-dan { border-left: 4px solid var(--success); }
+        .role-card-other { border-left: 4px solid var(--warning); }
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(15,23,42,0.6); transition: .25s; border-radius: 24px; border: 1px solid var(--card-border); }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: #94a3b8; transition: .25s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); background-color: #ffffff; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>Ma Sói Setup</h1>
+        <p class="desc">Thiết lập vai trò cho ván đấu mới</p>
+    </div>
+
+    <form id="dataForm">
+        <div class="card" style="margin-bottom: 16px;">
+            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Thông tin phòng chơi</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 500;">Tổng người chơi:</span>
+                    <input type="number" min="0" value="0" id="total" name="total" class="input-text" style="width: 80px; padding: 8px; text-align: center;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 12px;">
+                    <span style="font-weight: 500;">Đã chọn:</span>
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <input type="text" id="sum" readonly value="0" style="width: 40px; background: transparent; border: none; color: #60a5fa; font-weight: 800; font-size: 1.5rem; text-align: right; outline: none;">
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">vai trò</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 16px;">
+            <h3 style="margin-bottom: 14px; font-size: 1.1rem;">Danh sách vai trò</h3>
+            <div class="item-list">
+                <th:block th:each="item : ${datas}">
+                    <!-- Soi roles -->
+                    <div th:if="${#lists.contains(idSoi, item.id)}"
+                         th:classappend="'role-card role-card-soi'">
+                        <div style="padding-right: 10px; text-align: left;">
+                            <span class="role-title" style="color: #f87171;" th:text="${#strings.toUpperCase(item.location)}"></span>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
+                        </div>
+                        <div th:if="${item.id == '1' or item.id == '30'}">
+                            <input type="number" min="0" value="0" th:id="${item.id}" th:name="${item.id}"
+                                   class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" oninput="updateSum()">
+                        </div>
+                        <div th:unless="${item.id == '1' or item.id == '30'}">
+                            <label class="switch">
+                                <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Outsider roles -->
+                    <div th:if="${#lists.contains(idOutsider, item.id)}"
+                         th:classappend="'role-card role-card-other'">
+                        <div style="padding-right: 10px; text-align: left;">
+                            <span class="role-title" style="color: #fbbf24;" th:text="${#strings.toUpperCase(item.location)}"></span>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <!-- Villager roles -->
+                    <div th:if="${not #lists.contains(idSoi, item.id) and not #lists.contains(idOutsider, item.id)}"
+                         th:classappend="'role-card role-card-dan'">
+                        <div style="padding-right: 10px; text-align: left;">
+                            <span class="role-title" style="color: #34d399;" th:text="${#strings.toUpperCase(item.location)}"></span>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
+                        </div>
+                        <div th:if="${item.id == '1' or item.id == '30'}">
+                            <input type="number" min="0" value="0" th:id="${item.id}" th:name="${item.id}"
+                                   class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" oninput="updateSum()">
+                        </div>
+                        <div th:unless="${item.id == '1' or item.id == '30'}">
+                            <label class="switch">
+                                <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </th:block>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Cấu hình nâng cao</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="role-card" style="border-left: 4px solid var(--warning);">
+                    <div>
+                        <span class="role-title">SÓI NGUYỀN CHÚC</span>
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">Cho phép Sói nguyền hóa 1 người chơi thành Sói</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="checkSoi" name="checkSoi" value="1">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="role-card" style="border-left: 4px solid var(--warning);">
+                    <div>
+                        <span class="role-title">CUPID (TÌNH YÊU)</span>
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">Ghép đôi ngẫu nhiên 2 người chơi</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="checkCupid" name="checkCupid" value="1">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Chạy Game</button>
+    </form>
+
+    <script>
+        function updateSum() {
+            var sumTotal = 0;
+            var inputs = document.querySelectorAll('input[type="number"]:not(#total)');
+            inputs.forEach(function(input) { sumTotal += parseFloat(input.value) || 0; });
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkSoi):not(#checkCupid):checked');
+            checkboxes.forEach(function(checkbox) { sumTotal += parseInt(checkbox.value) || 0; });
+            document.getElementById('sum').value = sumTotal;
+        }
+
+        document.getElementById('sendButton').onclick = function() {
+            var formData = new URLSearchParams();
+            var inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(function(input) { formData.append(input.name, input.value); });
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            checkboxes.forEach(function(checkbox) {
+                if (checkbox.id !== 'checkSoi' && checkbox.id !== 'checkCupid') {
+                    formData.append(checkbox.name, 1);
+                }
+            });
+            formData.append('checkSoi', document.getElementById('checkSoi').checked ? 'true' : 'false');
+            formData.append('checkCupid', document.getElementById('checkCupid').checked ? 'true' : 'false');
+            fetch('/ms/create?' + formData.toString(), { method: 'GET' })
+                .then(response => response.text())
+                .then(data => {
+                    if (data.includes('ERROR')) { alert(data); }
+                    else { window.location.href = '/ms/admin'; }
+                })
+                .catch(error => console.error('Error:', error));
+        };
+    </script>
+</div>
+</body>
+</html>
+

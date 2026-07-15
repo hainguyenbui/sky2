@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Undercover</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>Undercover</h1>
+        <p class="desc">Ghi nhớ từ khóa của bạn để giải thích</p>
+    </div>
+
+    <!-- Not setup -->
+    <div th:if="${notSetup}" class="card" style="text-align: center;">
+        <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu chưa được setup</h2>
+        <p class="desc">Vui lòng liên hệ Admin để thiết lập phòng chơi mới.</p>
+        <a href="/" class="btn btn-primary" style="margin-top: 20px;">Về Trang Chủ</a>
+    </div>
+
+    <th:block th:unless="${notSetup}">
+        <div class="card" style="text-align: center;">
+            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">TỪ KHÓA CỦA BẠN:</h3>
+            <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
+                <div class="reveal-placeholder">Nhấp để ẩn/hiện từ khóa</div>
+                <div class="reveal-content">
+                    <h2 style="font-size: 1.8rem; color: #60a5fa;" th:text="${keyword}"></h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+            <div class="item-row"><span>Số lượng Spy:</span> <strong th:text="${countnumSpies}"></strong></div>
+            <div class="item-row"><span>Số lượng Mũ Trắng:</span> <strong th:text="${countWhite}"></strong></div>
+            <div class="item-row"><span>Số người còn lại:</span> <strong th:text="${playerCount}"></strong></div>
+        </div>
+
+        <div th:if="${not #lists.isEmpty(removed)}" class="card">
+            <h3 style="margin-bottom: 12px; text-align: center; color: var(--danger); font-size: 1.1rem;">Danh sách đã bị loại</h3>
+            <div class="item-list">
+                <div th:each="player : ${removed}"
+                     class="item-row" style="background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.15);">
+                    <span style="text-decoration: line-through; color: var(--text-muted); font-weight: 500;"
+                          th:text="${#strings.toUpperCase(player.userName)}"></span>
+                    <span th:classappend="${player.role == 'Spy'} ? 'badge-red' : (${player.role == 'Mũ Trắng'} ? 'badge-orange' : 'badge-green')"
+                          class="badge" th:text="${player.role}"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
+            <div class="qr-container">
+                <img th:src="${image}" alt="QR Code" class="qr-image">
+            </div>
+        </div>
+    </th:block>
+</div>
+</body>
+</html>
+

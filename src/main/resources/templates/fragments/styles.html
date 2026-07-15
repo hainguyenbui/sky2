@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<th:block th:fragment="css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090d16 0%, #111827 100%);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --success: #10b981;
+            --success-hover: #059669;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding: 20px 16px 40px 16px; line-height: 1.5;
+        }
+        .container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 20px; }
+        h1 { font-size: 2.2rem; font-weight: 800; text-align: center; letter-spacing: -0.025em;
+            background: linear-gradient(to right, #60a5fa, #a5b4fc); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        h2 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+        h3 { font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
+        p, .desc { color: var(--text-muted); font-size: 0.95rem; }
+        .card {
+            background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border); border-radius: 16px; padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.4);
+        }
+        .reveal-box {
+            background: rgba(30,41,59,0.4); border: 2px dashed rgba(255,255,255,0.15);
+            border-radius: 16px; padding: 35px 20px; text-align: center; cursor: pointer;
+            position: relative; overflow: hidden; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .reveal-box.blurred .reveal-content { filter: blur(24px); opacity: 0.05; pointer-events: none; user-select: none; transform: scale(0.95); }
+        .reveal-box.blurred .reveal-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .reveal-box.blurred .reveal-placeholder::before { content: '👁️'; font-size: 1.8rem; }
+        .reveal-box:not(.blurred) { border-style: solid; border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.08); }
+        .reveal-box:not(.blurred) .reveal-content { filter: none; opacity: 1; transform: scale(1); }
+        .reveal-box:not(.blurred) .reveal-placeholder { display: none; }
+        .reveal-content { transition: all 0.3s ease; width: 100%; }
+        .reveal-placeholder { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); transition: all 0.3s ease; }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 14px 24px; font-size: 1rem; font-weight: 600; border-radius: 12px;
+            border: none; cursor: pointer; transition: all 0.2s ease; color: #ffffff;
+            width: 100%; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); text-align: center;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-danger { background: linear-gradient(135deg, var(--danger), var(--danger-hover)); }
+        .btn-danger:active { transform: scale(0.98); }
+        .btn-success { background: linear-gradient(135deg, var(--success), var(--success-hover)); }
+        .btn-success:active { transform: scale(0.98); }
+        .input-text {
+            width: 100%; padding: 14px 16px; background: rgba(15,23,42,0.6);
+            border: 1px solid var(--card-border); border-radius: 12px; color: var(--text-primary);
+            font-size: 1.05rem; font-family: inherit; outline: none; transition: border-color 0.2s;
+        }
+        .input-text:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+        .item-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .item-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; background: rgba(30,41,59,0.4);
+            border: 1px solid var(--card-border); border-radius: 12px;
+        }
+        .badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 9999px; font-weight: 600; }
+        .badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .badge-orange { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .qr-container { display: flex; justify-content: center; align-items: center; margin: 10px 0; }
+        .qr-image { width: 220px; height: 220px; border-radius: 16px; border: 4px solid var(--card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .header-section { text-align: center; margin-bottom: 10px; }
+    </style>
+</th:block>
+</head>
+<body></body>
+</html>
+
