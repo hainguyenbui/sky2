@@ -130,6 +130,48 @@
     </form>
 
     <script>
+        var setupStorageKey = 'masoi.setup.v1';
+
+        function saveSetupState() {
+            var state = {};
+            var fields = document.querySelectorAll('#dataForm input[name]');
+            fields.forEach(function(field) {
+                if (field.type === 'checkbox') {
+                    state[field.name] = field.checked;
+                } else {
+                    state[field.name] = field.value;
+                }
+            });
+            sessionStorage.setItem(setupStorageKey, JSON.stringify(state));
+        }
+
+        function restoreSetupState() {
+            var rawState = sessionStorage.getItem(setupStorageKey);
+            if (!rawState) {
+                updateSum();
+                return;
+            }
+
+            try {
+                var state = JSON.parse(rawState);
+                Object.keys(state).forEach(function(name) {
+                    var field = document.querySelector('#dataForm input[name="' + name + '"]');
+                    if (!field) {
+                        return;
+                    }
+                    if (field.type === 'checkbox') {
+                        field.checked = state[name] === true;
+                    } else {
+                        field.value = state[name];
+                    }
+                });
+            } catch (error) {
+                console.error('Cannot restore setup state:', error);
+            }
+
+            updateSum();
+        }
+
         function updateSum() {
             var sumTotal = 0;
             var inputs = document.querySelectorAll('input[type="number"]:not(#total)');
@@ -137,9 +179,25 @@
             var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkSoi):not(#checkCupid):checked');
             checkboxes.forEach(function(checkbox) { sumTotal += parseInt(checkbox.value) || 0; });
             document.getElementById('sum').value = sumTotal;
+            saveSetupState();
         }
 
+        function bindSetupStateListeners() {
+            var fields = document.querySelectorAll('#dataForm input[name]');
+            fields.forEach(function(field) {
+                field.addEventListener('change', saveSetupState);
+                field.addEventListener('input', saveSetupState);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            bindSetupStateListeners();
+            restoreSetupState();
+        });
+
         document.getElementById('sendButton').onclick = function() {
+            saveSetupState();
+
             var formData = new URLSearchParams();
             var inputs = document.querySelectorAll('input[type="number"]');
             inputs.forEach(function(input) { formData.append(input.name, input.value); });

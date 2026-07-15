@@ -50,8 +50,11 @@
         <div style="display: flex; gap: 8px; justify-content: center;">
             <select class="selectSoiNguyen input-text" style="flex: 1; min-width: 150px; padding: 12px;">
                 <th:block th:each="item : ${players}">
-                    <option th:value="${item.idPlayGame}"
-                            th:text="${item.idPlayGame + '-' + item.location + '-' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}"></option>
+                    <option
+                            th:if="${!#lists.contains(idSoi, item.id)}"
+                            th:value="${item.idPlayGame}"
+                            th:text="${item.idPlayGame + '-' + item.location + '-' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}">
+                    </option>
                 </th:block>
             </select>
             <button id="addSoiNguyen" class="btn btn-primary" style="width: auto; padding: 12px 20px;">Nguyền</button>
@@ -64,6 +67,11 @@
         document.getElementById('addSoiNguyen').addEventListener('click', function() {
             var soiNguyen = document.querySelector('.selectSoiNguyen');
             var data = { soiNguyen: soiNguyen.value };
+            var playerText = soiNguyen.options[soiNguyen.selectedIndex].text;
+            if (!confirm("Bạn có muốn nguyền chúc người chơi " + playerText + "?")) {
+                return;
+            }
+
             fetch('/ms/soiNguyen', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
