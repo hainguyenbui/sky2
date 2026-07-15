@@ -17,7 +17,16 @@ public class ImageController {
 
     @GetMapping("/qrcode.png")
     public ResponseEntity<Resource> getQRCode() {
-        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/qrcode.png");
+        File file;
+        if (System.getProperty("os.name").contains("Win")) {
+            file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/qrcode.png");
+
+        } else if (System.getProperty("os.name").contains("Linux")) {
+            file = new File("/home/ec2-user/masoi/qrcode.png");
+        } else {
+            file = new File("/sdcard/java/qrcode.png");
+        }
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());
@@ -26,7 +35,15 @@ public class ImageController {
 
     @GetMapping("/spy.png")
     public ResponseEntity<Resource> getQRCode2() throws IOException {
-        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy.png");
+        File file;
+        if (System.getProperty("os.name").contains("Win")) {
+            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy.png");
+        } else if (System.getProperty("os.name").contains("Linux")) {
+            file = new File("/home/ec2-user/masoi/spy.png");
+
+        } else {
+            file = new File("/sdcard/java/spy.png");
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());
@@ -35,7 +52,15 @@ public class ImageController {
 
     @GetMapping("/gDuck.png")
     public ResponseEntity<Resource> getGDuck() throws IOException {
-        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/gDuck.png");
+        File file;
+        if (System.getProperty("os.name").contains("Win")) {
+            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/gDuck.png");
+        } else if (System.getProperty("os.name").contains("Linux")) {
+            file = new File("/home/ec2-user/masoi/gDuck.png");
+
+        } else {
+            file = new File("/sdcard/java/gDuck.png");
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());
@@ -44,7 +69,15 @@ public class ImageController {
 
     @GetMapping("/spy2.png")
     public ResponseEntity<Resource> getSpy2() throws IOException {
-        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy2.png");
+        File file;
+        if (System.getProperty("os.name").contains("Win")) {
+            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy2.png");
+        } else if (System.getProperty("os.name").contains("Linux")) {
+            file = new File("/home/ec2-user/masoi/spy2.png");
+
+        } else {
+            file = new File("/sdcard/java/spy2.png");
+        }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());

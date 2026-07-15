@@ -39,21 +39,37 @@ public class SpyfallApplication {
 						}
 					})
 					.flatMap(ni -> Collections.list(ni.getInetAddresses()).stream())
-					.filter(addr -> addr instanceof Inet4Address && !addr.isLoopbackAddress())
-					.filter(ip44 -> ip44.getHostAddress().startsWith("192.168."))
+					.filter(addr -> addr instanceof Inet4Address)
+					.filter(InetAddress::isSiteLocalAddress)
 					.map(InetAddress::getHostAddress)
 					.findFirst()
 					.orElse("127.0.0.1");
 			System.out.println("Port: " + ip4 + ":" + serverPort );
-			String content1 = "http://" + ip4 + ":" + serverPort + "/ms/play";
-			String content2 = "http://" + ip4 + ":" + serverPort + "/sp";
-			String content3 = "http://" + ip4 + ":" + serverPort + "/gd/play";
-			String content4 = "http://" + ip4 + ":" + serverPort + "/spy2";
+//			String content1 = "http://" + ip4 + ":" + serverPort + "/ms/play";
+//			String content2 = "http://" + ip4 + ":" + serverPort + "/sp";
+//			String content3 = "http://" + ip4 + ":" + serverPort + "/gd/play";
+//			String content4 = "http://" + ip4 + ":" + serverPort + "/spy2";
+			String content1 = "http://" + ip4 + "/ms/play";
+			String content2 = "http://" + ip4 + "/sp";
+			String content3 = "http://" + ip4 + "/gd/play";
+			String content4 = "http://" + ip4 + "/spy2";
 			Map<String, String> contents = new HashMap<>();
-			contents.put(content1, "src/main/resources/picture/qrcode.png");
-			contents.put(content2, "src/main/resources/picture/spy.png");
-			contents.put(content3, "src/main/resources/picture/gDuck.png");
-			contents.put(content4, "src/main/resources/picture/spy2.png");
+			if (systemEnv.contains("Win")) {
+				contents.put(content1, "src/main/resources/picture/qrcode.png");
+				contents.put(content2, "src/main/resources/picture/spy.png");
+				contents.put(content3, "src/main/resources/picture/gDuck.png");
+				contents.put(content4, "src/main/resources/picture/spy2.png");
+			} else if (systemEnv.contains("Linux")) {
+				contents.put("http://43.208.205.45/ms/play", filepath + "/home/ec2-user/masoi/qrcode.png");
+				contents.put("http://43.208.205.45/sp", filepath + "/home/ec2-user/masoi/spy.png");
+				contents.put("http://43.208.205.45/gd/play", filepath + "/home/ec2-user/masoi/gDuck.png");
+				contents.put("http://43.208.205.45/spy2", filepath + "/home/ec2-user/masoi/spy2.png");
+			} else {
+				contents.put(content1, filepath + "/sdcard/java/qrcode.png");
+				contents.put(content2, filepath + "/sdcard/java/spy.png");
+				contents.put(content3, filepath + "/sdcard/java/gDuck.png");
+				contents.put(content4, filepath + "/sdcard/java/spy2.png");
+			}
 
 			contents.forEach((key, value) -> {
 				int width = 300;

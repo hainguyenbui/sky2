@@ -1,24 +1,38 @@
-# Getting Started
+sudo dnf install java-17-amazon-corretto-devel -y
 
-### Reference Documentation
-For further reference, please consider the following sections:
+java -jar spyfall-0.0.1-SNAPSHOT.jar
 
-* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
-* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/docs/3.2.12/maven-plugin/reference/html/)
-* [Create an OCI image](https://docs.spring.io/spring-boot/docs/3.2.12/maven-plugin/reference/html/#build-image)
-* [Spring Web](https://docs.spring.io/spring-boot/3.2.12/reference/web/servlet.html)
+ssh -i <pem_key_location> ec2-user@<public_ip_address>
 
-### Guides
-The following guides illustrate how to use some features concretely:
+cai tu dong run 
 
-* [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
-* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
-* [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
+1. sudo nano /etc/systemd/system/spyfall.service
+2. set data
+[Unit]
+Description=Spyfall Spring Boot Application
+After=network.target
 
-### Maven Parent overrides
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/masoi
+ExecStart=sudo java -jar /home/ec2-user/masoi/spyfall-0.0.1-SNAPSHOT.jar
+Restart=always
+RestartSec=5
 
-Due to Maven's design, elements are inherited from the parent POM to the project POM.
-While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent.
-To prevent this, the project POM contains empty overrides for these elements.
-If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
+[Install]
+WantedBy=multi-user.target
 
+Ctrl + O (O là chữ O, không phải số 0)
+
+Màn hình dưới cùng sẽ hiện:
+
+File Name to Write: /etc/systemd/system/spyfall.service
+
+Chỉ cần nhấn: Enter để xác nhận lưu.
+
+Bước 2: Thoát nano Nhấn: Ctrl + X
+
+Nap lai cau hinh: sudo systemctl daemon-reload
+bat tu dong chay: sudo systemctl enable spyfall
+kiem tra trang thai: sudo systemctl status spyfall
