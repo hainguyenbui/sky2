@@ -60,6 +60,7 @@ public class MaSoiController {
             if (member == null) {
                 if (!ObjectUtils.isEmpty(name)) {
                     model.addAttribute("notSetup", true);
+                    model.addAttribute("image", maSoiService.getImage());
                     return "masoi/play";
                 }
                 // Not setup - redirect to lobby
