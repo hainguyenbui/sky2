@@ -1,6 +1,7 @@
 package com.example.spyfall.controller;
 
 import com.example.spyfall.common.DataMember;
+import com.example.spyfall.util.HtmlTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,7 @@ public class SpyController {
             "Nhà ga xe lửa, " +
             "Sở thú, " +
             "Bảo tàng, " +
-             "Chùa";
+            "Chùa";
 
     String data2 = "Bệnh viện, " +
             "Sân bay, " +
@@ -107,10 +108,24 @@ public class SpyController {
                 }
             }
             StringBuilder result = new StringBuilder();
-            if (ipAssigned != null) {
-                result.append("<h1 style=\"color: white; font-size: 500%; \" id=\"location\">").append(memberPlay.get(ipAssigned).getLocation()).append("</h1>");
+            
+            result.append("<div class=\"header-section\">\n")
+                  .append("    <h1>Spyfall</h1>\n")
+                  .append("    <p class=\"desc\">Tìm ra gián điệp ẩn mình</p>\n")
+                  .append("</div>\n");
 
+            String locationText = "";
+            if (ipAssigned != null) {
+                locationText = memberPlay.get(ipAssigned).getLocation();
             } else {
+                if (memberWillPlay.isEmpty()) {
+                    return HtmlTemplate.wrap("Spyfall", 
+                        "<div class=\"card\" style=\"text-align: center;\">\n" +
+                        "    <h2 style=\"color: var(--danger); margin-bottom: 10px;\">Ván đấu chưa được setup</h2>\n" +
+                        "    <p class=\"desc\">Vui lòng liên hệ Admin để thiết lập phòng chơi mới.</p>\n" +
+                        "    <a href=\"/\" class=\"btn btn-primary\" style=\"margin-top: 20px;\">Về Trang Chủ</a>\n" +
+                        "</div>");
+                }
                 Collections.shuffle(memberWillPlay);
                 DataMember yourLocation = memberWillPlay.get(0);
 
@@ -118,53 +133,54 @@ public class SpyController {
                 memberPlay.add(yourLocation);
                 memberWillPlay.remove(0);
                 System.out.println(yourLocation.getLocation());
-                result.append("<h1 style=\"color: white; font-size: 500%; \" id=\"location\">").append(yourLocation.getLocation()).append("</h1>");
-            }
-            result.append("<label style=\"font-size: 350%;\">"
-                    + "<input type=\"checkbox\" id=\"showTextCheckbox\" onchange=\"toggleText()\" >"
-                    + " Show/Hide Location"
-                    + "</label>");
-
-            // Thêm bảng 2 cột và 2 hàng
-            result.append("<table border=\"1\" style=\"width: 90%; margin-top: 20px; border-collapse: collapse; font-size: 250%;\">");
-
-            // Chia thành 2 hàng, mỗi hàng có 2 cột
-            for (int i = 0; i < dataPlay.size(); i += 2) {
-                result.append("<tr>");
-                // Cột 1 (phần tử đầu tiên trong cặp)
-                result.append("<td>").append(dataPlay.get(i).getId()).append(". ").append(dataPlay.get(i).getLocation()).append("</td>");
-                // Cột 2 (phần tử thứ hai trong cặp)
-                if (i + 1 < dataPlay.size()) {
-                    result.append("<td>").append(dataPlay.get(i + 1).getId()).append(". ").append(dataPlay.get(i + 1).getLocation()).append("</td>");
-                } else {
-                    // Nếu không đủ phần tử cho cột thứ hai, để trống
-                    result.append("<td></td>");
-                }
-                result.append("</tr>");
+                locationText = yourLocation.getLocation();
             }
 
-            // Đóng bảng
-            result.append("</table>");
+            // Click-to-reveal Box
+            result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;\">VAI TRÒ / ĐỊA ĐIỂM CỦA BẠN:</h3>\n")
+                  .append("    <div class=\"reveal-box blurred\" onclick=\"this.classList.toggle('blurred')\">\n")
+                  .append("        <div class=\"reveal-placeholder\">Nhấp để ẩn/hiện vai trò</div>\n")
+                  .append("        <div class=\"reveal-content\">\n")
+                  .append("            <h2 style=\"font-size: 1.8rem; color: #60a5fa;\">").append(locationText).append("</h2>\n")
+                  .append("        </div>\n")
+                  .append("    </div>\n")
+                  .append("</div>\n");
 
-        result.append("<script>"
-                + "function toggleText() {"
-                + "    var checkbox = document.getElementById(\"showTextCheckbox\");"
-                + "    var textElement = document.getElementById(\"location\");"
-                + "    if (checkbox.checked) {"
-                + "        textElement.style.color = \"black\";"  // Chữ màu đen khi checkbox được chọn
-                + "    } else {"
-                + "        textElement.style.color = \"white\";"  // Chữ màu trắng khi checkbox không được chọn
-                + "    }"
-                + "}"
-                + "</script>");
-            result.append("<img src=\"").append(image).append("\" alt=\"QR Code\" width=\"500\" height=\"500\">");
-        return result.toString();
+            // List of suspected locations
+            result.append("<div class=\"card\">\n")
+                  .append("    <h3 style=\"margin-bottom: 14px; text-align: center; font-size: 1.1rem;\">Danh sách địa điểm nghi vấn</h3>\n")
+                  .append("    <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;\">\n");
+
+            for (int i = 0; i < dataPlay.size(); i++) {
+                result.append("        <div style=\"padding: 8px 10px; background: rgba(15, 23, 42, 0.45); border-radius: 8px; border: 1px solid var(--card-border); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\">")
+                      .append(dataPlay.get(i).getId()).append(". ").append(dataPlay.get(i).getLocation())
+                      .append("        </div>\n");
+            }
+
+            result.append("    </div>\n")
+                  .append("</div>\n");
+
+            // QR Code Section
+            result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 10px; font-size: 1.1rem;\">Mã QR tham gia</h3>\n")
+                  .append("    <div class=\"qr-container\">\n")
+                  .append("        <img src=\"").append(image).append("\" alt=\"QR Code\" class=\"qr-image\">\n")
+                  .append("    </div>\n")
+                  .append("    <p class=\"desc\" style=\"margin-top: 10px; font-size: 0.85rem;\">Quét mã để thiết bị khác cùng vào chơi</p>\n")
+                  .append("</div>\n");
+
+            return HtmlTemplate.wrap("Spyfall", result.toString());
         } catch (Exception e) {
-
-            return "<h1 style=\"font-size: 500%;\"> Đợi xí nha đại ca</h1>" +
-                    "<img src=\"/qrcode.png\" alt=\"QR Code\" width=\"500\" height=\"500\">";
+            return HtmlTemplate.wrap("Spyfall", 
+                "<div class=\"card\" style=\"text-align: center;\">\n" +
+                "    <h2 style=\"margin-bottom: 10px;\">Đợi một chút nha...</h2>\n" +
+                "    <p class=\"desc\">Hệ thống đang đồng bộ dữ liệu.</p>\n" +
+                "    <div class=\"qr-container\" style=\"margin-top: 15px;\">\n" +
+                "        <img src=\"/qrcode.png\" alt=\"QR Code\" class=\"qr-image\">\n" +
+                "    </div>\n" +
+                "</div>");
         }
-
     }
 
     @GetMapping({"/sp/{style}/{total}/{spy}", "/sp/{style}/{total}", "/sp/{style}/{total}/{spy}/{whiteHat}"})
@@ -182,9 +198,9 @@ public class SpyController {
                 int maxId = dataPlay.stream()
                         .mapToInt(o -> {
                             try {
-                                return Integer.parseInt(o.getId());
+                                    return Integer.parseInt(o.getId());
                             } catch (NumberFormatException e) {
-                                return 0;
+                                    return 0;
                             }
                         })
                         .max()
@@ -234,33 +250,41 @@ public class SpyController {
                 memberWillPlay.add(createDM(total, "Spy đó nhìn nhìn cái gì"));
             }
         }
+        
         StringBuilder result = new StringBuilder();
+        result.append("<div class=\"header-section\">\n")
+              .append("    <h1>Spyfall Setup</h1>\n")
+              .append("    <p class=\"desc\" style=\"color: var(--success); font-weight: 500;\">Khởi tạo ván chơi thành công!</p>\n")
+              .append("</div>\n");
 
-        result.append("<table border=\"1\" style=\"width: 90%; margin-top: 20px; border-collapse: collapse; font-size: 250%;\">");
+        result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+              .append("    <h3 style=\"margin-bottom: 10px; font-size: 1.1rem;\">Mã QR tham gia</h3>\n")
+              .append("    <div class=\"qr-container\">\n")
+              .append("        <img src=\"").append(image).append("\" alt=\"QR Code\" class=\"qr-image\">\n")
+              .append("    </div>\n")
+              .append("    <div style=\"margin-top: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;\">\n")
+              .append("        <div class=\"item-row\"><span>Tổng người chơi:</span> <strong>").append(total).append("</strong></div>\n")
+              .append("        <div class=\"item-row\"><span>Số lượng Spy:</span> <strong>").append(spy != null ? spy : 1).append("</strong></div>\n")
+              .append("        <div class=\"item-row\"><span>Chế độ chơi:</span> <strong>").append(style.equals(1) ? "Spy có địa điểm khác biệt" : "Spy ẩn danh (không biết địa điểm)").append("</strong></div>\n")
+              .append("    </div>\n")
+              .append("</div>\n");
 
-        // Chia thành 2 hàng, mỗi hàng có 2 cột
-        for (int i = 0; i < dataPlay.size(); i += 2) {
-            result.append("<tr>");
-            // Cột 1 (phần tử đầu tiên trong cặp)
-            result.append("<td>").append(dataPlay.get(i).getId()).append(". ").append(dataPlay.get(i).getLocation()).append("</td>");
-            // Cột 2 (phần tử thứ hai trong cặp)
-            if (i + 1 < dataPlay.size()) {
-                result.append("<td>").append(dataPlay.get(i + 1).getId()).append(". ").append(dataPlay.get(i + 1).getLocation()).append("</td>");
-            } else {
-                // Nếu không đủ phần tử cho cột thứ hai, để trống
-                result.append("<td></td>");
-            }
-            result.append("</tr>");
+        result.append("<div class=\"card\">\n")
+              .append("    <h3 style=\"margin-bottom: 14px; text-align: center; font-size: 1.1rem;\">Danh sách địa điểm nghi vấn</h3>\n")
+              .append("    <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;\">\n");
+
+        for (int i = 0; i < dataPlay.size(); i++) {
+            result.append("        <div style=\"padding: 8px 10px; background: rgba(15, 23, 42, 0.45); border-radius: 8px; border: 1px solid var(--card-border); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\">")
+                  .append(dataPlay.get(i).getId()).append(". ").append(dataPlay.get(i).getLocation())
+                  .append("        </div>\n");
         }
 
-        // Đóng bảng
-        result.append("</table>");
+        result.append("    </div>\n")
+              .append("</div>\n");
 
-        return "<h1 style=\"font-size: 500%;\"> Success</h1>" +
-                "<h1 style=\"font-size: 500%;\"> 1. Spy co dia chi khac </h1>" +
-                "<h1 style=\"font-size: 500%;\"> 2. Spy khong biet dia chi </h1>" +
-                "<img src=\"" + image + "\" alt=\"QR Code\" width=\"500\" height=\"500\">" +
-                result.toString();
+        result.append("<a href=\"/sp\" class=\"btn btn-primary\">Vào Phòng Chơi</a>\n");
+
+        return HtmlTemplate.wrap("Spyfall Setup", result.toString());
     }
 
     @GetMapping("/sp/delete/{id}")

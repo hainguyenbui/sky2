@@ -17,13 +17,7 @@ public class ImageController {
 
     @GetMapping("/qrcode.png")
     public ResponseEntity<Resource> getQRCode() {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file = new File("/project/spyfall/src/main/resources/picture/qrcode.png");
-        } else {
-            file = new File("/sdcard/java/qrcode.png");
-        }
-
+        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/qrcode.png");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());
@@ -32,12 +26,7 @@ public class ImageController {
 
     @GetMapping("/spy.png")
     public ResponseEntity<Resource> getQRCode2() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file = new File("/project/spyfall/src/main/resources/picture/spy.png");
-        } else {
-            file = new File("/sdcard/java/spy.png");
-        }
+        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy.png");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());
@@ -46,12 +35,7 @@ public class ImageController {
 
     @GetMapping("/gDuck.png")
     public ResponseEntity<Resource> getGDuck() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file = new File("/project/spyfall/src/main/resources/picture/gDuck.png");
-        } else {
-            file = new File("/sdcard/java/gDuck.png");
-        }
+        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/gDuck.png");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());
@@ -60,12 +44,7 @@ public class ImageController {
 
     @GetMapping("/spy2.png")
     public ResponseEntity<Resource> getSpy2() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file = new File("/project/spyfall/src/main/resources/picture/spy2.png");
-        } else {
-            file = new File("/sdcard/java/spy2.png");
-        }
+        File file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy2.png");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_PNG);
         headers.setContentLength(file.length());

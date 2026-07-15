@@ -50,17 +50,10 @@ public class SpyfallApplication {
 			String content3 = "http://" + ip4 + ":" + serverPort + "/gd/play";
 			String content4 = "http://" + ip4 + ":" + serverPort + "/spy2";
 			Map<String, String> contents = new HashMap<>();
-			if (systemEnv.contains("Win")) {
-				contents.put(content1, filepath + "/project/spyfall/src/main/resources/picture/qrcode.png");
-				contents.put(content2, filepath + "/project/spyfall/src/main/resources/picture/spy.png");
-				contents.put(content3, filepath + "/project/spyfall/src/main/resources/picture/gDuck.png");
-				contents.put(content4, filepath + "/project/spyfall/src/main/resources/picture/spy2.png");
-			} else {
-				contents.put(content1, filepath + "/sdcard/java/qrcode.png");
-				contents.put(content2, filepath + "/sdcard/java/spy.png");
-				contents.put(content3, filepath + "/sdcard/java/gDuck.png");
-				contents.put(content4, filepath + "/sdcard/java/spy2.png");
-			}
+			contents.put(content1, "src/main/resources/picture/qrcode.png");
+			contents.put(content2, "src/main/resources/picture/spy.png");
+			contents.put(content3, "src/main/resources/picture/gDuck.png");
+			contents.put(content4, "src/main/resources/picture/spy2.png");
 
 			contents.forEach((key, value) -> {
 				int width = 300;

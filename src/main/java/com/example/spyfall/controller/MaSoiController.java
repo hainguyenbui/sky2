@@ -2,6 +2,7 @@ package com.example.spyfall.controller;
 
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.SoiNguyenDto;
+import com.example.spyfall.util.HtmlTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,104 +44,171 @@ public class MaSoiController {
         prepareData();
         StringBuilder result = new StringBuilder();
 
-        result.append("<img src=\"").append(image).append("\" alt=\"QR Code\" width=\"500\" height=\"500\">");
-        result.append("<form id=\"dataForm\" style=\"font-size: 150%;\">");
+        result.append("<div class=\"header-section\">\n")
+              .append("    <h1>Ma Sói Setup</h1>\n")
+              .append("    <p class=\"desc\">Thiết lập vai trò cho ván đấu mới</p>\n")
+              .append("</div>\n");
 
-        // them so luong
-        result.append("<label for=\"total\" style=\"width: 35%; display: inline-block; text-align: right; margin: 10px 0; font-size: 150%;\">")
-                .append("Total người chơi").append(": </label>");
-        result.append("<input type=\"number\" min=\"0\" value=\"0\" id=\"total\" name=\"total\" ")
-                .append("style=\"margin: 10px 0; font-size: 150%;\"><br>");
-        result.append("<label for=\"sum\" style=\"width: 35%; display: inline-block; text-align: right; margin: 10px 0; font-size: 150%;\">Sum: </label>");
-        result.append("<input type=\"number\" id=\"sum\" readonly style=\"margin: 10px 0; font-size: 150%;\"><br>");
+        result.append("<form id=\"dataForm\">\n");
 
-        result.append("<table border=\"1\" style=\"width: 90%; margin-top: 20px; border-collapse: collapse; font-size: 150%;\">");
-        for (int i = 0; i < datas.size(); i += 2) {
-            result.append("<tr>");
-            // Cột 1 (phần tử đầu tiên trong cặp)
-            addDataTableRun(result, datas.get(i));
-            // Cột 2 (phần tử thứ hai trong cặp)
-            if (i + 1 < datas.size()) {
-                addDataTableRun(result, datas.get(i+1));
-            } else {
-                // Nếu không đủ phần tử cho cột thứ hai, để trống
-                result.append("<td></td>");
-            }
-            result.append("</tr>");
+        // Player total setup card
+        result.append("    <div class=\"card\" style=\"margin-bottom: 16px;\">\n")
+              .append("        <h3 style=\"margin-bottom: 12px; font-size: 1.1rem;\">Thông tin phòng chơi</h3>\n")
+              .append("        <div style=\"display: flex; flex-direction: column; gap: 12px;\">\n")
+              .append("            <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n")
+              .append("                <span style=\"font-weight: 500;\">Tổng người chơi:</span>\n")
+              .append("                <input type=\"number\" min=\"0\" value=\"0\" id=\"total\" name=\"total\" class=\"input-text\" style=\"width: 80px; padding: 8px; text-align: center;\">\n")
+              .append("            </div>\n")
+              .append("            <div style=\"display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 12px;\">\n")
+              .append("                <span style=\"font-weight: 500;\">Đã chọn:</span>\n")
+              .append("                <div style=\"display: flex; align-items: baseline; gap: 4px;\">\n")
+              .append("                    <input type=\"text\" id=\"sum\" readonly value=\"0\" style=\"width: 40px; background: transparent; border: none; color: #60a5fa; font-weight: 800; font-size: 1.5rem; text-align: right; outline: none;\">\n")
+              .append("                    <span style=\"color: var(--text-muted); font-size: 0.9rem;\">vai trò</span>\n")
+              .append("                </div>\n")
+              .append("            </div>\n")
+              .append("        </div>\n")
+              .append("    </div>\n");
+
+        // Roles checklist card
+        result.append("    <div class=\"card\" style=\"margin-bottom: 16px;\">\n")
+              .append("        <h3 style=\"margin-bottom: 14px; font-size: 1.1rem;\">Danh sách vai trò</h3>\n")
+              .append("        <div class=\"item-list\">\n");
+
+        for (int i = 0; i < datas.size(); i++) {
+            addRoleCard(result, datas.get(i));
         }
-        // Đóng bảng
-        result.append("</table>");
 
-        result.append("<br>");
-        // them check soi nguyen checkSóiNguyền
-        result.append("<label style=\"font-size: 200%;\">"
-                + "<input style=\"transform: scale(2); margin: 10px 0;\" type=\"checkbox\" id=\"checkSoi\" >"
-                + " Check chơi sói nguyền"
-                + "</label> <br>");
-        result.append("<br>");
-        // them check soi nguyen checkSóiNguyền
-        result.append("<label style=\"font-size: 200%;\">"
-                + "<input style=\"transform: scale(2); margin: 10px 0;\" type=\"checkbox\" id=\"checkCupid\" >"
-                + " Cupid"
-                + "</label> <br> <br> <br>");
+        result.append("        </div>\n")
+              .append("    </div>\n");
 
-        result.append("<button type=\"button\" id=\"sendButton\" style=\"font-size: 220%; margin-top: 20px;\">Send</button>");
-        result.append("</form>");
+        // Custom config card (Soi Nguyen, Cupid)
+        result.append("    <div class=\"card\" style=\"margin-bottom: 20px;\">\n")
+              .append("        <h3 style=\"margin-bottom: 12px; font-size: 1.1rem;\">Cấu hình nâng cao</h3>\n")
+              .append("        <div style=\"display: flex; flex-direction: column; gap: 12px;\">\n")
+              .append("            <div class=\"role-card\" style=\"border-left: 4px solid var(--warning);\">\n")
+              .append("                <div>\n")
+              .append("                    <span class=\"role-title\">SÓI NGUYỀN CHÚC</span>\n")
+              .append("                    <p style=\"font-size: 0.75rem; color: var(--text-muted);\">Cho phép Sói nguyền hóa 1 người chơi thành Sói</p>\n")
+              .append("                </div>\n")
+              .append("                <label class=\"switch\">\n")
+              .append("                    <input type=\"checkbox\" id=\"checkSoi\" name=\"checkSoi\" value=\"1\">\n")
+              .append("                    <span class=\"slider\"></span>\n")
+              .append("                </label>\n")
+              .append("            </div>\n")
+              .append("            <div class=\"role-card\" style=\"border-left: 4px solid var(--warning);\">\n")
+              .append("                <div>\n")
+              .append("                    <span class=\"role-title\">CUPID (TÌNH YÊU)</span>\n")
+              .append("                    <p style=\"font-size: 0.75rem; color: var(--text-muted);\">Ghép đôi ngẫu nhiên 2 người chơi</p>\n")
+              .append("                </div>\n")
+              .append("                <label class=\"switch\">\n")
+              .append("                    <input type=\"checkbox\" id=\"checkCupid\" name=\"checkCupid\" value=\"1\">\n")
+              .append("                    <span class=\"slider\"></span>\n")
+              .append("                </label>\n")
+              .append("            </div>\n")
+              .append("        </div>\n")
+              .append("    </div>\n");
 
-        result.append("<script>");
-        result.append("function updateSum() {");
-        result.append("    var sumTotal = 0;");
-        result.append("    var inputs = document.querySelectorAll('input[type=\"number\"]:not(#sum):not(#total)');"); // Chọn tất cả input số");
-        result.append("    inputs.forEach(function(input) {");
-        result.append("        sumTotal += parseFloat(input.value) || 0;"); // Tính tổng, nếu không phải số thì thêm 0");
-        result.append("    });");
-        result.append("    var checkboxes = document.querySelectorAll('input[type=\"checkbox\"]:checked');"); // Lấy tất cả checkbox đã được chọn
+        result.append("    <button type=\"button\" id=\"sendButton\" class=\"btn btn-primary\" style=\"margin-top: 10px;\">Khởi Chạy Game</button>\n");
+        result.append("</form>\n");
 
-        // Duyệt qua các checkbox đã được chọn và cộng tổng
-        result.append("    checkboxes.forEach(function(checkbox) {");
-        result.append("    sumTotal += parseInt(checkbox.value);");
-        result.append("    });");
-        result.append("    document.getElementById('sum').value = sumTotal;"); // Cập nhật tổng vào trường sum
-        result.append("}");
+        result.append("<script>\n")
+              .append("function updateSum() {\n")
+              .append("    var sumTotal = 0;\n")
+              .append("    var inputs = document.querySelectorAll('input[type=\"number\"]:not(#total)');\n")
+              .append("    inputs.forEach(function(input) {\n")
+              .append("        sumTotal += parseFloat(input.value) || 0;\n")
+              .append("    });\n")
+              .append("    var checkboxes = document.querySelectorAll('input[type=\"checkbox\"]:not(#checkSoi):not(#checkCupid):checked');\n")
+              .append("    checkboxes.forEach(function(checkbox) {\n")
+              .append("        sumTotal += parseInt(checkbox.value) || 0;\n")
+              .append("    });\n")
+              .append("    document.getElementById('sum').value = sumTotal;\n")
+              .append("}\n")
+              .append("\n")
+              .append("document.getElementById('sendButton').onclick = function() {\n")
+              .append("    var formData = new URLSearchParams();\n")
+              .append("    var inputs = document.querySelectorAll('input[type=\"number\"]');\n")
+              .append("    inputs.forEach(function(input) {\n")
+              .append("        formData.append(input.name, input.value);\n")
+              .append("    });\n")
+              .append("    var checkboxes = document.querySelectorAll('input[type=\"checkbox\"]:checked');\n")
+              .append("    checkboxes.forEach(function(checkbox) {\n")
+              .append("        if (checkbox.id !== 'checkSoi' && checkbox.id !== 'checkCupid') {\n")
+              .append("            formData.append(checkbox.name, 1);\n")
+              .append("        }\n")
+              .append("    });\n")
+              .append("    formData.append('checkSoi', document.getElementById('checkSoi').checked ? 'true' : 'false');\n")
+              .append("    formData.append('checkCupid', document.getElementById('checkCupid').checked ? 'true' : 'false');\n")
+              .append("\n")
+              .append("    fetch('/ms/create?' + formData.toString(), { method: 'GET' })\n")
+              .append("        .then(response => response.text())\n")
+              .append("        .then(data => {\n")
+              .append("            if (data.includes('ERROR')) {\n")
+              .append("                alert(data);\n")
+              .append("            } else {\n")
+              .append("                window.location.href = '/ms/admin';\n")
+              .append("            }\n")
+              .append("        })\n")
+              .append("        .catch(error => console.error('Error:', error));\n")
+              .append("};\n")
+              .append("</script>\n");
 
-        result.append("document.getElementById('sendButton').onclick = function() {");
-        result.append("    var formData = new URLSearchParams();");
+        String styles = 
+            "<style>\n" +
+            "  .role-card {\n" +
+            "      display: flex;\n" +
+            "      justify-content: space-between;\n" +
+            "      align-items: center;\n" +
+            "      padding: 12px 16px;\n" +
+            "      background: rgba(30, 41, 59, 0.4);\n" +
+            "      border: 1px solid var(--card-border);\n" +
+            "      border-radius: 12px;\n" +
+            "      transition: all 0.2s;\n" +
+            "  }\n" +
+            "  .role-title {\n" +
+            "      font-weight: 700;\n" +
+            "      font-size: 0.9rem;\n" +
+            "      letter-spacing: 0.02em;\n" +
+            "  }\n" +
+            "  .role-card-soi { border-left: 4px solid var(--danger); }\n" +
+            "  .role-card-dan { border-left: 4px solid var(--success); }\n" +
+            "  .role-card-other { border-left: 4px solid var(--warning); }\n" +
+            "  .switch {\n" +
+            "      position: relative;\n" +
+            "      display: inline-block;\n" +
+            "      width: 46px;\n" +
+            "      height: 24px;\n" +
+            "      flex-shrink: 0;\n" +
+            "  }\n" +
+            "  .switch input { opacity: 0; width: 0; height: 0; }\n" +
+            "  .slider {\n" +
+            "      position: absolute;\n" +
+            "      cursor: pointer;\n" +
+            "      top: 0; left: 0; right: 0; bottom: 0;\n" +
+            "      background-color: rgba(15, 23, 42, 0.6);\n" +
+            "      transition: .25s;\n" +
+            "      border-radius: 24px;\n" +
+            "      border: 1px solid var(--card-border);\n" +
+            "  }\n" +
+            "  .slider:before {\n" +
+            "      position: absolute;\n" +
+            "      content: \"\";\n" +
+            "      height: 16px;\n" +
+            "      width: 16px;\n" +
+            "      left: 3px;\n" +
+            "      bottom: 3px;\n" +
+            "      background-color: #94a3b8;\n" +
+            "      transition: .25s;\n" +
+            "      border-radius: 50%;\n" +
+            "  }\n" +
+            "  input:checked + .slider { background-color: var(--primary); }\n" +
+            "  input:checked + .slider:before {\n" +
+            "      transform: translateX(22px);\n" +
+            "      background-color: #ffffff;\n" +
+            "  }\n" +
+            "</style>";
 
-        result.append("    var inputs = document.querySelectorAll('input[type=\"number\"]');");
-        result.append("    inputs.forEach(function(input) {");
-        result.append("        formData.append(input.name, input.value);");
-        result.append("    });");
-        result.append("    var checkboxes = document.querySelectorAll('input[type=\"checkbox\"]:checked');"); // Lấy tất cả checkbox đã được chọn
-        result.append("    checkboxes.forEach(function(checkbox) {");
-        result.append("        formData.append(checkbox.name, 1);");
-        result.append("    });");
-
-        result.append("    var checkbox = document.getElementById(\"checkSoi\");"
-                + "    if (checkbox.checked) {"
-                + "        formData.append('checkSoi', 'true');"
-                + "    } else {"
-                + "        formData.append('checkSoi', 'false');"
-                + "    }");
-
-        result.append("    var checkbox = document.getElementById(\"checkCupid\");"
-                + "    if (checkbox.checked) {"
-                + "        formData.append('checkCupid', 'true');"
-                + "    } else {"
-                + "        formData.append('checkCupid', 'false');"
-                + "    }");
-
-        result.append("    fetch('/ms/create?' + formData.toString(), { method: 'GET' })");
-        result.append("        .then(response => response.text())");
-        result.append("        .then(data => {");
-        result.append("            alert('Response: ' + data);");
-        result.append("            if (!data.includes('ERROR')) {");  // Kiểm tra nếu không có từ 'error' trong data");
-        result.append("                window.location.href = '/ms/admin';");
-        result.append("            }");
-        result.append("        })");
-        result.append("        .catch(error => console.error('Error:', error));");
-        result.append("};");
-        result.append("</script>");
-        return result.toString();
+        return HtmlTemplate.wrap("Ma Sói Setup", result.toString(), styles);
     }
 
     @GetMapping("/create")
@@ -249,9 +317,16 @@ public class MaSoiController {
                 }
             }
 
+            result.append("<div class=\"header-section\">\n")
+                  .append("    <h1>Ma Sói</h1>\n")
+                  .append("    <p class=\"desc\">Ván đấu ").append(detailEachGame.size() + 1).append("</p>\n")
+                  .append("</div>\n");
+
+            String roleText = "";
+            String descText = "";
             if (ipAssigned != null) {
-                result.append("<h1 style=\"color: white; font-size: 500%; \" id=\"location\">")
-                        .append(pls.get(ipAssigned).getLocation()).append("</h1>");
+                roleText = pls.get(ipAssigned).getLocation();
+                descText = pls.get(ipAssigned).getDescription();
                 if (name != null) {
                     pls.get(ipAssigned).setNameMember(name);
                 }
@@ -263,70 +338,110 @@ public class MaSoiController {
 
                     yourLocation.setIpData(clientIp);
                     yourLocation.setNameMember(name);
-                    result.append("<h1 style=\"color: white; font-size: 500%; \" id=\"location\">").append(yourLocation.getLocation()).append("</h1>");
+                    roleText = yourLocation.getLocation();
+                    descText = yourLocation.getDescription();
                 } else {
-                    result.append("<h1 style=\"font-size: 500%; \" > Loading </h1>");
+                    return HtmlTemplate.wrap("Ma Sói", 
+                        "<div class=\"card\" style=\"text-align: center;\">\n" +
+                        "    <h2 style=\"color: var(--warning);\">Đang chờ khởi tạo...</h2>\n" +
+                        "    <p class=\"desc\">Vui lòng đợi Admin setup phòng chơi.</p>\n" +
+                        "    <div class=\"qr-container\" style=\"margin-top: 15px;\">\n" +
+                        "        <img src=\"/qrcode.png\" alt=\"QR Code\" class=\"qr-image\">\n" +
+                        "    </div>\n" +
+                        "</div>");
                 }
-
             }
-            result.append("<label style=\"font-size: 250%;\">"
-                    + "<input type=\"checkbox\" id=\"showTextCheckbox\" onchange=\"toggleText()\" >"
-                    + " Show/Hide Chức năng - Game " + (detailEachGame.size() + 1)
-                    + "</label>");
-            result.append("<button type=\"button\" id=\"showHistory\" style=\"font-size: 250%; float: right;\">History</button>");
 
-            showDescription(listShowForMember, result, false);
+            // Reveal Box for Werewolf Role
+            result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;\">CHỨC NĂNG CỦA BẠN:</h3>\n")
+                  .append("    <div class=\"reveal-box blurred\" onclick=\"this.classList.toggle('blurred')\">\n")
+                  .append("        <div class=\"reveal-placeholder\">Nhấp để ẩn/hiện chức năng</div>\n")
+                  .append("        <div class=\"reveal-content\">\n")
+                  .append("            <h2 id=\"location\" style=\"font-size: 2rem; color: #f87171;\">").append(roleText).append("</h2>\n")
+                  .append("            <p class=\"desc\" style=\"margin-top: 10px; font-size: 0.9rem; color: var(--text-muted);\">").append(descText).append("</p>\n")
+                  .append("        </div>\n")
+                  .append("    </div>\n")
+                  .append("</div>\n");
 
-            result.append("<div id=\"popupModal\" style=\"overflow: auto; resize: both; max-height: 80%; display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; background: white; border: 1px solid #ccc; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); width: 90%; max-width: 90%; padding: 20px;\">");
-            result.append("<button id=\"closePopup\" style=\"font-size: 260%; margin-top: 20px; padding: 10px 20px; background: #ff4d4d; color: white; border: none; cursor: pointer;\">Close</button>");
+            // Action Buttons
+            result.append("<div style=\"display: flex; gap: 10px;\">\n")
+                  .append("    <button type=\"button\" id=\"showHistory\" class=\"btn btn-primary\" style=\"flex: 1;\">Xem Lịch Sử</button>\n")
+                  .append("</div>\n");
 
-            result.append("<div id=\"popupContent\">");
-            result.append("</div>");
-            result.append("</div>");
+            // Roles in play description
+            result.append("<div class=\"card\">\n")
+                  .append("    <h3 style=\"margin-bottom: 12px; font-size: 1.1rem;\">Các chức năng có trong ván</h3>\n")
+                  .append("    <div class=\"item-list\">\n");
+            
+            StringBuilder rolesDesc = new StringBuilder();
+            showDescription(listShowForMember, rolesDesc, false);
+            result.append(rolesDesc.toString());
 
-            result.append("<script>"
-                    + "function toggleText() {"
-                    + "    var checkbox = document.getElementById(\"showTextCheckbox\");"
-                    + "    var cupid = document.getElementById(\"cupid\");"
-                    + "    var textElement = document.getElementById(\"location\");"
-                    + "    if (checkbox.checked) {"
-                    + "        textElement.style.color = \"black\";"  // Chữ màu đen khi checkbox được chọn
-                    + "        cupid.style.color = \"orange\";"
-                    + "    } else {"
-                    + "        textElement.style.color = \"white\";"  // Chữ màu trắng khi checkbox không được chọn
-                    + "        cupid.style.color = \"white\";"
-                    + "    }"
-                    + "}"
+            result.append("    </div>\n")
+                  .append("</div>\n");
 
-                    + " document.getElementById('showHistory').onclick = function() {"
-                    + "     const popupModal = document.getElementById('popupModal');"
-                    + "     const popupContent = document.getElementById('popupContent');"
-                    + "        fetch('/ms/showHistory', {"  // Chữ màu đen khi checkbox được chọn
-                    + "             method: 'POST'"
-                    + "        })"
-                    + "        .then(response => response.text())"
-                    + "        .then(responseData => {"
-                    + "             popupContent.innerHTML = responseData;"
-                    + "             popupModal.style.display = 'block';"
-                    + "         })"
-                    + "         .catch(error => {"
-                    + "             console.error('Error:', error);"
-                    + "         });"
-                    + "};"
+            // QR Code Section
+            result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 10px; font-size: 1.1rem;\">Mã QR tham gia</h3>\n")
+                  .append("    <div class=\"qr-container\">\n")
+                  .append("        <img src=\"").append(image).append("\" alt=\"QR Code\" class=\"qr-image\">\n")
+                  .append("    </div>\n")
+                  .append("</div>\n");
 
-                    + "             document.getElementById('closePopup').onclick = function() {"
-                    + "     const popupModal = document.getElementById('popupModal');"
-                    + "     const popupContent = document.getElementById('popupContent');"
-                    + "                     popupModal.style.display = 'none';"
-                    + "             }"
-                    + "</script>");
+            // Modal Popup Layout Redesigned
+            result.append("<div id=\"popupModal\" style=\"display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 20px;\">\n")
+                  .append("    <div class=\"card\" style=\"width: 100%; max-width: 450px; max-height: 85%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #131b2e;\">\n")
+                  .append("        <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;\">\n")
+                  .append("            <h2 style=\"font-size: 1.3rem;\">Lịch Sử Ván Đấu</h2>\n")
+                  .append("            <button id=\"closePopup\" style=\"background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;\">&times;</button>\n")
+                  .append("        </div>\n")
+                  .append("        <div id=\"popupContent\" style=\"overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 16px;\">\n")
+                  .append("            <!-- History content goes here -->\n")
+                  .append("        </div>\n")
+                  .append("    </div>\n")
+                  .append("</div>\n");
 
-            result.append("<img src=\"").append(image).append("\" alt=\"QR Code\" width=\"500\" height=\"500\">");
-            return result.toString();
+            result.append("<script>\n"
+                    + "document.getElementById('showHistory').onclick = function() {\n"
+                    + "    const popupModal = document.getElementById('popupModal');\n"
+                    + "    const popupContent = document.getElementById('popupContent');\n"
+                    + "    fetch('/ms/showHistory', { method: 'POST' })\n"
+                    + "        .then(response => response.text())\n"
+                    + "        .then(responseData => {\n"
+                    + "             popupContent.innerHTML = responseData;\n"
+                    + "             popupModal.style.display = 'flex';\n"
+                    + "        })\n"
+                    + "        .catch(error => console.error('Error:', error));\n"
+                    + "};\n"
+                    + "\n"
+                    + "document.getElementById('closePopup').onclick = function() {\n"
+                    + "    document.getElementById('popupModal').style.display = 'none';\n"
+                    + "};\n"
+                    + "\n"
+                    + "window.onclick = function(event) {\n"
+                    + "    const modal = document.getElementById('popupModal');\n"
+                    + "    if (event.target == modal) {\n"
+                    + "        modal.style.display = 'none';\n"
+                    + "    }\n"
+                    + "};\n"
+                    + "</script>\n");
+
+            String customCss = 
+                "<style>\n" +
+                "  #cupid { color: #f59e0b; font-style: normal; font-weight: 500; font-size: 0.8rem; display: block; margin-top: 4px; }\n" +
+                "  .history-game-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; background: rgba(30, 41, 59, 0.3); }\n" +
+                "</style>";
+
+            return HtmlTemplate.wrap("Ma Sói Play", result.toString(), customCss);
         } catch (Exception e) {
-            result.append("<h1 style=\"font-size: 500%;\"> Load</h1>");
-//            showDescription(datas, result, false);
-            return result.toString();
+            return HtmlTemplate.wrap("Ma Sói Play", 
+                "<div class=\"card\" style=\"text-align: center;\">\n" +
+                "    <h2 style=\"margin-bottom: 10px;\">Đang tải phòng...</h2>\n" +
+                "    <div class=\"qr-container\" style=\"margin-top: 15px;\">\n" +
+                "        <img src=\"/qrcode.png\" alt=\"QR Code\" class=\"qr-image\">\n" +
+                "    </div>\n" +
+                "</div>");
         }
     }
 
@@ -334,67 +449,74 @@ public class MaSoiController {
     String playGetName() {
         StringBuilder result = new StringBuilder();
 
-        result.append("<form id=\"dataForm\" style=\"font-size: 150%;\" onsubmit=\"handleSubmit(event)\">");
+        result.append("<div class=\"header-section\">\n")
+              .append("    <h1>Ma Sói</h1>\n")
+              .append("    <p class=\"desc\">Đăng ký thông tin người chơi</p>\n")
+              .append("</div>\n");
 
-        result.append("<input type=\"text\" id=\"nameId\" name=\"total\" placeholder=\"Nhập tên của bạn\"")
-                .append("style=\"margin: 10px 0; font-size: 250%;\"><br>");
+        result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+              .append("    <h3 style=\"margin-bottom: 16px;\">Nhập tên của bạn</h3>\n")
+              .append("    <form id=\"dataForm\" onsubmit=\"handleSubmit(event)\">\n")
+              .append("        <input type=\"text\" id=\"nameId\" class=\"input-text\" placeholder=\"Ví dụ: Huy, Nam...\" required style=\"text-align: center; margin-bottom: 20px;\"><br>\n")
+              .append("        <button type=\"submit\" class=\"btn btn-primary\">Vào Chơi</button>\n")
+              .append("    </form>\n")
+              .append("</div>\n");
 
-        result.append("<div style=\"text-align: center; margin-top: 20px;\">");
-        result.append("<button type=\"submit\" id=\"sendButton\" ")
-                .append("style=\"font-size: 300%; padding: 15px 40px;\">Ok</button>");
-        result.append("</div>");
+        result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+              .append("    <h3 style=\"margin-bottom: 10px; font-size: 1.1rem;\">Mã QR tham gia</h3>\n")
+              .append("    <div class=\"qr-container\">\n")
+              .append("        <img src=\"").append(image).append("\" alt=\"QR Code\" class=\"qr-image\">\n")
+              .append("    </div>\n")
+              .append("</div>\n");
 
-        result.append("</form>");
-        result.append("<script>");
-        result.append("function handleSubmit(event) {");
-        result.append("    event.preventDefault();"); // Ngăn form submit mặc định
-        result.append("    var input = document.getElementById(\"nameId\");");
-        result.append("    if (input.value.trim() !== '') {");
-        result.append("        window.location.href = '/ms/play/' + input.value;");
-        result.append("    }");
-        result.append("}");
+        result.append("<script>\n")
+              .append("function handleSubmit(event) {\n")
+              .append("    event.preventDefault();\n")
+              .append("    var input = document.getElementById(\"nameId\");\n")
+              .append("    if (input.value.trim() !== '') {\n")
+              .append("        window.location.href = '/ms/play/' + encodeURIComponent(input.value.trim());\n")
+              .append("    }\n")
+              .append("}\n")
+              .append("</script>\n");
 
-        result.append("document.getElementById('sendButton').onclick = function() {");
-        result.append("    handleSubmit(new Event('submit'));"); // Cho nút OK dùng lại
-        result.append("};");
-        result.append("</script>");
-
-        result.append("<img src=\"").append(image).append("\" alt=\"QR Code\" width=\"500\" height=\"500\">");
-        return result.toString();
+        return HtmlTemplate.wrap("Ma Sói", result.toString());
     }
-
 
     @PostMapping("/showHistory")
     String showHistory() {
         StringBuilder result = new StringBuilder();
         detailEachGame.forEach((key, value) -> {
-            result.append("<h3 style=\"font-size: 200%; \" > Game ").append(key).append(": </h3>");
+            result.append("<div class=\"history-game-card\">\n")
+                  .append("    <h4 style=\"font-size: 1rem; color: #60a5fa; margin-bottom: 10px;\">Ván ").append(key).append(":</h4>\n")
+                  .append("    <div class=\"item-list\">\n");
+
             value.sort(Comparator.comparing((DataMember m) -> Integer.parseInt(m.getId())));
-            result.append("<table border=\"1\" style=\"border-collapse: collapse; \">");
             value.forEach(item -> {
-                String color;
+                String badgeClass = "badge-green";
                 if (idSoi.contains(item.getId())) {
-                    color = "red";
+                    badgeClass = "badge-red";
                 } else if (idOutsider.contains(item.getId())) {
-                    color = "orange";
-                } else {
-                    color = "green";
+                    badgeClass = "badge-orange";
                 }
-                result.append("<tr >");
-                result.append("<td style=\"font-weight: bold; text-align: left; padding-right: 5px; font-size: 300%; width: 30%; color: " + color + ";\">")
-                        .append(item.getLocation()).append(": ")
-                        .append("</td>");
-                if (item.getNameMember() == null && item.getIpData() != null) {
-                    result.append("<td style=\"font-size: 300%; \"> Đã giấu tên</br> </td>");
-                } else if (item.getNameMember() == null) {
-                    result.append("<td style=\"font-size: 300%; \"> Chưa ai chọn</br> </td>");
-                } else {
-                    result.append("<td style=\"font-size: 300%; \">").append(item.getNameMember()).append("</br> </td>");
+
+                String displayLocation = item.getLocation();
+                // Strip tags for history clean rendering if any
+                displayLocation = displayLocation.replaceAll("<[^>]*>", "");
+
+                String name = "Chưa nhận";
+                if (item.getNameMember() != null) {
+                    name = item.getNameMember();
+                } else if (item.getIpData() != null) {
+                    name = "Ẩn danh";
                 }
-                result.append("<td style=\"padding-bottom: 12%;\"/>");
-                result.append("</tr>");
+
+                result.append("        <div class=\"item-row\" style=\"padding: 8px 12px; font-size: 0.85rem;\">\n")
+                      .append("            <span style=\"font-weight: 500;\">").append(name).append("</span>\n")
+                      .append("            <span class=\"badge ").append(badgeClass).append("\">").append(displayLocation).append("</span>\n")
+                      .append("        </div>\n");
             });
-            result.append("</table>");
+            result.append("    </div>\n")
+                  .append("</div>\n");
         });
 
         return result.toString();
@@ -465,156 +587,131 @@ public class MaSoiController {
     String admin() {
         prepareData();
         StringBuilder result = new StringBuilder();
-        result.append("<img src=\"").append(image).append("\" alt=\"QR Code\" width=\"500\" height=\"500\">");
-        result.append("<h1 style=\"font-size: 400%; \">");
+        
+        result.append("<div class=\"header-section\">\n")
+              .append("    <h1>Quản Trò Ma Sói</h1>\n")
+              .append("    <p class=\"desc\">Bảng điều khiển ván đấu hiện tại</p>\n")
+              .append("</div>\n");
+
+        // QR Code Section
+        result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+              .append("    <div class=\"qr-container\">\n")
+              .append("        <img src=\"").append(image).append("\" alt=\"QR Code\" class=\"qr-image\" style=\"width: 150px; height: 150px;\">\n")
+              .append("    </div>\n")
+              .append("    <p class=\"desc\" style=\"font-size: 0.8rem; margin-top: 5px;\">Quét mã QR để người chơi tham gia</p>\n")
+              .append("</div>\n");
+
+        // Active roles summary card
+        StringBuilder activeRoles = new StringBuilder();
         for (DataMember item: pls) {
             if (!item.getId().equals("1") && !item.getId().equals("30")) {
-                result.append(item.getLocation()).append(", ");
+                activeRoles.append(item.getLocation()).append(", ");
             }
-
         }
-        result.append("</h1>");
+        String rolesStr = activeRoles.toString();
+        if (rolesStr.endsWith(", ")) {
+            rolesStr = rolesStr.substring(0, rolesStr.length() - 2);
+        }
+        if (!rolesStr.isEmpty()) {
+            result.append("<div class=\"card\" style=\"margin-bottom: 16px;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 6px; font-size: 0.95rem; color: var(--text-muted);\">Vai trò đặc biệt trong ván:</h3>\n")
+                  .append("    <p style=\"font-weight: 600; font-size: 1rem; color: #a5b4fc;\">").append(rolesStr).append("</p>\n")
+                  .append("</div>\n");
+        }
 
+        // Players roster card
+        result.append("<div class=\"card\">\n")
+              .append("    <h3 style=\"margin-bottom: 14px; font-size: 1.1rem;\">Danh sách người chơi</h3>\n")
+              .append("    <div class=\"item-list\">\n");
 
-
-        result.append("<table border=\"1\" style=\"border-collapse: collapse; \">");
         pls.sort(Comparator.comparing((DataMember m) -> Integer.parseInt(m.getId())));
         pls.forEach(item -> {
-            result.append("<tr >");
-            result.append("<td style=\"font-weight: bold; text-align: left; padding-right: 5px; font-size: 200%; width: 30%;\">")
-                    .append(item.getIdPlayGame())
-                    .append("-")
-                    .append(item.getLocation()).append(": ")
-                    .append("</td>");
-            if (item.getNameMember() == null && item.getIpData() != null) {
-                result.append("<td style=\"font-size: 250%; \"> Đã giấu tên</br> </td>");
-            } else if (item.getNameMember() == null) {
-                result.append("<td style=\"font-size: 250%; \"> Chưa ai chọn</br> </td>");
-            } else {
-                result.append("<td style=\"font-size: 250%; \">").append(item.getNameMember()).append("</br> </td>");
+            String badgeClass = "badge-green";
+            String cardBorder = "border-left: 4px solid var(--success);";
+            if (idSoi.contains(item.getId())) {
+                badgeClass = "badge-red";
+                cardBorder = "border-left: 4px solid var(--danger);";
+            } else if (idOutsider.contains(item.getId())) {
+                badgeClass = "badge-orange";
+                cardBorder = "border-left: 4px solid var(--warning);";
             }
-            result.append("<td style=\"padding-bottom: 12%;\"/>");
-            result.append("</tr>");
+
+            String displayLocation = item.getLocation().replaceAll("<[^>]*>", "");
+            String name = "Chưa nhận chức năng";
+            if (item.getNameMember() != null) {
+                name = item.getNameMember();
+            } else if (item.getIpData() != null) {
+                name = "Ẩn danh";
+            }
+
+            result.append("        <div class=\"item-row\" style=\"").append(cardBorder).append(" padding: 12px 16px;\">\n")
+                  .append("            <span style=\"font-weight: 700; font-size: 1rem;\">")
+                  .append(item.getIdPlayGame()).append(". ").append(name)
+                  .append("            </span>\n")
+                  .append("            <span class=\"badge ").append(badgeClass).append("\">").append(displayLocation).append("</span>\n")
+                  .append("        </div>\n");
         });
-//        Map<String, List<String>> selectData = createMapSelect(); //TODO update detail every night
-        result.append("</table>");
+        result.append("    </div>\n")
+              .append("</div>\n");
 
-//        result.append("<button id='addButton' type='button' style='font-size: 16px; margin-top: 20px;'>Add</button>");
-
+        // Werewolf Curse Activation (if applicable)
         if (isHaveSoiNguyen && !isAddSoiNguyen) {
-            result.append("    <select class=\"selectSoiNguyen\" style=\"margin-right: 10px; font-size: 300%;\">';");
+            result.append("<div class=\"card\" style=\"margin-top: 16px; text-align: center;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 12px; font-size: 1.1rem;\">Nguyền chúc của Sói</h3>\n")
+                  .append("    <div style=\"display: flex; gap: 8px; justify-content: center;\">\n")
+                  .append("        <select class=\"selectSoiNguyen input-text\" style=\"flex: 1; min-width: 150px; padding: 12px;\">\n");
+            
             pls.forEach(item -> {
-                String name = (item.getNameMember() == null || item.getNameMember().isEmpty()) ? "" : item.getNameMember().substring(0, 1).toUpperCase() + item.getNameMember().substring(1);
-                result.append("    newRow += '<option value=\"").append(item.getIdPlayGame()).append("\">").append(item.getIdPlayGame() + "-").append(item.getLocation()).append("-").append(name).append("</option>';");
-
+                String name = (item.getNameMember() == null || item.getNameMember().isEmpty()) ? "Ẩn danh" : item.getNameMember().substring(0, 1).toUpperCase() + item.getNameMember().substring(1);
+                String displayLocation = item.getLocation().replaceAll("<[^>]*>", "");
+                result.append("            <option value=\"").append(item.getIdPlayGame()).append("\">")
+                      .append(item.getIdPlayGame()).append("-").append(displayLocation).append("-").append(name)
+                      .append("</option>\n");
             });
-            result.append("  '</select>';");
-
-            result.append("<button id='addSoiNguyen' type='button' style='font-size: 300%; margin-top: 20px; '>Add Soi Nguyen</button>");
+            
+            result.append("        </select>\n")
+                  .append("        <button id=\"addSoiNguyen\" class=\"btn btn-primary\" style=\"width: auto; padding: 12px 20px;\">Nguyền</button>\n")
+                  .append("    </div>\n")
+                  .append("</div>\n");
         }
 
-        result.append("<div id='selectContainer'></div>");
-        result.append("<button id='endGame' type='button' style='font-size: 400%; margin-top: 20px; background-color: red; color: white;'>End Game</button>");
+        // End Game button
+        result.append("<button id=\"endGame\" class=\"btn btn-danger\" style=\"margin-top: 24px;\">Kết Thúc Ván Đấu</button>\n");
 
-        result.append("<script>");
-        //TODO update detail every night
-//        result.append("    var selectedValue = 1; ");
-//        result.append("document.getElementById('addButton').addEventListener('click', function() {");
-//        result.append("    var newRow = '<div style=\"margin-bottom: 10px;\">';");
-//        result.append("    newRow += '<select class=\"select1\" style=\"margin-right: 10px;\">';");
-//        selectData.forEach((key, value) -> {
-//            result.append("    newRow += '<option value=\"").append(key).append("\">").append(key).append("</option>';");
-//        });
-//        result.append("    newRow += '</select>';");
-//        result.append("    newRow += '<select class=\"select2\" style=\"margin-right: 10px;\">';");
-//        result.append("    newRow += '<option value=\"No option\">No option</option>';");
-//        result.append("    newRow += '</select>';");
-//        result.append("    newRow += '<select class=\"select3\" style=\"margin-right: 10px;\">';");
-//        pls.forEach(item -> {
-//            String name = (item.getNameMember() == null || item.getNameMember().isEmpty()) ? "" : item.getNameMember().substring(0, 1).toUpperCase() + item.getNameMember().substring(1);
-//            result.append("    newRow += '<option value=\"").append(item.getLocation()).append("-").append(name).append("\">").append(item.getLocation()).append("-").append(name).append("</option>';");
-//        });
-//        result.append("    newRow += '</select>';");
-//
-//        result.append("    newRow += '<select class=\"select4\" style=\"margin-right: 10px;\">';");
-//        for (int i = 1; i < 14; i++) {
-////            result.append("    newRow += '<option value=\"").append(i).append("\">").append("Đêm - " + i).append("</option>';");
-//            result.append("        if (" + i + " == selectedValue) {");
-//            result.append("            newRow += '<option value=\"").append(i).append("\" selected >").append("Đêm - ").append(i).append("</option>';");
-//            result.append("        } else {");
-//            result.append("            newRow += '<option value=\"").append(i).append("\">").append("Đêm - ").append(i).append("</option>';");
-//            result.append("        }");
-//        }
-//
-//        result.append("    newRow += '</select>';");
-//
-//        result.append("    newRow += '</div>';");
-//        result.append("    document.getElementById('selectContainer').innerHTML += newRow;");
-//
-//        result.append("    var select1s = document.querySelectorAll('.select1');");
-//        result.append("    var select2s = document.querySelectorAll('.select2');");
-//        result.append("    var select4s = document.querySelectorAll('.select4');");
-//
-//        result.append("    select1s.forEach((select1, index) => {");
-//        result.append("        var select2 = select2s[index];");
-//        result.append("        select1.addEventListener('change', function() {");
-//        result.append("            select2.innerHTML = ''; ");
-//        selectData.forEach((key, value) -> {
-//            result.append("            if (select1.value === '").append(key).append("') {");
-//            value.forEach(item -> result.append("                select2.innerHTML += '<option value=\"").append(item).append("\">").append(item).append("</option>';"));
-//            result.append("            }");
-//        });
-//        result.append("        });");
-//        result.append("    });");
-//
-//        result.append("});");
+        result.append("<script>\n");
         if (isHaveSoiNguyen && !isAddSoiNguyen) {
-            result.append("document.getElementById('addSoiNguyen').addEventListener('click', function() {");
-            result.append("    var soiNguyen = document.querySelector('.selectSoiNguyen');");
-            result.append("    var data = {");
-            result.append("        soiNguyen: soiNguyen.value,");
-            result.append("    };");
-            result.append("    fetch('/ms/soiNguyen', {");
-            result.append("        method: 'POST',");
-            result.append("        headers: {");
-            result.append("            'Content-Type': 'application/json'");
-            result.append("        },");
-            result.append("        body: JSON.stringify(data)");
-            result.append("    })");
-            result.append("    .then(response => response.text())");
-            result.append("    .then(responseData => {");
-            result.append("         alert('Response: ' + responseData);");
-
-            result.append("    })");
-            result.append("    .catch(error => {");
-            result.append("        console.error('Error:', error);");
-            result.append("    });");
-            result.append("});");
+            result.append("document.getElementById('addSoiNguyen').addEventListener('click', function() {\n")
+                  .append("    var soiNguyen = document.querySelector('.selectSoiNguyen');\n")
+                  .append("    var data = { soiNguyen: soiNguyen.value };\n")
+                  .append("    fetch('/ms/soiNguyen', {\n")
+                  .append("        method: 'POST',\n")
+                  .append("        headers: { 'Content-Type': 'application/json' },\n")
+                  .append("        body: JSON.stringify(data)\n")
+                  .append("    })\n")
+                  .append("    .then(response => response.text())\n")
+                  .append("    .then(responseData => {\n")
+                  .append("         alert('Response: ' + responseData);\n")
+                  .append("         window.location.reload();\n")
+                  .append("    })\n")
+                  .append("    .catch(error => console.error('Error:', error));\n")
+                  .append("});\n");
         }
 
-        result.append("document.getElementById('endGame').addEventListener('click', function() {");
-        result.append("    const userConfirmed = confirm(\"Bạn có chắc chắn muốn END GAME?\");");
-        result.append("    if (userConfirmed) { ");
-        result.append("         fetch('/ms/end', {");
-        result.append("             method: 'POST'");
-        result.append("         })");
-        result.append("         .then(response => response.text())");
-        result.append("         .then(responseData => {");
-        result.append("                 alert('Response: ' + responseData);");
-        result.append("                 window.history.back();");
+        result.append("document.getElementById('endGame').addEventListener('click', function() {\n")
+              .append("    const userConfirmed = confirm(\"Bạn có chắc chắn muốn KẾT THÚC GAME?\");\n")
+              .append("    if (userConfirmed) { \n")
+              .append("         fetch('/ms/end', { method: 'POST' })\n")
+              .append("             .then(response => response.text())\n")
+              .append("             .then(responseData => {\n")
+              .append("                 alert('Response: ' + responseData);\n")
+              .append("                 window.location.href = '/ms/run';\n")
+              .append("             })\n")
+              .append("             .catch(error => console.error('Error:', error));\n")
+              .append("    } \n")
+              .append("});\n")
+              .append("</script>\n");
 
-        result.append("         })");
-        result.append("         .catch(error => {");
-        result.append("             console.error('Error:', error);");
-        result.append("         });");
-        result.append("    } else { ");
-        result.append("         console.log(\"Người dùng đã hủy hành động.\"); ");
-        result.append("    } ");
-        result.append("});");
-        result.append("</script>");
-
-        return result.toString();
-
+        return HtmlTemplate.wrap("Quản Trò Ma Sói", result.toString());
     }
 
     @PostMapping("/soiNguyen")
@@ -634,76 +731,81 @@ public class MaSoiController {
         return "add Soi Nguyen: " + soiNguyenName;
     }
 
-
     @GetMapping("/admin2")
     String admin2() {
         prepareData();
         StringBuilder result = new StringBuilder();
-        showDescription(datas, result, true);
-        return result.toString();
+        
+        result.append("<div class=\"header-section\">\n")
+              .append("    <h1>Tất cả chức năng Ma Sói</h1>\n")
+              .append("    <p class=\"desc\">Danh sách mô tả chi tiết bài phân vai</p>\n")
+              .append("</div>\n");
 
+        result.append("<div class=\"card\">\n")
+              .append("    <div class=\"item-list\">\n");
+
+        showDescription(datas, result, true);
+
+        result.append("    </div>\n")
+              .append("</div>\n");
+
+        return HtmlTemplate.wrap("Mô tả chức năng", result.toString());
     }
 
     private void showDescription(List<DataMember> list, StringBuilder result, Boolean isAdmin) {
-        result.append("<h3></h3>");
-        result.append("<table border=\"1\" style=\"border-collapse: collapse; border: blue; border-inline-end: none\">");
         list.forEach(item -> {
-            result.append("<tr >");
+            String badgeClass = "badge-green";
+            String cardBorder = "border-left: 4px solid var(--success);";
             if (idSoi.contains(item.getId())) {
-                result.append("<td style=\"font-weight: bold; text-align: left; padding-right: 5px; font-size: 200%; color: red; \">");
+                badgeClass = "badge-red";
+                cardBorder = "border-left: 4px solid var(--danger);";
             } else if (idOutsider.contains(item.getId())) {
-                result.append("<td style=\"font-weight: bold; text-align: left; padding-right: 5px; font-size: 200%; color: orange; \">");
-            } else {
-                result.append("<td style=\"font-weight: bold; text-align: left; padding-right: 5px; font-size: 200%; \">");
+                badgeClass = "badge-orange";
+                cardBorder = "border-left: 4px solid var(--warning);";
             }
 
+            String displayTitle = item.getLocation();
             if (isAdmin) {
-                result.append(item.getId()).append(" ");
-                result.append(item.getLocation());
+                displayTitle = item.getId() + ". " + displayTitle;
             } else {
-                result.append(item.getLocation()).append(": ").append((item.getId().equals("1") || item.getId().equals("30") || !item.getTotal().equals("1")) ? item.getTotal() : "");
+                String qty = (item.getId().equals("1") || item.getId().equals("30") || !item.getTotal().equals("1")) ? " (x" + item.getTotal() + ")" : "";
+                displayTitle = displayTitle + qty;
             }
 
-            result.append("</td>");
-            result.append("<td style=\"font-size: 250%; \">").append(item.getDescription()).append("</br> </td>");
-            result.append("<td style=\"padding-bottom: 15%;\"/>");
-            result.append("</tr>");
+            result.append("        <div class=\"role-card\" style=\"").append(cardBorder).append(" display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 16px;\">\n")
+                  .append("            <span class=\"role-title\" style=\"font-weight:700;\">").append(displayTitle).append("</span>\n")
+                  .append("            <p style=\"font-size: 0.8rem; color: var(--text-muted); text-align: left;\">").append(item.getDescription()).append("</p>\n")
+                  .append("        </div>\n");
         });
-        result.append("</table>");
     }
 
-    private void addDataTableRun(StringBuilder result, DataMember item) {
-        result.append("<td style=\"height: 110px;\">");
+    private void addRoleCard(StringBuilder result, DataMember item) {
+        String cardClass = "role-card-dan";
+        String colorStyle = "color: #34d399;"; // green-400
+        if (item.getId().equals("1") || idSoi.contains(item.getId())) {
+            cardClass = "role-card-soi";
+            colorStyle = "color: #f87171;"; // red-400
+        } else if (idOutsider.contains(item.getId())) {
+            cardClass = "role-card-other";
+            colorStyle = "color: #fbbf24;"; // amber-400
+        }
+        
+        result.append("            <div class=\"role-card ").append(cardClass).append("\">\n")
+              .append("                <div style=\"padding-right: 10px; text-align: left;\">\n")
+              .append("                    <span class=\"role-title\" style=\"").append(colorStyle).append("\">").append(item.getLocation().toUpperCase()).append("</span>\n")
+              .append("                    <p style=\"font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;\">").append(item.getDescription()).append("</p>\n")
+              .append("                </div>\n");
+        
         if (item.getId().equals("1") || item.getId().equals("30")) {
-            result.append("<label style=\"margin-right: 10px; color: red; font-size: 100%;\" for=\"")
-                    .append(item.getId()).append("\">")
-                    .append(item.getLocation().toUpperCase()).append(": </label>");
-            result.append("<input type=\"number\" min=\"0\" value=\"0\" id=\"").append(item.getId()).append("\" name=\"").append(item.getId()).append("\" ")
-                    .append("style=\"font-size: 100%; width: 40%;\" oninput=\"updateSum()\"><br>");
-        } else if (idSoi.contains(item.getId())){
-            result.append("<label style=\"margin-right: 10px; margin-bottom: 15px; color: red; font-size: 100%;\" for=\"")
-                    .append(item.getId()).append("\">")
-                    .append(item.getLocation().toUpperCase()).append(": </label>");
-            result.append("<input style=\"transform: scale(2); margin: 10px 0;\" type=\"checkbox\" id=\"").append(item.getId()).append("\" name=\"")
-                    .append(item.getId()).append("\" value=\"1\" onclick=\"updateSum()\"><br>");
-        } else if (idOutsider.contains(item.getId())){
-            result.append("<label style=\"margin-right: 10px; margin-bottom: 15px; color: orange; font-size: 100%;\" for=\"")
-                    .append(item.getId()).append("\">")
-                    .append(item.getLocation().toUpperCase()).append(": </label>");
-            result.append("<input style=\"transform: scale(2); margin: 10px 0;\" type=\"checkbox\" id=\"").append(item.getId()).append("\" name=\"")
-                    .append(item.getId()).append("\" value=\"1\" onclick=\"updateSum()\"><br>");
+            result.append("                <input type=\"number\" min=\"0\" value=\"0\" id=\"").append(item.getId()).append("\" name=\"").append(item.getId()).append("\" ")
+                  .append("class=\"input-text\" style=\"width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;\" oninput=\"updateSum()\">\n");
         } else {
-            result.append("<label style=\"margin-right: 10px; margin-bottom: 15px; color: green; font-size: 100%;\" for=\"")
-                    .append(item.getId()).append("\">")
-                    .append(item.getLocation().toUpperCase()).append(": </label>");
-            result.append("<input style=\"transform: scale(2); margin: 10px 0;\" type=\"checkbox\" id=\"").append(item.getId()).append("\" name=\"")
-                    .append(item.getId()).append("\" value=\"1\" onclick=\"updateSum()\"><br>");
+            result.append("                <label class=\"switch\">\n")
+                  .append("                    <input type=\"checkbox\" id=\"").append(item.getId()).append("\" name=\"").append(item.getId()).append("\" value=\"1\" onclick=\"updateSum()\">\n")
+                  .append("                    <span class=\"slider\"></span>\n")
+                  .append("                </label>\n");
         }
-
-        if (item.getId().equals(idSoi.get(idSoi.size() - 1)) || item.getId().equals("21")) {
-            result.append("<br>");
-        }
-        result.append("</td>");
+        result.append("            </div>\n");
     }
 
     private Map<String, List<String>> createMapSelect() {

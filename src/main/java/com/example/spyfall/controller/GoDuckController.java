@@ -1,6 +1,7 @@
 package com.example.spyfall.controller;
 
 import com.example.spyfall.common.GoDuck;
+import com.example.spyfall.util.HtmlTemplate;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,39 +32,42 @@ public class GoDuckController {
     String playGetName() {
         StringBuilder result = new StringBuilder();
 
-        result.append("<form id=\"dataForm\" style=\"font-size: 150%;\" onsubmit=\"handleSubmit(event)\">");
+        result.append("<div class=\"header-section\">\n")
+              .append("    <h1>GoDuck</h1>\n")
+              .append("    <p class=\"desc\">Trò chơi suy luận ẩn danh</p>\n")
+              .append("</div>\n");
 
-        result.append("<input type=\"text\" id=\"nameId\" name=\"total\" placeholder=\"Nhập tên của bạn\"")
-                .append("style=\"margin: 10px 0; font-size: 250%;\"><br>");
+        result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+              .append("    <h3 style=\"margin-bottom: 16px;\">Tham gia phòng chơi</h3>\n")
+              .append("    <form id=\"dataForm\" onsubmit=\"handleSubmit(event)\">\n")
+              .append("        <input type=\"text\" id=\"nameId\" class=\"input-text\" placeholder=\"Nhập tên của bạn\" required style=\"text-align: center; margin-bottom: 20px;\"><br>\n")
+              .append("        <button type=\"submit\" class=\"btn btn-primary\">Vào Chơi</button>\n")
+              .append("    </form>\n")
+              .append("</div>\n");
 
-        result.append("<div style=\"text-align: center; margin-top: 20px;\">");
-        result.append("<button type=\"submit\" id=\"sendButton\" ")
-                .append("style=\"font-size: 300%; padding: 15px 40px;\">Ok</button>");
-        result.append("</div>");
+        result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+              .append("    <h3 style=\"margin-bottom: 10px; font-size: 1.1rem;\">Mã QR tham gia</h3>\n")
+              .append("    <div class=\"qr-container\">\n")
+              .append("        <img src=\"").append(image).append("\" alt=\"QR Code\" class=\"qr-image\">\n")
+              .append("    </div>\n")
+              .append("</div>\n");
 
-        result.append("</form>");
-        result.append("<script>");
-        result.append("function handleSubmit(event) {");
-        result.append("    event.preventDefault();"); // Ngăn form submit mặc định
-        result.append("    var input = document.getElementById(\"nameId\");");
-        result.append("    if (input.value.trim() !== '') {");
-        result.append("        window.location.href = '/gd/play/' + input.value;");
-        result.append("    }");
-        result.append("}");
+        result.append("<script>\n")
+              .append("function handleSubmit(event) {\n")
+              .append("    event.preventDefault();\n")
+              .append("    var input = document.getElementById(\"nameId\");\n")
+              .append("    if (input.value.trim() !== '') {\n")
+              .append("        window.location.href = '/gd/play/' + encodeURIComponent(input.value.trim());\n")
+              .append("    }\n")
+              .append("}\n")
+              .append("</script>\n");
 
-        result.append("document.getElementById('sendButton').onclick = function() {");
-        result.append("    handleSubmit(new Event('submit'));"); // Cho nút OK dùng lại
-        result.append("};");
-        result.append("</script>");
-
-        result.append("<img src=\"").append(image).append("\" alt=\"QR Code\" width=\"500\" height=\"500\">");
-        return result.toString();
+        return HtmlTemplate.wrap("GoDuck", result.toString());
     }
 
     @GetMapping("/play/{name}")
     public String play(HttpServletRequest request, @PathVariable String name) {
         try {
-
             StringBuilder result = new StringBuilder();
             String clientIp = request.getHeader("X-Forwarded-For");
             if (clientIp == null || clientIp.isEmpty()) {
@@ -88,69 +92,91 @@ public class GoDuckController {
                         .build();
                 memberPlay.put(clientIp, member);
             }
+            
+            result.append("<div class=\"header-section\">\n")
+                  .append("    <h1>GoDuck</h1>\n")
+                  .append("    <p class=\"desc\">Vai trò & thông tin phòng chơi</p>\n")
+                  .append("</div>\n");
+
             Integer idMemberPlay = memberPlay.get(clientIp).getId();
+            
+            // Build secret information content
+            StringBuilder secretInfo = new StringBuilder();
             if (spyMember.containsKey(idMemberPlay)) {
-                result.append("<h1 style=\"color: white; font-size: 500%; \" id=\"location\">");
                 for (Map.Entry<Integer, GoDuck> entry : spySeeMember.entrySet()) {
-                    result.append(Objects.toString(entry.getValue(), entry.getKey() + "; "));
+                    if (entry.getValue() != null) {
+                        secretInfo.append(entry.getValue().getUserName()).append(" (ID: ").append(entry.getKey()).append("); ");
+                    } else {
+                        secretInfo.append("ID: ").append(entry.getKey()).append("; ");
+                    }
                 }
-                result.append("</h1>");
             } else {
-                result.append("<h1 style=\"color: white; font-size: 500%; \" id=\"location\">");
                 for (Map.Entry<Integer, GoDuck> entry : spyMember.entrySet()) {
-                    result.append(Objects.toString(entry.getValue(), entry.getKey() + "; "));
+                    if (entry.getValue() != null) {
+                        secretInfo.append(entry.getValue().getUserName()).append(" (ID: ").append(entry.getKey()).append("); ");
+                    } else {
+                        secretInfo.append("ID: ").append(entry.getKey()).append("; ");
+                    }
                 }
-                result.append("</h1>");
             }
+
+            // Click-to-reveal Box
+            result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;\">THÔNG TIN MẬT DÀNH CHO BẠN:</h3>\n")
+                  .append("    <div class=\"reveal-box blurred\" onclick=\"this.classList.toggle('blurred')\">\n")
+                  .append("        <div class=\"reveal-placeholder\">Nhấp để ẩn/hiện thông tin</div>\n")
+                  .append("        <div class=\"reveal-content\">\n")
+                  .append("            <h2 style=\"font-size: 1.5rem; color: #f87171;\">")
+                  .append(secretInfo.toString().isEmpty() ? "Chưa có thông tin" : secretInfo.toString())
+                  .append("</h2>\n")
+                  .append("        </div>\n")
+                  .append("    </div>\n")
+                  .append("</div>\n");
+
             if (totalPlay == 0) {
-                result.append("<h1 style=\" font-size: 500%; \"> Ngồi đợi xí Ní ơi</h1>");
+                result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+                      .append("    <h3 style=\"color: var(--warning);\">Đang chờ Admin khởi chạy ván đấu...</h3>\n")
+                      .append("</div>\n");
             } else {
-                result.append("<label style=\"font-size: 250%;\">"
-                        + "<input type=\"checkbox\" id=\"showTextCheckbox\" onchange=\"toggleText()\" >"
-                        + " Show/Hide Location"
-                        + "</label>");
-                result.append("<h1 style=\" font-size: 250%; \"> Số người chơi: " + totalPlay + ". Số Sói: " + spyTotalPlay  +"</h1>");
+                result.append("<div class=\"card\" style=\"display: flex; justify-content: center; gap: 15px; padding: 12px;\">\n")
+                      .append("    <span class=\"badge badge-green\" style=\"font-size: 0.85rem;\">Tổng: ").append(totalPlay).append("</span>\n")
+                      .append("    <span class=\"badge badge-red\" style=\"font-size: 0.85rem;\">Số Spy: ").append(spyTotalPlay).append("</span>\n")
+                      .append("</div>\n");
             }
 
-            // Thêm bảng 2 cột và 2 hàng
-            result.append("<table border=\"1\" style=\"width: 90%; margin-top: 20px; border-collapse: collapse; font-size: 250%;\">");
+            // Member list table redesigned to a card list
+            result.append("<div class=\"card\">\n")
+                  .append("    <h3 style=\"margin-bottom: 12px; text-align: center; font-size: 1.1rem;\">Danh sách người chơi</h3>\n")
+                  .append("    <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;\">\n");
 
-            // Chia thành 2 hàng, mỗi hàng có 2 cột
             List<GoDuck> memberData = memberPlay.values().stream().sorted(Comparator.comparing(GoDuck::getId)).toList();
-            for (int i = 0; i < memberPlay.size(); i += 2) {
-                result.append("<tr>");
-                // Cột 1 (phần tử đầu tiên trong cặp)
-                result.append("<td>").append(memberData.get(i).getId()).append(". ").append(memberData.get(i).getUserName()).append("</td>");
-                // Cột 2 (phần tử thứ hai trong cặp)
-                if (i + 1 < memberData.size()) {
-                    result.append("<td>").append(memberData.get(i + 1).getId()).append(". ").append(memberData.get(i + 1).getUserName()).append("</td>");
-                } else {
-                    // Nếu không đủ phần tử cho cột thứ hai, để trống
-                    result.append("<td></td>");
-                }
-                result.append("</tr>");
+            for (GoDuck player : memberData) {
+                result.append("        <div style=\"padding: 8px 10px; background: rgba(15, 23, 42, 0.45); border-radius: 8px; border: 1px solid var(--card-border); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\">")
+                      .append("<strong>").append(player.getId()).append(".</strong> ").append(player.getUserName())
+                      .append("        </div>\n");
             }
 
-            // Đóng bảng
-            result.append("</table>");
+            result.append("    </div>\n")
+                  .append("</div>\n");
 
-            result.append("<script>"
-                    + "function toggleText() {"
-                    + "    var checkbox = document.getElementById(\"showTextCheckbox\");"
-                    + "    var textElement = document.getElementById(\"location\");"
-                    + "    if (checkbox.checked) {"
-                    + "        textElement.style.color = \"black\";"  // Chữ màu đen khi checkbox được chọn
-                    + "    } else {"
-                    + "        textElement.style.color = \"white\";"  // Chữ màu trắng khi checkbox không được chọn
-                    + "    }"
-                    + "}"
-                    + "</script>");
-            result.append("<img src=\"").append(image).append("\" alt=\"QR Code\" width=\"500\" height=\"500\">");
+            // QR Code at footer
+            result.append("<div class=\"card\" style=\"text-align: center;\">\n")
+                  .append("    <h3 style=\"margin-bottom: 10px; font-size: 1.1rem;\">Mã QR tham gia</h3>\n")
+                  .append("    <div class=\"qr-container\">\n")
+                  .append("        <img src=\"").append(image).append("\" alt=\"QR Code\" class=\"qr-image\">\n")
+                  .append("    </div>\n")
+                  .append("</div>\n");
 
-            return result.toString();
+            return HtmlTemplate.wrap("GoDuck Game", result.toString());
         } catch (Exception e) {
-            return "<h1 style=\"font-size: 500%;\"> Đợi xí nha đại ca</h1>" +
-                    "<img src=\"/qrcode.png\" alt=\"QR Code\" width=\"500\" height=\"500\">";
+            return HtmlTemplate.wrap("GoDuck Game", 
+                "<div class=\"card\" style=\"text-align: center;\">\n" +
+                "    <h2 style=\"margin-bottom: 10px;\">Đang đồng bộ...</h2>\n" +
+                "    <p class=\"desc\">Vui lòng đợi quản trò cài đặt.</p>\n" +
+                "    <div class=\"qr-container\" style=\"margin-top: 15px;\">\n" +
+                "        <img src=\"/qrcode.png\" alt=\"QR Code\" class=\"qr-image\">\n" +
+                "    </div>\n" +
+                "</div>");
         }
     }
 
@@ -163,7 +189,7 @@ public class GoDuckController {
         } else {
             spyTotalPlay = spy;
         }
-        // SO luong ng choi lay ra so spy tuong ung
+        
         List<Integer> numbers = new ArrayList<>();
         for (int i = 1; i <= totalPlay; i++) {
             numbers.add(i);
@@ -178,6 +204,24 @@ public class GoDuckController {
             spySeeMember.put(numbers.remove(0), null);
             Collections.shuffle(numbers);
         }
-        return "<h1 style=\" font-size: 500%; \"> Total: " + total + "Spy: "+ spyTotalPlay + "</h1>";
+
+        String content = 
+            "<div class=\"header-section\">\n" +
+            "    <h1>GoDuck Setup</h1>\n" +
+            "    <p class=\"desc\" style=\"color: var(--success); font-weight: 500;\">Thiết lập phòng chơi thành công!</p>\n" +
+            "</div>\n" +
+            "\n" +
+            "<div class=\"card\" style=\"text-align: center;\">\n" +
+            "    <div class=\"qr-container\">\n" +
+            "        <img src=\"" + image + "\" alt=\"QR Code\" class=\"qr-image\">\n" +
+            "    </div>\n" +
+            "    <div style=\"margin-top: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;\">\n" +
+            "        <div class=\"item-row\"><span>Tổng người chơi:</span> <strong>" + total + "</strong></div>\n" +
+            "        <div class=\"item-row\"><span>Số lượng Spy:</span> <strong>" + spyTotalPlay + "</strong></div>\n" +
+            "    </div>\n" +
+            "    <a href=\"/gd/play\" class=\"btn btn-primary\" style=\"margin-top: 20px;\">Vào Phòng Chơi</a>\n" +
+            "</div>";
+
+        return HtmlTemplate.wrap("GoDuck Setup", content);
     }
 }
