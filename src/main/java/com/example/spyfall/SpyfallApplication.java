@@ -60,10 +60,10 @@ public class SpyfallApplication {
 				contents.put(content3, "src/main/resources/picture/gDuck.png");
 				contents.put(content4, "src/main/resources/picture/spy2.png");
 			} else if (systemEnv.contains("Linux")) {
-				contents.put("http://43.208.205.45/ms/play", filepath + "/home/ec2-user/masoi/qrcode.png");
-				contents.put("http://43.208.205.45/sp", filepath + "/home/ec2-user/masoi/spy.png");
-				contents.put("http://43.208.205.45/gd/play", filepath + "/home/ec2-user/masoi/gDuck.png");
-				contents.put("http://43.208.205.45/spy2", filepath + "/home/ec2-user/masoi/spy2.png");
+				contents.put("http://43.208.208.83/ms/play", filepath + "/home/ec2-user/masoi/qrcode.png");
+				contents.put("http://43.208.208.83/sp", filepath + "/home/ec2-user/masoi/spy.png");
+				contents.put("http://43.208.208.83/gd/play", filepath + "/home/ec2-user/masoi/gDuck.png");
+				contents.put("http://43.208.208.83/spy2", filepath + "/home/ec2-user/masoi/spy2.png");
 			} else {
 				contents.put(content1, filepath + "/sdcard/java/qrcode.png");
 				contents.put(content2, filepath + "/sdcard/java/spy.png");
