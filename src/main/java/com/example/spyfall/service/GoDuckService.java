@@ -49,9 +49,9 @@ public class GoDuckService {
         Map<Integer, GoDuck> targetMap = spyMember.containsKey(idMemberPlay) ? spySeeMember : spyMember;
         for (Map.Entry<Integer, GoDuck> entry : targetMap.entrySet()) {
             if (entry.getValue() != null) {
-                sb.append(entry.getValue().getUserName()).append(" (ID: ").append(entry.getKey()).append("); ");
+                sb.append(entry.getValue().getUserName()).append(" (ID: ").append(entry.getKey()).append(")");
             } else {
-                sb.append("ID: ").append(entry.getKey()).append("; ");
+                sb.append("ID: ").append(entry.getKey());
             }
         }
         return sb.toString();

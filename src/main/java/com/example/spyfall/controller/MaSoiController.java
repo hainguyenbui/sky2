@@ -55,6 +55,7 @@ public class MaSoiController {
     @GetMapping({"/play/", "/play/{name}"})
     String play(HttpServletRequest request, @PathVariable(required = false) String name, Model model) {
         String clientIp = getClientIp(request);
+        System.out.println(clientIp);
         try {
             DataMember member = maSoiService.getOrAssignRole(clientIp, name);
             if (member == null) {
