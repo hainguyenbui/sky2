@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Sử Ma Sói</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <style>
+        .game-card {
+            background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08));
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        .game-card:hover {
+            background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.12));
+            border-color: rgba(99,102,241,0.4);
+            box-shadow: 0 8px 16px rgba(59,130,246,0.15);
+        }
+        .game-number {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .game-number::before {
+            content: '🎮';
+            font-size: 1.3rem;
+        }
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: rgba(30,41,59,0.5);
+            border-radius: 10px;
+            border-left: 4px solid;
+            transition: all 0.2s ease;
+        }
+        .player-row:last-child {
+            margin-bottom: 0;
+        }
+        .player-row.soi {
+            border-left-color: #ef4444;
+            background: rgba(239,68,68,0.08);
+        }
+        .player-row.soi:hover {
+            background: rgba(239,68,68,0.12);
+            box-shadow: inset 0 0 8px rgba(239,68,68,0.1);
+        }
+        .player-row.outsider {
+            border-left-color: #f59e0b;
+            background: rgba(245,158,11,0.08);
+        }
+        .player-row.outsider:hover {
+            background: rgba(245,158,11,0.12);
+            box-shadow: inset 0 0 8px rgba(245,158,11,0.1);
+        }
+        .player-row.dan {
+            border-left-color: #10b981;
+            background: rgba(16,185,129,0.08);
+        }
+        .player-row.dan:hover {
+            background: rgba(16,185,129,0.12);
+            box-shadow: inset 0 0 8px rgba(16,185,129,0.1);
+        }
+        .player-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            flex: 1;
+        }
+        .player-role {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+        .role-soi {
+            background: rgba(239,68,68,0.2);
+            color: #f87171;
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+        .role-outsider {
+            background: rgba(245,158,11,0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245,158,11,0.3);
+        }
+        .role-dan {
+            background: rgba(16,185,129,0.2);
+            color: #34d399;
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state::before {
+            content: '📋';
+            display: block;
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>Lịch Sử Ván Đấu</h1>
+        <p class="desc">Xem lại kết quả các ván chơi trước</p>
+    </div>
+
+    <div th:if="${#lists.isEmpty(games)}" class="empty-state">
+        <p>Chưa có ván đấu nào</p>
+    </div>
+
+    <div th:if="${not #lists.isEmpty(games)}">
+        <div th:each="game : ${games}" class="game-card">
+            <div class="game-number">Ván <span th:text="${game.gameNumber}"></span></div>
+            
+            <div th:each="player : ${game.players}" 
+                 th:classappend="${player.isSoi} ? 'soi' : (${player.isOutsider} ? 'outsider' : 'dan')"
+                 class="player-row">
+                <span class="player-name" th:text="${player.displayName}"></span>
+                <span th:classappend="${player.isSoi} ? 'role-soi' : (${player.isOutsider} ? 'role-outsider' : 'role-dan')"
+                      class="player-role"
+                      th:text="${player.displayLocation}"></span>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -44,13 +44,6 @@ public class DataInputService {
         return dataSpyPlay;
     }
 
-    public List<DataMember> createMaSoi() {
-        if (dataMaSoi.isEmpty()) {
-            prepareDataMaSoi();
-        }
-        return dataMaSoi;
-    }
-
     public List<List<String>> createDataSpy2() {
         if (!keywords.isEmpty()) {
             return keywords;
@@ -955,36 +948,39 @@ public class DataInputService {
                 "Sở thú";
     }
 
-    private void prepareDataMaSoi() {
-        if (dataMaSoi.isEmpty()) {
-            dataMaSoi.add(new DataMember("1", "Sói", "Sói đó, sói nè, sói chính hiệu 9999"));
-            dataMaSoi.add(new DataMember("2", "Sói đầu đàn", "Sói có quyền quyết định cắn ai"));
-            dataMaSoi.add(new DataMember("3", "Sói nguyền", "Nguyền 1 người chơi, người đó sẽ là sói"));
-            dataMaSoi.add(new DataMember("4", "Sói đầu đàn(2)", "Sói tiên tri phải soi 2 lần"));
-            dataMaSoi.add(new DataMember("5", "Sói si đa", "1 lần duy nhất chức năng nào chạm vào bạn thì chức năng đó chết"));
-            dataMaSoi.add(new DataMember("6", "Kẻ phản bội", "Theo phe sói, biết sói là ai, sói không biết bạn"));
+    public void prepareDataMaSoi(List<DataMember> datas) {
+        if (datas.isEmpty()) {
+            datas.add(createDM("1", "Sói", "Sói đó, sói nè, sói chính hiệu 9999"));
+            datas.add(createDM("2", "Sói đầu đàn", "Sói có quyền quyết định cắn ai"));
+            datas.add(createDM("3", "Sói nguyền", "Nguyền 1 người chơi, người đó sẽ là sói"));
+            datas.add(createDM("4", "Sói đầu đàn(2)", "Sói tiên tri phải soi 2 lần"));
+            datas.add(createDM("5", "Sói si đa", "1 lần duy nhất chức năng nào chạm vào bạn thì chức năng đó chết"));
+            datas.add(createDM("6", "Kẻ phản bội", "Theo phe sói, biết sói là ai, sói không biết bạn"));
 
-            dataMaSoi.add(new DataMember("20", "Sát thủ", "Phe thứ 3, có quyền giết sói nhưng sói ko giết lại được. Nếu bị sói nguyền và là thành viên còn sống duy nhất thì mỗi đêm giết 2 người"));
-            dataMaSoi.add(new DataMember("21", "Chán đời", "Muốn chết nhưng ko muốn bị sói cắn. Khi bị treo cổ bạn sẽ win"));
+            datas.add(createDM("20", "Sát thủ", "Phe thứ 3, có quyền giết sói nhưng sói ko giết lại được."));
+            datas.add(createDM("21", "Chán đời", "Muốn chết nhưng ko muốn bị sói cắn. Khi bị treo cổ bạn sẽ win"));
 
-            dataMaSoi.add(new DataMember("30", "Dân", "Dân giàu nước mạnh"));
-            dataMaSoi.add(new DataMember("31", "Phù thủy", "Có 1 bình cứu và 1 bình giết. Khi đã sài phép cứu thì sẽ ko biết ai bị giết nữa"));
-            dataMaSoi.add(new DataMember("32", "Tiên tri", "Soi 1 người có phải Sói hay ko"));
-            dataMaSoi.add(new DataMember("33", "Bảo vệ", "Mỗi đêm bảo vệ 1 người, ko bảo vệ 1 người 2 đêm liên tiếp"));
-            dataMaSoi.add(new DataMember("34", "Thợ săn", "Ghim 1 người, chỉ trong đêm nếu bạn chết người đó chết theo"));
-            dataMaSoi.add(new DataMember("35", "Thanh niên cứng", "Khi bị treo cổ có quyền lật bài và giết 1 người, bạn vẫn sống như bình thường"));
+            datas.add(createDM("30", "Dân", "Dân giàu nước mạnh"));
+            datas.add(createDM("31", "Phù thủy", "Có 1 bình cứu và 1 bình giết. Khi đã sài phép cứu thì sẽ ko biết ai bị giết nữa"));
+            datas.add(createDM("32", "Tiên tri", "Soi 1 người có phải Sói hay ko"));
+            datas.add(createDM("33", "Bảo vệ", "Mỗi đêm bảo vệ 1 người, ko bảo vệ 1 người 2 đêm liên tiếp"));
+            datas.add(createDM("34", "Thợ săn", "Ghim 1 người, chỉ trong đêm nếu bạn chết người đó chết theo"));
+            datas.add(createDM("35", "Thanh niên cứng", "Khi bị treo cổ có quyền lật bài và giết 1 người, bạn vẫn sống như bình thường"));
+            datas.add(createDM("37", "Tiên tri tập sự", "Khi tiên tri chết thì bạn là Tiên tri"));
+            datas.add(createDM("38", "Câm lặng", "Chọn 1 người và cấm phép người đó."));
+            datas.add(createDM("39", "Thám tử", "Chọn 1 vùng 3 người, bạn sẽ biết có sói trong đó hay không"));
+            datas.add(createDM("40", "Bị nguyền", "Bạn theo phe dân, nếu bị sói cắn sẽ thành sói"));
 
-            dataMaSoi.add(new DataMember("37", "Tiên tri tập sự", "Khi tiên tri chết thì bạn là Tiên tri"));
-            dataMaSoi.add(new DataMember("38", "Câm lặng", "Chọn 1 người và cấm phép người đó. Nếu chọn sói đầu đàn thì sói sẽ ko cắn dc người, nếu sói con thì phải là sói duy nhất"));
-            dataMaSoi.add(new DataMember("39", "Thám tử", "Chọn 1 vùng 3 người, bạn sẽ biết có sói trong đó hay không"));
-            dataMaSoi.add(new DataMember("40", "Bị nguyền", "Bạn theo phe dân, nếu bị sói cắn sẽ thành sói"));
-            dataMaSoi.add(new DataMember("41", "Người bệnh", "Nếu sói/sát thủ cắn bạn, thì đêm sau sói/sát thủ không giết được ai"));
-            dataMaSoi.add(new DataMember("42", "Nhân bản", "Chọn 1 người, nếu người đó chết bạn sẽ nhận chức năng người đó"));
-            dataMaSoi.add(new DataMember("43", "Độc tài", "Duy nhất: chọn 1 người chơi, nếu không phải dân(- chán đời) người đó chết, nếu dân bạn chết"));
-            dataMaSoi.add(new DataMember("44", "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm"));
-            dataMaSoi.add(new DataMember("45", "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng"));
-            dataMaSoi.add(new DataMember("46", "Boooooom", "Duy nhất chọn 1 người chơi giao bom, mỗi đêm bạn có quyền kích nổ hoặc ko, sáng ra người cầm bom sẽ chuyển bom đi, nếu chết có quyền chọn chuyển bom hoặc ko"));
-
+            datas.add(createDM("41", "Người bệnh", "Nếu sói/sát thủ cắn bạn, thì đêm sau sói/sát thủ không giết được ai"));
+            datas.add(createDM("42", "Nhân bản", "Chọn 1 người, nếu người đó chết bạn sẽ nhận chức năng người đó"));
+            datas.add(createDM("43", "Độc tài", "Duy nhất: chọn 1 người chơi, nếu không phải dân người đó chết, nếu dân bạn chết"));
+            datas.add(createDM("44", "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm"));
+            datas.add(createDM("45", "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng"));
+            datas.add(createDM("46", "Boooooom", "Duy nhất chọn 1 người chơi giao bom, mỗi đêm bạn có quyền kích nổ hoặc ko"));
         }
+    }
+
+    private DataMember createDM(String id, String location, String description) {
+        return DataMember.builder().id(id).location(location).description(description).build();
     }
 }

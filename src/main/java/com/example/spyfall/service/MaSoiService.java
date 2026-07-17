@@ -2,6 +2,7 @@ package com.example.spyfall.service;
 
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.SoiNguyenDto;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -25,13 +26,13 @@ public class MaSoiService {
     public final List<String> ID_OUTSIDER = List.of("21", "20", "22");
 
     public String getImage() { return image; }
-    public List<DataMember> getDatas() { prepareData(); return datas; }
+    public List<DataMember> getDatas() { dataInputService.prepareDataMaSoi(datas); return datas; }
     public List<DataMember> getPls() { return pls; }
     public List<DataMember> getListShowForMember() { return listShowForMember; }
-    public boolean isGameEnd() { return isGameEnd; }
-    public boolean isHaveSoiNguyen() { return isHaveSoiNguyen; }
-    public boolean isAddSoiNguyen() { return isAddSoiNguyen; }
     public int getGameNumber() { return detailEachGame.size() + 1; }
+
+    @Autowired
+    DataInputService dataInputService;
 
     public boolean isShowSoiNguyen() {
         return isHaveSoiNguyen && !isAddSoiNguyen;
@@ -46,7 +47,7 @@ public class MaSoiService {
         boolean isCupid = Boolean.parseBoolean(params.get("checkCupid"));
 
         isGameEnd = false;
-        prepareData();
+        dataInputService.prepareDataMaSoi(datas);
         pls.clear();
         listShowForMember.clear();
         checkDecreaseSoi = false;
@@ -105,8 +106,8 @@ public class MaSoiService {
      * Get or assign role for the player. Returns DataMember assigned or null if not set up.
      */
     public DataMember getOrAssignRole(String clientIp, String name) {
-        prepareData();
-        if (!pls.isEmpty()) {
+        if (pls.isEmpty()) return null;
+        else {
             for (DataMember dataMember : pls) {
                 if (clientIp.equals(dataMember.getIpData())) {
                     if (name != null) dataMember.setNameMember(name);
@@ -114,7 +115,6 @@ public class MaSoiService {
                 }
             }
         }
-        if (pls.isEmpty()) return null;
 
         Collections.shuffle(pls);
         pls.sort(Comparator.comparing((DataMember m) -> m.getIpData(), Comparator.nullsFirst(String::compareTo)));
@@ -127,25 +127,34 @@ public class MaSoiService {
         return yourLocation;
     }
 
-    public String buildHistoryHtml() {
-        StringBuilder result = new StringBuilder();
+    public Map<String, Object> getGameHistoryData() {
+        List<Map<String, Object>> games = new ArrayList<>();
         detailEachGame.forEach((key, value) -> {
-            result.append("<div class=\"history-game-card\">\n")
-                  .append("    <h4 style=\"font-size: 1rem; color: #60a5fa; margin-bottom: 10px;\">Ván ").append(key).append(":</h4>\n")
-                  .append("    <div class=\"item-list\">\n");
+            Map<String, Object> game = new HashMap<>();
+            game.put("gameNumber", key);
+            
+            List<Map<String, Object>> players = new ArrayList<>();
             value.sort(Comparator.comparing(m -> Integer.parseInt(m.getId())));
             value.forEach(item -> {
-                String badgeClass = ID_SOI.contains(item.getId()) ? "badge-red" : (ID_OUTSIDER.contains(item.getId()) ? "badge-orange" : "badge-green");
+                Map<String, Object> player = new HashMap<>();
                 String displayLocation = item.getLocation().replaceAll("<[^>]*>", "");
                 String name = item.getNameMember() != null ? item.getNameMember() : (item.getIpData() != null ? "Ẩn danh" : "Chưa nhận");
-                result.append("        <div class=\"item-row\" style=\"padding: 8px 12px; font-size: 0.85rem;\">\n")
-                      .append("            <span style=\"font-weight: 500;\">").append(name).append("</span>\n")
-                      .append("            <span class=\"badge ").append(badgeClass).append("\">").append(displayLocation).append("</span>\n")
-                      .append("        </div>\n");
+                
+                player.put("id", item.getId());
+                player.put("displayName", name);
+                player.put("displayLocation", displayLocation);
+                player.put("isSoi", ID_SOI.contains(item.getId()));
+                player.put("isOutsider", ID_OUTSIDER.contains(item.getId()));
+                players.add(player);
             });
-            result.append("    </div>\n</div>\n");
+            
+            game.put("players", players);
+            games.add(game);
         });
-        return result.toString();
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("games", games);
+        return result;
     }
 
     public String endGame() {
@@ -181,39 +190,6 @@ public class MaSoiService {
         }
         String result = sb.toString();
         return result.endsWith(", ") ? result.substring(0, result.length() - 2) : result;
-    }
-
-    private void prepareData() {
-        if (datas.isEmpty()) {
-            datas.add(createDM("1", "Sói", "Sói đó, sói nè, sói chính hiệu 9999"));
-            datas.add(createDM("2", "Sói đầu đàn", "Sói có quyền quyết định cắn ai"));
-            datas.add(createDM("3", "Sói nguyền", "Nguyền 1 người chơi, người đó sẽ là sói"));
-            datas.add(createDM("4", "Sói đầu đàn(2)", "Sói tiên tri phải soi 2 lần"));
-            datas.add(createDM("5", "Sói si đa", "1 lần duy nhất chức năng nào chạm vào bạn thì chức năng đó chết"));
-            datas.add(createDM("6", "Kẻ phản bội", "Theo phe sói, biết sói là ai, sói không biết bạn"));
-            datas.add(createDM("20", "Sát thủ", "Phe thứ 3, có quyền giết sói nhưng sói ko giết lại được."));
-            datas.add(createDM("21", "Chán đời", "Muốn chết nhưng ko muốn bị sói cắn. Khi bị treo cổ bạn sẽ win"));
-            datas.add(createDM("30", "Dân", "Dân giàu nước mạnh"));
-            datas.add(createDM("31", "Phù thủy", "Có 1 bình cứu và 1 bình giết. Khi đã sài phép cứu thì sẽ ko biết ai bị giết nữa"));
-            datas.add(createDM("32", "Tiên tri", "Soi 1 người có phải Sói hay ko"));
-            datas.add(createDM("33", "Bảo vệ", "Mỗi đêm bảo vệ 1 người, ko bảo vệ 1 người 2 đêm liên tiếp"));
-            datas.add(createDM("34", "Thợ săn", "Ghim 1 người, chỉ trong đêm nếu bạn chết người đó chết theo"));
-            datas.add(createDM("35", "Thanh niên cứng", "Khi bị treo cổ có quyền lật bài và giết 1 người, bạn vẫn sống như bình thường"));
-            datas.add(createDM("37", "Tiên tri tập sự", "Khi tiên tri chết thì bạn là Tiên tri"));
-            datas.add(createDM("38", "Câm lặng", "Chọn 1 người và cấm phép người đó."));
-            datas.add(createDM("39", "Thám tử", "Chọn 1 vùng 3 người, bạn sẽ biết có sói trong đó hay không"));
-            datas.add(createDM("40", "Bị nguyền", "Bạn theo phe dân, nếu bị sói cắn sẽ thành sói"));
-            datas.add(createDM("41", "Người bệnh", "Nếu sói/sát thủ cắn bạn, thì đêm sau sói/sát thủ không giết được ai"));
-            datas.add(createDM("42", "Nhân bản", "Chọn 1 người, nếu người đó chết bạn sẽ nhận chức năng người đó"));
-            datas.add(createDM("43", "Độc tài", "Duy nhất: chọn 1 người chơi, nếu không phải dân người đó chết, nếu dân bạn chết"));
-            datas.add(createDM("44", "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm"));
-            datas.add(createDM("45", "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng"));
-            datas.add(createDM("46", "Boooooom", "Duy nhất chọn 1 người chơi giao bom, mỗi đêm bạn có quyền kích nổ hoặc ko"));
-        }
-    }
-
-    private DataMember createDM(String id, String location, String description) {
-        return DataMember.builder().id(id).location(location).description(description).build();
     }
 
     private DataMember createDM(DataMember d, Integer total) {

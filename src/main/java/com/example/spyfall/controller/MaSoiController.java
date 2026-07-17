@@ -105,9 +105,9 @@ public class MaSoiController {
     }
 
     @PostMapping("/showHistory")
-    @ResponseBody
-    String showHistory() {
-        return maSoiService.buildHistoryHtml();
+    String showHistory(Model model) {
+        model.addAllAttributes(maSoiService.getGameHistoryData());
+        return "masoi/history";
     }
 
     @PostMapping("/end")

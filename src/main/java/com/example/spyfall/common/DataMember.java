@@ -26,6 +26,22 @@ public class DataMember {
 
     String idPlayGame;
 
+    boolean protectedSkill = false;
+
+    boolean killSkill = false;
+
+    boolean superProtectedSkill = false;
+
+    /**
+     * 1 thợ săn
+     * 2 nhân bản
+     * 3 đuổi khòi làng
+     * 4 tập sự
+     * 5 người bệnh
+     * 6 bị nguyền
+     */
+    int connectSkill = 0;
+
     public DataMember(Integer id, String location) {
         this.id = String.valueOf(id);
         this.location = location;
