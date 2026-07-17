@@ -23,7 +23,11 @@
         <p class="desc">Vui lòng liên hệ Admin để thiết lập phòng chơi mới.</p>
         <a href="/" class="btn btn-primary" style="margin-top: 20px;">Về Trang Chủ</a>
     </div>
-    <th:block th:unless="${notSetup}">
+    <div th:if="${fullSlot}" class="card" style="text-align: center;">
+        <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu đã ĐẦY</h2>
+        <p class="desc">Vui lòng yêu cầu khứa admin SETUP lại.</p>
+    </div>
+    <th:block th:unless="${notSetup == true and fullSlot == true}">
         <div class="header-section">
             <h1>Ma Sói</h1>
             <p class="desc" th:text="'Ván đấu ' + ${gameNumber}"></p>

@@ -3,7 +3,10 @@ package com.example.spyfall.controller;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.SoiNguyenDto;
 import com.example.spyfall.service.MaSoiService;
+import com.example.spyfall.util.CookieUtil;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,11 +30,6 @@ public class MaSoiController {
     @Autowired
     private MaSoiService maSoiService;
 
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        return (ip == null || ip.isEmpty()) ? request.getRemoteAddr() : ip;
-    }
-
     @GetMapping("/run")
     String run(Model model) {
         model.addAttribute("datas", maSoiService.getDatas());
@@ -53,11 +51,10 @@ public class MaSoiController {
     }
 
     @GetMapping({"/play/", "/play/{name}"})
-    String play(HttpServletRequest request, @PathVariable(required = false) String name, Model model) {
-        String clientIp = getClientIp(request);
-        System.out.println(clientIp);
+    String play(HttpServletRequest request, HttpServletResponse response, @PathVariable(required = false) String name, Model model) {
+        String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
-            DataMember member = maSoiService.getOrAssignRole(clientIp, name);
+            DataMember member = maSoiService.getOrAssignRole(deviceId, name);
             if (member == null) {
                 if (!ObjectUtils.isEmpty(name)) {
                     model.addAttribute("notSetup", true);
@@ -67,6 +64,10 @@ public class MaSoiController {
                 // Not setup - redirect to lobby
                 model.addAttribute("image", maSoiService.getImage());
                 return "masoi/lobby";
+            } else if (ObjectUtils.isEmpty(member.getLocation())) {
+                model.addAttribute("fullSlot", true);
+                model.addAttribute("image", maSoiService.getImage());
+                return "masoi/play";
             }
             model.addAttribute("role", member.getLocation());
             model.addAttribute("desc", member.getDescription());

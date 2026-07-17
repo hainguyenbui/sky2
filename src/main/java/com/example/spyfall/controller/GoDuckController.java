@@ -1,7 +1,9 @@
 package com.example.spyfall.controller;
 
 import com.example.spyfall.service.GoDuckService;
+import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,11 +18,6 @@ public class GoDuckController {
     @Autowired
     private GoDuckService goDuckService;
 
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        return (ip == null || ip.isEmpty()) ? request.getRemoteAddr() : ip;
-    }
-
     @GetMapping("/play")
     String lobby(Model model) {
         model.addAttribute("image", goDuckService.getImage());
@@ -28,11 +25,11 @@ public class GoDuckController {
     }
 
     @GetMapping("/play/{name}")
-    String play(HttpServletRequest request, @PathVariable String name, Model model) {
-        String clientIp = getClientIp(request);
+    String play(HttpServletRequest request, HttpServletResponse response, @PathVariable String name, Model model) {
+        String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
-            goDuckService.getOrRegisterMember(clientIp, name);
-            String secretInfo = goDuckService.buildSecretInfo(clientIp);
+            goDuckService.getOrRegisterMember(deviceId, name);
+            String secretInfo = goDuckService.buildSecretInfo(deviceId);
             model.addAttribute("secretInfo", secretInfo);
             model.addAttribute("totalPlay", goDuckService.getTotalPlay());
             model.addAttribute("spyTotalPlay", goDuckService.getSpyTotalPlay());

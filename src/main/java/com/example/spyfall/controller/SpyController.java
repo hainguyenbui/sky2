@@ -1,40 +1,49 @@
 package com.example.spyfall.controller;
 
+import com.example.spyfall.common.Spy2;
 import com.example.spyfall.service.SpyService;
+import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.Optional;
-
 @Controller
+@RequestMapping("/sp")
 public class SpyController {
 
     @Autowired
     private SpyService spyService;
 
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        return (ip == null || ip.isEmpty()) ? request.getRemoteAddr() : ip;
+    @GetMapping
+    String lobby(Model model) {
+        model.addAttribute("image", spyService.getImage());
+        return "spy/lobby";
     }
 
-    @GetMapping({"/sp", "/sp/"})
-    String play(HttpServletRequest request, Model model) {
-        String clientIp = getClientIp(request);
-        System.out.println(clientIp);
+    @GetMapping("/play/{name}")
+    String play(HttpServletRequest request, HttpServletResponse response, @PathVariable String name, Model model) {
+        String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
-            String location = spyService.getOrAssignMember(clientIp);
-            if (location == null) {
+            String keyword = spyService.getOrAssignMember(deviceId, name);
+            if (keyword == null) {
                 model.addAttribute("notSetup", true);
+            } else if (keyword.isEmpty()) {
+                model.addAttribute("notSetup", false);
+                model.addAttribute("fullSlot", true);
+                model.addAttribute("image", spyService.getImage());
+                model.addAttribute("dataPlay", spyService.getKeywords());
             } else {
                 model.addAttribute("notSetup", false);
-                model.addAttribute("location", location);
-                model.addAttribute("dataPlay", spyService.getDataPlay());
+                model.addAttribute("keyword", keyword);
+                model.addAttribute("removed", spyService.getRemoved());
                 model.addAttribute("image", spyService.getImage());
+                model.addAttribute("dataPlay", spyService.getKeywords());
             }
         } catch (Exception e) {
             model.addAttribute("notSetup", true);
@@ -42,18 +51,43 @@ public class SpyController {
         return "spy/play";
     }
 
-    @GetMapping({"/sp/{style}/{total}/{spy}", "/sp/{style}/{total}", "/sp/{style}/{total}/{spy}/{whiteHat}"})
-    String setup(@PathVariable Integer total, @PathVariable Integer style,
-                 @PathVariable(required = false) Integer spy,
-                 @PathVariable(required = false) Optional<Integer> whiteHat,
-                 Model model) {
-        spyService.setupGame(total, style, spy, whiteHat.orElse(null));
-        model.addAttribute("dataPlay", spyService.getDataPlay());
-        model.addAttribute("total", total);
-        model.addAttribute("spy", spy != null ? spy : 1);
-        model.addAttribute("styleDesc", style == 1 ? "Spy có địa điểm khác biệt" : "Spy ẩn danh (không biết địa điểm)");
+    @GetMapping("/setup/{totalPlayers}/{numSpies}/{numWhite}")
+    String setup(@PathVariable int totalPlayers, @PathVariable int numSpies,
+                 @PathVariable int numWhite, Model model) {
+        spyService.setupGame(totalPlayers, numSpies, numWhite);
+        model.addAttribute("totalPlayers", totalPlayers);
+        model.addAttribute("numSpies", numSpies);
+        model.addAttribute("numWhite", numWhite);
+        model.addAttribute("setup", true);
+        model.addAttribute("number", spyService.getNumberGamePlay());
+        model.addAttribute("image", spyService.getImage());
+        model.addAttribute("player", spyService.getDataPlayer());
+        return "spy/setup";
+    }
+
+    @GetMapping({"/setup"})
+    String setupIndex(Model model) {
+        if (spyService.getNumberGamePlay() > 0) {
+            model.addAttribute("setup", true);
+            model.addAttribute("number", spyService.getNumberGamePlay());
+            model.addAttribute("player", spyService.getDataPlayer());
+        }
         model.addAttribute("image", spyService.getImage());
         return "spy/setup";
+    }
+
+    @GetMapping("/remove/{id}")
+    @ResponseBody
+    String removePlayer(@PathVariable int id) {
+        Spy2 removedPlayer = spyService.removePlayer(id);
+        return removedPlayer.getRole();
+    }
+
+    @GetMapping("/removeList")
+    String listRemove(Model model) {
+        model.addAttribute("players", spyService.getDataPlayer());
+        model.addAttribute("removed", spyService.getRemoved());
+        return "spy/list";
     }
 
     @GetMapping("/sp/delete/{id}")

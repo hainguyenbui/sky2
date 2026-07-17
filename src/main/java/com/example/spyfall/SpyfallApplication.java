@@ -26,7 +26,6 @@ public class SpyfallApplication {
 		SpringApplication.run(SpyfallApplication.class, args);
 		String systemEnv = System.getProperty("os.name");
 
-		String serverPort = "8083";
 		String filepath = "";
 		// lay IP url
 		try {
@@ -44,7 +43,6 @@ public class SpyfallApplication {
 					.map(InetAddress::getHostAddress)
 					.findFirst()
 					.orElse("127.0.0.1");
-			System.out.println("Port: " + ip4 + ":" + serverPort );
 //			String content1 = "http://" + ip4 + ":" + serverPort + "/ms/play";
 //			String content2 = "http://" + ip4 + ":" + serverPort + "/sp";
 //			String content3 = "http://" + ip4 + ":" + serverPort + "/gd/play";

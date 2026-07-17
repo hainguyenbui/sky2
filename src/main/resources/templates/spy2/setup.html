@@ -10,7 +10,9 @@
 <div class="container">
     <div class="header-section">
         <h1>Undercover Setup</h1>
-        <p class="desc" style="color: var(--success); font-weight: 500;">Khởi tạo thành công!</p>
+        <th:block th:if="${setup}">
+            <p class="desc" style="color: var(--success); font-weight: 500;" th:text="'Khởi tạo ván chơi ' + ${number} + ' thành công!'"></p>
+        </th:block>
     </div>
 
     <div class="card" style="text-align: center;">
@@ -18,13 +20,90 @@
             <img th:src="${image}" alt="QR Code" class="qr-image">
         </div>
         <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
-            <div class="item-row"><span>Tổng người chơi:</span> <strong th:text="${totalPlayers}"></strong></div>
-            <div class="item-row"><span>Số lượng Spy:</span> <strong th:text="${numSpies}"></strong></div>
-            <div class="item-row"><span>Số lượng Mũ Trắng:</span> <strong th:text="${numWhite}"></strong></div>
+            <div class="item-row">
+                <span>Tổng người chơi:</span>
+                <input type="number" min="0" th:value="${totalPlayers != null ? totalPlayers : 4}" th:id="total" th:name="total"
+                       class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" />
+            </div>
+            <div class="item-row">
+                <span>Số lượng Spy:</span>
+                <input type="number" min="0" th:value="${numSpies != null ? numSpies : 1}" th:id="spy" th:name="spy"
+                       class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" />
+            </div>
+            <div class="item-row">
+                <span>Mũ Trắng:</span>
+                <input type="number" min="0" th:value="${numWhite != null ? numWhite : 0}" th:id="whiteHat" th:name="whiteHat"
+                       class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" />
+            </div>
         </div>
-        <a href="/spy2" class="btn btn-primary" style="margin-top: 20px;">Vào Phòng Chơi</a>
+        <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Tạo Game</button>
+        <a href="/spy2" target="_blank" class="btn btn-primary" style="margin-top: 20px;">Vào Phòng Chơi</a>
+        <a href="/spy2/removeList"  class="btn btn-primary" style="margin-top: 20px;">Sang trang quản lý</a>
     </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 14px; text-align: center; font-size: 1.1rem;">Danh sách người chơi</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+            <label th:each="item : ${player}"
+                   style="padding: 8px 10px;
+                      background: rgba(15,23,42,0.45);
+                      border-radius: 8px;
+                      border: 1px solid var(--card-border);
+                      display:flex;
+                      align-items:center;
+                      gap:8px;">
+
+                <input type="radio"
+                       name="selectedPlayer"
+                       th:value="${item.id}"
+                       th:data-username="${item.userName}"
+                       th:disabled="${item.remove}"/>
+
+                <span th:text="${item.id + '. ' + item.userName}"
+                      th:styleappend="${item.remove} ? 'text-decoration:line-through;opacity:0.5;' : ''">
+                </span>
+
+            </label>
+        </div>
+        <button type="button" id="removeButton" class="btn btn-primary" style="margin-top: 10px;">Loại bỏ người chơi</button>
+    </div>
+
 </div>
+<script>
+    document.getElementById('sendButton').onclick = function() {
+        var total = document.getElementById('total').value;
+        var spy = document.getElementById('spy').value;
+        var whiteHat = document.getElementById('whiteHat').value;
+<!--        window.location.href = '/spy2/setup/' + total + '/' + spy + '/' + whiteHat;-->
+        fetch('/spy2/setup/' + total + '/' + spy + '/' + whiteHat)
+            .then(response => response.text())
+            .then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+            });
+    };
+    document.getElementById("removeButton").addEventListener("click", function () {
+
+    const selected = document.querySelector('input[name="selectedPlayer"]:checked');
+
+    if (!selected) {
+        alert("Vui lòng chọn một người chơi.");
+        return;
+    }
+
+    const username = selected.dataset.username;
+
+    if (confirm("Bạn muốn loại bỏ " + username + " khỏi ván chơi?")) {
+        const id = selected.value;
+        fetch('/spy2/remove/' + id)
+                .then(response => response.text())
+                .then(data => {
+                    alert(data);
+                });
+    }
+});
+</script>
 </body>
 </html>
 

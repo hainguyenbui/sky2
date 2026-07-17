@@ -1,7 +1,10 @@
 package com.example.spyfall.controller;
 
+import com.example.spyfall.common.Spy2;
 import com.example.spyfall.service.Spy2Service;
+import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,11 +20,6 @@ public class Spy2Controller {
     @Autowired
     private Spy2Service spy2Service;
 
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        return (ip == null || ip.isEmpty()) ? request.getRemoteAddr() : ip;
-    }
-
     @GetMapping
     String lobby(Model model) {
         model.addAttribute("image", spy2Service.getImage());
@@ -29,13 +27,16 @@ public class Spy2Controller {
     }
 
     @GetMapping("/play/{name}")
-    String play(HttpServletRequest request, @PathVariable String name, Model model) {
-        String clientIp = getClientIp(request);
-        System.out.println(clientIp);
+    String play(HttpServletRequest request, HttpServletResponse response, @PathVariable String name, Model model) {
+        String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
-            String keyword = spy2Service.getOrAssignKeyword(clientIp, name);
+            String keyword = spy2Service.getOrAssignKeyword(deviceId, name);
             if (keyword == null) {
                 model.addAttribute("notSetup", true);
+            } else if (keyword.isEmpty()) {
+                model.addAttribute("notSetup", false);
+                model.addAttribute("fullSlot", true);
+                model.addAttribute("image", spy2Service.getImage());
             } else {
                 model.addAttribute("notSetup", false);
                 model.addAttribute("keyword", keyword);
@@ -58,6 +59,20 @@ public class Spy2Controller {
         model.addAttribute("totalPlayers", totalPlayers);
         model.addAttribute("numSpies", numSpies);
         model.addAttribute("numWhite", numWhite);
+        model.addAttribute("setup", true);
+        model.addAttribute("number", spy2Service.getNumberGamePlay());
+        model.addAttribute("image", spy2Service.getImage());
+        model.addAttribute("player", spy2Service.getDataPlayer());
+        return "spy2/setup";
+    }
+
+    @GetMapping({"/setup"})
+    String setupIndex(Model model) {
+        if (spy2Service.getNumberGamePlay() > 0) {
+            model.addAttribute("setup", true);
+            model.addAttribute("number", spy2Service.getNumberGamePlay());
+            model.addAttribute("player", spy2Service.getDataPlayer());
+        }
         model.addAttribute("image", spy2Service.getImage());
         return "spy2/setup";
     }
@@ -65,8 +80,8 @@ public class Spy2Controller {
     @GetMapping("/remove/{id}")
     @ResponseBody
     String removePlayer(@PathVariable int id) {
-        spy2Service.removePlayer(id);
-        return "Success";
+        Spy2 removedPlayer = spy2Service.removePlayer(id);
+        return removedPlayer.getRole();
     }
 
     @GetMapping("/removeList")

@@ -3,31 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spyfall</title>
+    <title>Undercover</title>
     <th:block th:replace="~{fragments/styles :: css}"></th:block>
 </head>
 <body>
 <div class="container">
     <div class="header-section">
         <h1>Spyfall</h1>
-        <p class="desc">Tìm ra gián điệp ẩn mình</p>
+        <p class="desc">Ghi nhớ từ khóa của bạn để giải thích</p>
     </div>
 
-    <!-- Not setup yet -->
+    <!-- Not setup -->
     <div th:if="${notSetup}" class="card" style="text-align: center;">
         <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu chưa được setup</h2>
         <p class="desc">Vui lòng liên hệ Admin để thiết lập phòng chơi mới.</p>
         <a href="/" class="btn btn-primary" style="margin-top: 20px;">Về Trang Chủ</a>
     </div>
-
-    <!-- Normal play view -->
-    <th:block th:unless="${notSetup}">
+    <div th:if="${fullSlot}" class="card" style="text-align: center;">
+        <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu đã ĐẦY</h2>
+        <p class="desc">Vui lòng yêu cầu khứa admin SETUP lại.</p>
+    </div>
+    <th:block th:unless="${notSetup == true and fullSlot == true}">
         <div class="card" style="text-align: center;">
-            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">VAI TRÒ / ĐỊA ĐIỂM CỦA BẠN:</h3>
+            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">TỪ KHÓA CỦA BẠN:</h3>
             <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
-                <div class="reveal-placeholder">Nhấp để ẩn/hiện vai trò</div>
+                <div class="reveal-placeholder">Nhấp để ẩn/hiện từ khóa</div>
                 <div class="reveal-content">
-                    <h2 style="font-size: 1.8rem; color: #60a5fa;" th:text="${location}"></h2>
+                    <h2 style="font-size: 1.8rem; color: #60a5fa;" th:text="${keyword}"></h2>
                 </div>
             </div>
         </div>
@@ -37,7 +39,19 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
                 <div th:each="item : ${dataPlay}"
                      style="padding: 8px 10px; background: rgba(15,23,42,0.45); border-radius: 8px; border: 1px solid var(--card-border); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    <span th:text="${item.id + '. ' + item.location}"></span>
+                    <span th:text="${item.id + '. ' + item.keyword}"></span>
+                </div>
+            </div>
+        </div>
+        <div th:if="${not #lists.isEmpty(removed)}" class="card">
+            <h3 style="margin-bottom: 12px; text-align: center; color: var(--danger); font-size: 1.1rem;">Danh sách đã bị loại</h3>
+            <div class="item-list">
+                <div th:each="player : ${removed}"
+                     class="item-row" style="background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.15);">
+                    <span style="text-decoration: line-through; color: var(--text-muted); font-weight: 500;"
+                          th:text="${#strings.toUpperCase(player.userName)}"></span>
+                    <span th:classappend="${player.role == 'Spy'} ? 'badge-red' : (${player.role == 'Mũ Trắng'} ? 'badge-orange' : 'badge-green')"
+                          class="badge" th:text="${player.role}"></span>
                 </div>
             </div>
         </div>
@@ -47,7 +61,6 @@
             <div class="qr-container">
                 <img th:src="${image}" alt="QR Code" class="qr-image">
             </div>
-            <p class="desc" style="margin-top: 10px; font-size: 0.85rem;">Quét mã để thiết bị khác cùng vào chơi</p>
         </div>
     </th:block>
 </div>

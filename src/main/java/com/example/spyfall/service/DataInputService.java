@@ -916,7 +916,7 @@ public class DataInputService {
         return keywords;
     }
 
-    private String valueDataSpy() {
+    public String valueDataSpy() {
         return  "Bệnh viện, " +
                 "Sân bay, " +
                 "Trường học, " +

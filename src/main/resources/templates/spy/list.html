@@ -48,14 +48,14 @@
             <input type="number" id="numberInput" class="input-text" placeholder="Nhập ID" style="width: 100px; text-align: center;">
             <button id="okButton" class="btn btn-danger" style="width: auto; padding: 12px 20px;">OK</button>
         </div>
-        <a href="/spy2/setup"  class="btn btn-primary" style="margin-top: 20px;">Về trang setup</a>
+        <a href="/sp/setup"  class="btn btn-primary" style="margin-top: 20px;">Về trang setup</a>
     </div>
 
     <script>
         document.getElementById("okButton").addEventListener("click", function() {
             var number = document.getElementById("numberInput").value;
             if(number === "") { alert("Vui lòng nhập ID người chơi!"); return; }
-            fetch("/spy2/remove/" + encodeURIComponent(number))
+            fetch("/sp/remove/" + encodeURIComponent(number))
                 .then(response => {
                     if(response.ok){ alert("Bắn bỏ thành công!"); window.location.reload(); }
                     else { alert("Lỗi: " + response.status); }

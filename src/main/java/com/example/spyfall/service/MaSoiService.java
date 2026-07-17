@@ -119,6 +119,9 @@ public class MaSoiService {
         Collections.shuffle(pls);
         pls.sort(Comparator.comparing((DataMember m) -> m.getIpData(), Comparator.nullsFirst(String::compareTo)));
         DataMember yourLocation = pls.get(0);
+        if (yourLocation.getIpData() != null) {
+            return new DataMember();
+        }
         yourLocation.setIpData(clientIp);
         yourLocation.setNameMember(name);
         return yourLocation;

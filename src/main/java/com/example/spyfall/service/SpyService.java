@@ -1,117 +1,110 @@
 package com.example.spyfall.service;
 
-import com.example.spyfall.common.DataMember;
+import com.example.spyfall.common.Spy2;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 
 @Service
 public class SpyService {
 
-    private List<DataMember> dataPlay = new ArrayList<>();
-    private List<DataMember> memberWillPlay = new ArrayList<>();
-    private List<DataMember> memberPlay = new ArrayList<>();
-    private List<DataMember> listItemOfSpy = new ArrayList<>();
-    private DataMember allMemberData = null;
-    private DataMember spyMemberData = null;
+    @Getter
+    private List<Spy2> keywords = new ArrayList<>();
+    private List<Spy2> dataWillPlay = new ArrayList<>();
+    @Getter
+    private List<Spy2> dataPlayer = new ArrayList<>();
+    private List<Spy2> listItemOfSpy = new ArrayList<>();
+    @Getter
+    private List<Spy2> removed = new ArrayList<>();
+    @Getter
     private final String image = "/spy.png";
+    @Getter
+    private int numberGamePlay = 0;
 
-    private final String data2 = "Bệnh viện, Sân bay, Trường học, Trung Tâm giải trí, Rạp xiếc, " +
-            "Ngân hàng, Trung tâm mua sắm, Khách sạn, Bãi biển, Sân vận động, Nhà tù, Quán cà phê, " +
-            "Nhà hát, Bảo tàng, Thư viện, Khu cắm trại, Phòng gym, Ga tàu, Nhà thờ, Chùa, Nhà sách, " +
-            "Rạp phim, Trung tâm tiệc cưới, Công viên nước, Thủy cung, Chợ đêm, Hiệu thuốc, Quán bar, " +
-            "Karaoke, Nhà kho, Đồn công an, Phố đi bộ, Hồ bơi, Nhà hàng, Công viên, Sở thú";
-
-    public String getImage() { return image; }
-
-    public List<DataMember> getDataPlay() { return dataPlay; }
+    @Autowired
+    DataInputService dataInputService;
 
     /**
      * Get or assign a member role for the given IP.
      * Returns null if game not set up yet.
      * Returns the location/role string.
      */
-    public String getOrAssignMember(String clientIp) {
-        if (!memberPlay.isEmpty()) {
-            for (DataMember dataMember : memberPlay) {
-                if (dataMember.getIpData().equals(clientIp)) {
-                    return dataMember.getLocation();
+    public String getOrAssignMember(String deviceId, String name) {
+        if (!dataPlayer.isEmpty()) {
+            for (Spy2 dataMember : dataPlayer) {
+                if (dataMember.getIpConfig().equals(deviceId)) {
+                    return dataMember.getKeyword();
                 }
             }
         }
-        if (memberWillPlay.isEmpty()) {
+        if (dataWillPlay.isEmpty()) {
+            if (numberGamePlay >0) {
+                return "";
+            }
             return null; // not set up
         }
-        Collections.shuffle(memberWillPlay);
-        DataMember yourLocation = memberWillPlay.get(0);
-        yourLocation.setIpData(clientIp);
-        memberPlay.add(yourLocation);
-        memberWillPlay.remove(0);
-        return yourLocation.getLocation();
+        Collections.shuffle(dataWillPlay);
+        Spy2 yourLocation = dataWillPlay.get(0);
+        yourLocation.setIpConfig(deviceId);
+        yourLocation.setUserName(name);
+        dataPlayer.add(yourLocation);
+        dataWillPlay.remove(0);
+        return yourLocation.getKeyword();
     }
 
     public boolean isGameSetup() {
-        return !memberWillPlay.isEmpty() || !memberPlay.isEmpty();
+        return !dataWillPlay.isEmpty() || !dataPlayer.isEmpty();
     }
 
-    public void setupGame(int total, int style, Integer spy, Integer whiteHat) {
-        memberPlay.clear();
-        memberWillPlay.clear();
+    public void setupGame(int total, Integer spy, Integer whiteHat) {
+        dataPlayer.clear();
+        dataWillPlay.clear();
         listItemOfSpy.clear();
-        dataPlay.clear();
+        numberGamePlay++;
 
-        String[] datas = data2.split(",");
-        for (String dataItem : datas) {
-            String trimmed = dataItem.trim();
-            boolean exist = dataPlay.stream().anyMatch(item -> item.getLocation().equals(trimmed));
-            if (!exist) {
-                int newId = dataPlay.size() + 1;
-                dataPlay.add(createDM(newId, trimmed));
+        String[] datas = dataInputService.valueDataSpy().split(",");
+        //clear keywords after
+        if (ObjectUtils.isEmpty(keywords)) {
+            for (String dataItem : datas) {
+                String trimmed = dataItem.trim();
+                boolean exist = keywords.stream().anyMatch(item -> item.getKeyword().equals(trimmed));
+                if (!exist) {
+                    int newId = keywords.size() + 1;
+                    keywords.add(createDM(newId, trimmed, null));
+                }
             }
         }
 
         Random random = new Random();
-        int indexMember = random.nextInt(dataPlay.size());
-        allMemberData = dataPlay.get(indexMember);
 
-        listItemOfSpy = new ArrayList<>(dataPlay);
+        listItemOfSpy = new ArrayList<>(keywords);
+        int indexMember = random.nextInt(listItemOfSpy.size());
+        Spy2 dataNotSpy = listItemOfSpy.get(indexMember);
         listItemOfSpy.remove(indexMember);
 
         int indexSpy = random.nextInt(listItemOfSpy.size());
-        spyMemberData = listItemOfSpy.get(indexSpy);
+        Spy2 dataSpy = listItemOfSpy.get(indexSpy);
 
-        if (spy == null) {
-            for (int i = 1; i < total; i++) {
-                memberWillPlay.add(createDM(total, allMemberData.getLocation()));
-            }
-            if (style == 1) {
-                memberWillPlay.add(createDM(total, spyMemberData.getLocation()));
-            } else {
-                memberWillPlay.add(createDM(total, "Spy đó nhìn nhìn cái gì"));
-            }
-        } else {
-            int whiteHatNum = (whiteHat == null) ? 0 : whiteHat;
-            int totalWhiteHatAndSpy = whiteHatNum + spy;
-            for (int i = 0; i < (total - totalWhiteHatAndSpy); i++) {
-                memberWillPlay.add(createDM(total, allMemberData.getLocation()));
-            }
-            for (int i = 0; i < spy; i++) {
-                if (style == 1) {
-                    memberWillPlay.add(createDM(total, spyMemberData.getLocation()));
-                } else {
-                    memberWillPlay.add(createDM(total, "Spy đó nhìn nhìn cái gì"));
-                }
-            }
-            for (int i = 0; i < whiteHatNum; i++) {
-                memberWillPlay.add(createDM(total, "Spy đó nhìn nhìn cái gì"));
-            }
+        int totalWhiteHatAndSpy = whiteHat + spy;
+        int cnt = 1;
+        for (int i = 0; i < (total - totalWhiteHatAndSpy); i++) {
+            dataWillPlay.add(createDM(cnt++, dataNotSpy.getKeyword(), "Dân Thường"));
+        }
+        for (int i = 0; i < spy; i++) {
+            dataWillPlay.add(createDM(cnt++, dataSpy.getKeyword(), "Spy"));
+        }
+        for (int i = 0; i < whiteHat; i++) {
+            dataWillPlay.add(createDM(cnt++, "Spy đó nhìn nhìn cái gì", "Mũ Trắng"));
         }
     }
 
     public boolean deleteItem(int id) {
-        for (DataMember item : dataPlay) {
-            if (item.getId().trim().equals(String.valueOf(id))) {
-                dataPlay.remove(item);
+        for (Spy2 item : keywords) {
+            if (Objects.equals(item.getId(), id)) {
+                keywords.remove(item);
                 return true;
             }
         }
@@ -119,14 +112,28 @@ public class SpyService {
     }
 
     public void addItem(String name) {
-        int newId = dataPlay.stream()
-                .mapToInt(o -> { try { return Integer.parseInt(o.getId()); } catch (NumberFormatException e) { return 0; } })
+        int newId = keywords.stream()
+                .mapToInt(Spy2::getId)
                 .max().orElse(0) + 1;
-        dataPlay.add(createDM(newId, name));
+        keywords.add(createDM(newId, name, null));
     }
 
-    private DataMember createDM(int id, String location) {
-        return DataMember.builder().id(String.valueOf(id)).location(location).build();
+    public Spy2 removePlayer(int id) {
+        for (Spy2 player : dataPlayer) {
+            if (Objects.equals(player.getId(), id)) {
+                player.setRemove(true);
+                if (!removed.contains(player)) {
+                    removed.add(player);
+                }
+                return player;
+            }
+        }
+        return null;
     }
+
+    private Spy2 createDM(int id, String location, String role) {
+        return Spy2.builder().id(id).keyword(location).role(role).build();
+    }
+
 }
 

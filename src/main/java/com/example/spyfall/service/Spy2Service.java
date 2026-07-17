@@ -1,6 +1,7 @@
 package com.example.spyfall.service;
 
 import com.example.spyfall.common.Spy2;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,24 +12,22 @@ public class Spy2Service {
 
     private List<List<String>> keywords = new ArrayList<>();
     private List<Spy2> dataWillPlay = new ArrayList<>();
+    @Getter
     private List<Spy2> dataPlayer = new ArrayList<>();
-    private List<Spy2> dataSpies = new ArrayList<>();
+    @Getter
     private List<Spy2> removed = new ArrayList<>();
     private List<Spy2> dataMainSpy2 = new ArrayList<>();
-    private Spy2 dataSpy;
-    private Spy2 dataNotSpy;
+    @Getter
     private final String image = "/spy2.png";
+    @Getter
     private Integer countnumSpies = 0;
+    @Getter
     private Integer countWhite = 0;
+    @Getter
+    private int numberGamePlay = 0;
 
     @Autowired
     private DataInputService dataInputService;
-
-    public String getImage() { return image; }
-    public Integer getCountnumSpies() { return countnumSpies; }
-    public Integer getCountWhite() { return countWhite; }
-    public List<Spy2> getRemoved() { return removed; }
-    public List<Spy2> getDataPlayer() { return dataPlayer; }
 
     public int getActivePlayerCount() {
         return dataPlayer.size() - removed.size();
@@ -37,10 +36,10 @@ public class Spy2Service {
     /**
      * Get keyword for existing IP, or assign new one. Returns null if not set up.
      */
-    public String getOrAssignKeyword(String clientIp, String name) {
+    public String getOrAssignKeyword(String deviceId, String name) {
         if (!dataPlayer.isEmpty()) {
             for (Spy2 dataMember : dataPlayer) {
-                if (dataMember.getIpConfig().equals(clientIp)) {
+                if (dataMember.getIpConfig().equals(deviceId)) {
                     if (!Objects.equals(dataMember.getUserName(), name)) {
                         dataMember.setUserName(name);
                     }
@@ -49,12 +48,15 @@ public class Spy2Service {
             }
         }
         if (dataWillPlay.isEmpty()) {
-            return null;
+            if (numberGamePlay > 0) {
+                return "";
+            }
+            return null; // not set up
         }
         Collections.shuffle(dataWillPlay);
         Spy2 yourLocation = dataWillPlay.get(0);
         yourLocation.setUserName(name);
-        yourLocation.setIpConfig(clientIp);
+        yourLocation.setIpConfig(deviceId);
         dataPlayer.add(yourLocation);
         dataWillPlay.remove(0);
         return yourLocation.getKeyword();
@@ -66,26 +68,25 @@ public class Spy2Service {
         dataMainSpy2.clear();
         dataPlayer.clear();
         removed.clear();
+        numberGamePlay++;
+
+        countWhite = numWhite;
+        countnumSpies = numSpies;
 
         if (keywords.isEmpty()) {
             keywords.addAll(dataInputService.createDataSpy2());
         }
         checkDuplicatePairs();
+        //get pair data spy-notSpy
         int dataget = random.nextInt(keywords.size());
         for (String spydata : keywords.get(dataget)) {
             dataMainSpy2.add(Spy2.builder().keyword(spydata).build());
         }
         keywords.remove(dataget);
 
-        countnumSpies = numSpies;
-        countWhite = numWhite;
-
         int indexMember = random.nextInt(dataMainSpy2.size());
-        dataNotSpy = dataMainSpy2.get(indexMember);
-        dataSpies = new ArrayList<>(dataMainSpy2);
-        dataSpies.remove(indexMember);
-        int indexSpy = random.nextInt(dataSpies.size());
-        dataSpy = dataSpies.get(indexSpy);
+        Spy2 dataNotSpy = dataMainSpy2.get(indexMember);
+        Spy2 dataSpy = dataMainSpy2.get(1 - indexMember);
 
         int cnt = 1;
         for (int i = 0; i < totalPlayers - (numSpies + numWhite); i++) {
@@ -99,15 +100,17 @@ public class Spy2Service {
         }
     }
 
-    public void removePlayer(int id) {
+    public Spy2 removePlayer(int id) {
         for (Spy2 player : dataPlayer) {
             if (player.getId() == id) {
                 player.setRemove(true);
                 if (!removed.contains(player)) {
                     removed.add(player);
                 }
+                return player;
             }
         }
+        return null;
     }
 
     private Spy2 createPlayer(int id, String keyword, String role) {
