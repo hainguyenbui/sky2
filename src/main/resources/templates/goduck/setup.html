@@ -10,7 +10,9 @@
 <div class="container">
     <div class="header-section">
         <h1>GoDuck Setup</h1>
-        <p class="desc" style="color: var(--success); font-weight: 500;">Thiết lập phòng chơi thành công!</p>
+        <th:block th:if="${setup != null and setup > 0}">
+            <p class="desc" style="color: var(--success); font-weight: 500;" th:text="'Khởi tạo ván chơi ' + ${setup} + ' thành công!'"></p>
+        </th:block>
     </div>
 
     <div class="card" style="text-align: center;">
@@ -18,12 +20,43 @@
             <img th:src="${image}" alt="QR Code" class="qr-image">
         </div>
         <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
-            <div class="item-row"><span>Tổng người chơi:</span> <strong th:text="${total}"></strong></div>
-            <div class="item-row"><span>Số lượng Spy:</span> <strong th:text="${spy}"></strong></div>
+            <div class="item-row">
+                <span>Tổng người chơi:</span>
+                <input type="number" min="0" th:value="${totalPlayers != null ? totalPlayers : 4}" th:id="total" th:name="total"
+                       class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" />
+            </div>
+            <div class="item-row"><span>Số lượng Spy:</span>
+                <input type="number" min="0" th:value="${numSpies != null ? numSpies : 1}" th:id="spy" th:name="spy"
+                       class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" />
+            </div>
+            <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Tạo Game</button>
+            <button type="button" id="clearData" class="btn btn-primary" style="margin-top: 10px;">Xóa Dữ Liệu</button>
         </div>
-        <a href="/gd/play" class="btn btn-primary" style="margin-top: 20px;">Vào Phòng Chơi</a>
+        <a href="/gd/play" target="_blank" class="btn btn-primary" style="margin-top: 20px;">Vào Phòng Chơi</a>
     </div>
 </div>
+<script>
+    document.getElementById('sendButton').onclick = function() {
+        var total = document.getElementById('total').value;
+        var spy = document.getElementById('spy').value;
+        fetch('/gd/setup/' + total + '/' + spy)
+            .then(response => response.text())
+            .then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+            });
+    };
+    document.getElementById('clearData').onclick = function() {
+        if (confirm('Bạn có chắc chắn muốn xóa dữ liệu không?')) {
+            fetch('/gd/clear')
+                .then(response => response.text())
+                .then(data => {
+                    alert(data);
+                });
+        }
+    };
+</script>
 </body>
 </html>
 

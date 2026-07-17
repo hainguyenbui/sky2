@@ -1,5 +1,6 @@
 package com.example.spyfall.controller;
 
+import com.example.spyfall.common.GoDuck;
 import com.example.spyfall.service.GoDuckService;
 import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 @RequestMapping("/gd")
@@ -28,9 +30,8 @@ public class GoDuckController {
     String play(HttpServletRequest request, HttpServletResponse response, @PathVariable String name, Model model) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
-            goDuckService.getOrRegisterMember(deviceId, name);
-            String secretInfo = goDuckService.buildSecretInfo(deviceId);
-            model.addAttribute("secretInfo", secretInfo);
+            String data = goDuckService.getOrRegisterMember(deviceId, name);
+            model.addAttribute("secretInfo", data);
             model.addAttribute("totalPlay", goDuckService.getTotalPlay());
             model.addAttribute("spyTotalPlay", goDuckService.getSpyTotalPlay());
             model.addAttribute("members", goDuckService.getSortedMembers());
@@ -45,12 +46,27 @@ public class GoDuckController {
         return "goduck/play";
     }
 
-    @GetMapping("/run/{total}/{spy}")
+    @GetMapping("/setup/{total}/{spy}")
     String setup(@PathVariable Integer total, @PathVariable Integer spy, Model model) {
         goDuckService.setupGame(total, spy != null ? spy : 1);
-        model.addAttribute("total", total);
-        model.addAttribute("spy", goDuckService.getSpyTotalPlay());
+        model.addAttribute("totalPlayers", total);
+        model.addAttribute("setup", goDuckService.getCountGame());
+        model.addAttribute("numSpies", goDuckService.getSpyTotalPlay());
         model.addAttribute("image", goDuckService.getImage());
         return "goduck/setup";
+    }
+
+    @GetMapping("/setup")
+    String setup(Model model) {
+        model.addAttribute("setup", goDuckService.getCountGame());
+        model.addAttribute("image", goDuckService.getImage());
+        return "goduck/setup";
+    }
+
+    @GetMapping("clear")
+    @ResponseBody
+    String clear(Model model) {
+        goDuckService.clear();
+        return "Xóa dữ liệu thành công";
     }
 }

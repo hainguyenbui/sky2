@@ -1,23 +1,28 @@
 package com.example.spyfall.service;
 
 import com.example.spyfall.common.GoDuck;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class GoDuckService {
 
     private Map<String, GoDuck> memberPlay = new HashMap<>();
-    private Map<Integer, GoDuck> spyMember = new HashMap<>();
-    private Map<Integer, GoDuck> spySeeMember = new HashMap<>();
+    private List<GoDuck> dataPlay = new ArrayList<>();
+    @Getter
     private Integer totalPlay = 0;
+    @Getter
     private Integer spyTotalPlay = 0;
+    @Getter
     private final String image = "/gDuck.png";
-
-    public String getImage() { return image; }
-    public Integer getTotalPlay() { return totalPlay; }
-    public Integer getSpyTotalPlay() { return spyTotalPlay; }
+    @Getter
+    private int countGame = 0;
+    List<Integer> spyPlayers = new ArrayList<>();
+    List<Integer> notSpyPlayers = new ArrayList<>();
 
     public List<GoDuck> getSortedMembers() {
         return memberPlay.values().stream()
@@ -25,57 +30,65 @@ public class GoDuckService {
                 .toList();
     }
 
-    public GoDuck getOrRegisterMember(String clientIp, String name) {
-        // Update spy/spySee maps with current names
-        memberPlay.values().forEach(item -> {
-            if (spyMember.containsKey(item.getId())) spyMember.put(item.getId(), item);
-            else if (spySeeMember.containsKey(item.getId())) spySeeMember.put(item.getId(), item);
-        });
-
-        if (memberPlay.containsKey(clientIp)) {
-            memberPlay.get(clientIp).setUserName(name);
+    public String getOrRegisterMember(String deviceId, String name) {
+        if (ObjectUtils.isEmpty(dataPlay)) {
+            return null;
+        }
+        if (memberPlay.containsKey(deviceId)) {
+            memberPlay.get(deviceId).setUserName(name);
         } else {
             int idMember = memberPlay.size() + 1;
-            memberPlay.put(clientIp, GoDuck.builder().ipConfig(clientIp).userName(name).id(idMember).build());
-        }
-        return memberPlay.get(clientIp);
-    }
+            GoDuck data = dataPlay.stream().filter(d -> d.getId().equals(idMember)).findFirst().orElse(null);
 
-    public String buildSecretInfo(String clientIp) {
-        GoDuck member = memberPlay.get(clientIp);
-        if (member == null) return "";
-        Integer idMemberPlay = member.getId();
-        StringBuilder sb = new StringBuilder();
-        Map<Integer, GoDuck> targetMap = spyMember.containsKey(idMemberPlay) ? spySeeMember : spyMember;
-        for (Map.Entry<Integer, GoDuck> entry : targetMap.entrySet()) {
-            if (entry.getValue() != null) {
-                sb.append(entry.getValue().getUserName()).append(" (ID: ").append(entry.getKey()).append(")");
-            } else {
-                sb.append("ID: ").append(entry.getKey());
+            if (!ObjectUtils.isEmpty(data)) {
+                data.setDeviceId(deviceId);
+                data.setUserName(name);
             }
+            memberPlay.put(deviceId, data);
         }
-        return sb.toString();
+        return memberPlay.get(deviceId).getNumberSee()
+                .stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
     }
 
     public void setupGame(int total, int spy) {
-        spyMember.clear();
-        spySeeMember.clear();
-        memberPlay.clear();
+        spyPlayers.clear();
+        notSpyPlayers.clear();
         totalPlay = total;
         spyTotalPlay = spy;
+        countGame++;
+        memberPlay.forEach((k, v) -> {
+            v.setNumberSee(new ArrayList<>());
+        });
 
         List<Integer> numbers = new ArrayList<>();
         for (int i = 1; i <= totalPlay; i++) numbers.add(i);
+
         Collections.shuffle(numbers);
 
-        for (int i = 0; i < spyTotalPlay; i++) {
-            spyMember.put(numbers.remove(0), null);
-            Collections.shuffle(numbers);
+        spyPlayers.addAll(numbers.subList(0, spy));
+        notSpyPlayers.addAll(numbers.subList(spy, spy*2));
+        for (int i = dataPlay.size() + 1; i <= totalPlay; i++) {
+            GoDuck member = GoDuck.builder().id(i).build();
+            dataPlay.add(member);
         }
-        for (int i = 0; i < spyTotalPlay; i++) {
-            spySeeMember.put(numbers.remove(0), null);
-            Collections.shuffle(numbers);
-        }
+        dataPlay.forEach(d -> {
+            if (spyPlayers.contains(d.getId())) {
+                d.setNumberSee(notSpyPlayers);
+            } else {
+                d.setNumberSee(spyPlayers);
+            }
+        });
+    }
+
+    public void clear() {
+        memberPlay.clear();
+        spyPlayers.clear();
+        notSpyPlayers.clear();
+        totalPlay = 0;
+        spyTotalPlay = 0;
+        countGame = 0;
     }
 }
 
