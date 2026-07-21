@@ -24,7 +24,7 @@
                      class="role-card">
                     <span class="role-title"
                           th:style="${#lists.contains(idSoi, item.id)} ? 'color: #f87171' : (${#lists.contains(idOutsider, item.id)} ? 'color: #fbbf24' : 'color: #34d399')"
-                          th:text="${item.id + '. ' + item.location}"></span>
+                          th:text="${item.id + '. ' + item.role}"></span>
                     <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
                 </div>
             </th:block>

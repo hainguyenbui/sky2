@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 
 @Data
 @AllArgsConstructor
@@ -12,9 +14,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class DataMember {
 
-    String id;
+    int id;
 
-    String location;
+    String role;
 
     String ipData;
 
@@ -24,13 +26,24 @@ public class DataMember {
 
     String nameMember;
 
+    // Số thứ tự nhân vật
     String idPlayGame;
 
-    boolean protectedSkill = false;
+    int protectedSkill = 0;
 
-    boolean killSkill = false;
+    int killSkill = 0;
 
     boolean superProtectedSkill = false;
+
+    boolean disabledSkill = false;
+
+    boolean isDead = false;
+
+    /**
+     * 1 cupid
+     */
+    int lifeLink = 0;
+    List<Integer> lifeLinkIds;
 
     /**
      * 1 thợ săn
@@ -39,24 +52,33 @@ public class DataMember {
      * 4 tập sự
      * 5 người bệnh
      * 6 bị nguyền
+     * 7 silent
      */
     int connectSkill = 0;
 
-    public DataMember(Integer id, String location) {
-        this.id = String.valueOf(id);
-        this.location = location;
+    public DataMember(Integer id, String role) {
+        this.id = id;
+        this.role = role;
     }
 
-    public DataMember(String id, String location, String description) {
+    public DataMember(int id, String role, String description) {
         this.id = id;
-        this.location = location;
+        this.role = role;
         this.description =description;
     }
 
     public DataMember(DataMember dataMember, Integer total) {
         this.id = dataMember.getId();
-        this.location = dataMember.getLocation();
+        this.role = dataMember.getRole();
         this.description = dataMember.getDescription();
         this.total = String.valueOf(total);
+    }
+
+    public void decreaseKillSkill() {
+        killSkill--;
+    }
+
+    public void decreaseProtectedSkill() {
+        protectedSkill--;
     }
 }

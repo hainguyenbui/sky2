@@ -3,9 +3,11 @@ package com.example.spyfall.service;
 import com.example.spyfall.common.DataMember;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DataInputService {
@@ -20,13 +22,13 @@ public class DataInputService {
 
             for (String dataItem : datas) {
                 boolean exist = dataSpyPlay.stream()
-                        .anyMatch(item -> item.getLocation().equals(dataItem));
+                        .anyMatch(item -> item.getRole().equals(dataItem));
 
                 if (!exist) {
                     int maxId = dataSpyPlay.stream()
                             .mapToInt(o -> {
                                 try {
-                                    return Integer.parseInt(o.getId());
+                                    return o.getId();
                                 } catch (NumberFormatException e) {
                                     return 0;
                                 }
@@ -948,39 +950,53 @@ public class DataInputService {
                 "Sở thú";
     }
 
-    public void prepareDataMaSoi(List<DataMember> datas) {
+    public void prepareDataMaSoi(List<DataMember> datas) throws Exception {
         if (datas.isEmpty()) {
-            datas.add(createDM("1", "Sói", "Sói đó, sói nè, sói chính hiệu 9999"));
-            datas.add(createDM("2", "Sói đầu đàn", "Sói có quyền quyết định cắn ai"));
-            datas.add(createDM("3", "Sói nguyền", "Nguyền 1 người chơi, người đó sẽ là sói"));
-            datas.add(createDM("4", "Sói đầu đàn(2)", "Sói tiên tri phải soi 2 lần"));
-            datas.add(createDM("5", "Sói si đa", "1 lần duy nhất chức năng nào chạm vào bạn thì chức năng đó chết"));
-            datas.add(createDM("6", "Kẻ phản bội", "Theo phe sói, biết sói là ai, sói không biết bạn"));
+            datas.add(createDM(1, "Sói", "Sói đó, sói nè, sói chính hiệu 9999", Map.of("killSkill", 9999)));
+            datas.add(createDM(2, "Sói đầu đàn", "Sói có quyền quyết định cắn ai", Map.of("killSkill", 9999)));
+            datas.add(createDM(3, "Sói nguyền", "Nguyền 1 người chơi, người đó sẽ là sói", Map.of("killSkill", 9999)));
+            datas.add(createDM(4, "Sói đầu đàn(2)", "Sói tiên tri phải soi 2 lần", Map.of("killSkill", 9999)));
+            datas.add(createDM(5, "Sói si đa", "1 lần duy nhất chức năng nào chạm vào bạn thì chức năng đó chết", Map.of("killSkill", 9999)));
+            datas.add(createDM(15, "Kẻ phản bội", "Theo phe sói, biết sói là ai, sói không biết bạn", null));
 
-            datas.add(createDM("20", "Sát thủ", "Phe thứ 3, có quyền giết sói nhưng sói ko giết lại được."));
-            datas.add(createDM("21", "Chán đời", "Muốn chết nhưng ko muốn bị sói cắn. Khi bị treo cổ bạn sẽ win"));
+            datas.add(createDM(20, "Sát thủ", "Phe thứ 3, có quyền giết sói nhưng sói ko giết lại được.", Map.of("killSkill", 9999)));
+            datas.add(createDM(21, "Chán đời", "Muốn chết nhưng ko muốn bị sói cắn. Khi bị treo cổ bạn sẽ win", null));
 
-            datas.add(createDM("30", "Dân", "Dân giàu nước mạnh"));
-            datas.add(createDM("31", "Phù thủy", "Có 1 bình cứu và 1 bình giết. Khi đã sài phép cứu thì sẽ ko biết ai bị giết nữa"));
-            datas.add(createDM("32", "Tiên tri", "Soi 1 người có phải Sói hay ko"));
-            datas.add(createDM("33", "Bảo vệ", "Mỗi đêm bảo vệ 1 người, ko bảo vệ 1 người 2 đêm liên tiếp"));
-            datas.add(createDM("34", "Thợ săn", "Ghim 1 người, chỉ trong đêm nếu bạn chết người đó chết theo"));
-            datas.add(createDM("35", "Thanh niên cứng", "Khi bị treo cổ có quyền lật bài và giết 1 người, bạn vẫn sống như bình thường"));
-            datas.add(createDM("37", "Tiên tri tập sự", "Khi tiên tri chết thì bạn là Tiên tri"));
-            datas.add(createDM("38", "Câm lặng", "Chọn 1 người và cấm phép người đó."));
-            datas.add(createDM("39", "Thám tử", "Chọn 1 vùng 3 người, bạn sẽ biết có sói trong đó hay không"));
-            datas.add(createDM("40", "Bị nguyền", "Bạn theo phe dân, nếu bị sói cắn sẽ thành sói"));
+            datas.add(createDM(30, "Dân", "Dân giàu nước mạnh", null));
+            datas.add(createDM(31, "Phù thủy", "Có 1 bình cứu và 1 bình giết. Khi đã sài phép cứu thì sẽ ko biết ai bị giết nữa", Map.of("killSkill", 1, "protectedSkill", 1)));
+            datas.add(createDM(32, "Tiên tri", "Soi 1 người có phải Sói hay ko", null));
+            datas.add(createDM(33, "Bảo vệ", "Mỗi đêm bảo vệ 1 người, ko bảo vệ 1 người 2 đêm liên tiếp", Map.of("protectedSkill", 9999)));
+            datas.add(createDM(34, "Thợ săn", "Ghim 1 người, chỉ trong đêm nếu bạn chết người đó chết theo", Map.of("connectSkill", 1)));
+            datas.add(createDM(35, "Thanh niên cứng", "Khi bị treo cổ có quyền lật bài và giết 1 người, bạn vẫn sống như bình thường", null));
+            datas.add(createDM(37, "Tiên tri tập sự", "Khi tiên tri chết thì bạn là Tiên tri", Map.of("connectSkill", 4)));
+            datas.add(createDM(38, "Câm lặng", "Chọn 1 người và cấm phép người đó. Nếu là sói phải là Sói đầu đàn hoặc là con sói duy nhất", Map.of("connectSkill", 7)));
+            datas.add(createDM(39, "Thám tử", "Chọn 1 vùng 3 người, bạn sẽ biết có sói trong đó hay không", null));
+            datas.add(createDM(40, "Bị nguyền", "Bạn theo phe dân, nếu bị sói cắn sẽ thành sói", null));
 
-            datas.add(createDM("41", "Người bệnh", "Nếu sói/sát thủ cắn bạn, thì đêm sau sói/sát thủ không giết được ai"));
-            datas.add(createDM("42", "Nhân bản", "Chọn 1 người, nếu người đó chết bạn sẽ nhận chức năng người đó"));
-            datas.add(createDM("43", "Độc tài", "Duy nhất: chọn 1 người chơi, nếu không phải dân người đó chết, nếu dân bạn chết"));
-            datas.add(createDM("44", "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm"));
-            datas.add(createDM("45", "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng"));
-            datas.add(createDM("46", "Boooooom", "Duy nhất chọn 1 người chơi giao bom, mỗi đêm bạn có quyền kích nổ hoặc ko"));
+            datas.add(createDM(41, "Người bệnh", "Nếu sói/sát thủ cắn bạn, thì đêm sau sói/sát thủ không giết được ai", Map.of("connectSkill", 6)));
+            datas.add(createDM(42, "Nhân bản", "Chọn 1 người, nếu người đó chết bạn sẽ nhận chức năng người đó", Map.of("connectSkill", 2)));
+            datas.add(createDM(43, "Độc tài", "Duy nhất: giết 1 người chơi, nếu không phải dân bạn sống, nếu dân bạn cùng chết. Nếu được bảo vệ bạn sẽ sống", Map.of("killSkill", 1)));
+            datas.add(createDM(44, "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm", Map.of("superProtectedSkill", true)));
+            datas.add(createDM(45, "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng", Map.of("connectSkill", 3)));
+            datas.add(createDM(46, "Boooooom", "Duy nhất chọn 1 người chơi giao bom, mỗi đêm bạn có quyền kích nổ hoặc ko", Map.of("killSkill", 1)));
         }
     }
 
-    private DataMember createDM(String id, String location, String description) {
-        return DataMember.builder().id(id).location(location).description(description).build();
+    private DataMember createDM(int id, String location, String description, Map<String, Object> skills) throws Exception {
+        var builder = DataMember.builder()
+                .id(id)
+                .role(location)
+                .description(description);
+        if (skills != null) {
+            for (Map.Entry<String, Object> entry : skills.entrySet()) {
+                Method method = Arrays.stream(builder.getClass().getMethods())
+                        .filter(m -> m.getName().equals(entry.getKey()))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchMethodException(entry.getKey()));
+                method.invoke(builder, entry.getValue());
+            }
+        }
+
+        return builder.build();
     }
 }

@@ -13,6 +13,16 @@
         .role-card-dan { border-left: 4px solid var(--success); }
         .role-card-other { border-left: 4px solid var(--warning); }
         .role-title { font-weight: 700; font-size: 0.9rem; }
+
+        /* Alive/Dead Lists */
+        .lists-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+        .list-section { background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; }
+        .list-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; padding: 8px; border-radius: 8px; }
+        .list-title.alive { background: rgba(16,185,129,0.2); color: #34d399; }
+        .list-title.dead { background: rgba(239,68,68,0.2); color: #f87171; }
+        .list-item { padding: 8px; background: rgba(30,41,59,0.5); border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+        .list-item-name { font-weight: 500; }
+        .list-item-role { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.2); color: #60a5fa; }
     </style>
 </head>
 <body>
@@ -38,7 +48,7 @@
             <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
                 <div class="reveal-placeholder">Nhấp để ẩn/hiện chức năng</div>
                 <div class="reveal-content">
-                    <h2 id="location" style="font-size: 2rem; color: #f87171;" th:utext="${role}"></h2>
+                    <h2 id="location" th:style="'font-size: 2rem; color: #f87171; ' + (${isDead} ? 'text-decoration: line-through;' : '')" th:utext="${role}"></h2>
                     <p class="desc" style="margin-top: 10px; font-size: 0.9rem;" th:text="${desc}"></p>
                 </div>
             </div>
@@ -50,6 +60,33 @@
         <button type="button" id="showHistory" class="btn btn-primary" style="flex: 1;">Xem Lịch Sử</button>
     </div>
 
+    <!-- Alive/Dead Lists -->
+    <div th:if="${historyGame}" class="lists-container">
+        <div th:each="entry : ${historyGame}">
+            <span th:text="${entry.key}"></span>
+            :<br>
+            <span th:utext="${entry.value}"></span>
+        </div>
+    </div>
+    <div th:if="${alivePlayer}" class="lists-container">
+        <div class="list-section">
+            <div class="list-title alive">Danh Sách Sống Sót</div>
+            <th:block th:each="item : ${alivePlayer}">
+                <div class="list-item" th:if="${!item.dead}">
+                    <span class="list-item-name" th:text="${(item.nameMember != null ? item.nameMember : 'Ẩn danh') + ' - ' + item.role}"></span>
+                </div>
+            </th:block>
+        </div>
+        <div class="list-section">
+            <div class="list-title dead">Danh Sách NA</div>
+            <th:block th:each="item : ${deadPlayer}">
+                <div class="list-item">
+                    <span class="list-item-name" th:text="${(item.nameMember != null ? item.nameMember : 'Ẩn danh') + ' - ' + item.role}"></span>
+                </div>
+            </th:block>
+        </div>
+    </div>
+
     <div class="card">
         <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
         <div class="item-list">
@@ -57,7 +94,7 @@
                 <div th:classappend="${#lists.contains(idSoi, item.id)} ? 'role-card role-card-soi' : (${#lists.contains(idOutsider, item.id)} ? 'role-card role-card-other' : 'role-card role-card-dan')">
                     <span class="role-title"
                           th:classappend="${#lists.contains(idSoi, item.id)} ? '' : (${#lists.contains(idOutsider, item.id)} ? 'style=color:#fbbf24' : '')"
-                          th:text="${item.location + (item.id == '1' or item.id == '30' or item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
+                          th:text="${item.role + (item.id == '1' or item.id == '30' or item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
                     <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
                 </div>
             </th:block>

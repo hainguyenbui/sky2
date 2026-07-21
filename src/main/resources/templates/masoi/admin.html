@@ -8,6 +8,37 @@
     <style>
         #cupid { color: #f59e0b; font-style: normal; font-weight: 500; font-size: 0.8rem; display: block; margin-top: 4px; }
         .history-game-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; background: rgba(30,41,59,0.3); }
+        
+        /* Toggle Switches */
+        .toggle-group { display: flex; gap: 12px; flex-direction: column; margin-bottom: 16px; }
+        .toggle-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(30,41,59,0.4); border-radius: 10px; border: 1px solid var(--card-border); }
+        .toggle-label { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 28px; }
+        .toggle-switch input:checked + .toggle-slider { background-color: var(--primary); }
+        .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
+        
+        /* Kill Management */
+        .kill-section { background: rgba(239,68,68,0.08); border: 2px solid rgba(239,68,68,0.3); border-radius: 16px; padding: 16px; margin-top: 16px; }
+        .kill-title { color: #f87171; font-weight: 700; margin-bottom: 12px; font-size: 1.1rem; }
+        .kill-table { width: 100%; border-collapse: collapse; }
+        .kill-table th, .kill-table td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(239,68,68,0.2); font-size: 0.9rem; }
+        .kill-table th { background: rgba(239,68,68,0.1); font-weight: 600; color: #f87171; }
+        .kill-checkbox { width: 18px; height: 18px; cursor: pointer; }
+        .kill-btn { background: linear-gradient(135deg, var(--danger), var(--danger-hover)); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 12px; width: 100%; }
+        .kill-btn:active { transform: scale(0.98); }
+        
+        /* Alive/Dead Lists */
+        .lists-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+        .list-section { background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; }
+        .list-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; padding: 8px; border-radius: 8px; }
+        .list-title.alive { background: rgba(16,185,129,0.2); color: #34d399; }
+        .list-title.dead { background: rgba(239,68,68,0.2); color: #f87171; }
+        .list-item { padding: 8px; background: rgba(30,41,59,0.5); border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+        .list-item-name { font-weight: 500; }
+        .list-item-role { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.2); color: #60a5fa; }
     </style>
 </head>
 <body>
@@ -15,6 +46,37 @@
     <div class="header-section">
         <h1>Quản Trò Ma Sói</h1>
         <p class="desc">Bảng điều khiển ván đấu hiện tại</p>
+    </div>
+
+    <!-- Admin Options -->
+    <div class="card">
+        <h3 style="margin-bottom: 14px; font-size: 1.1rem;">⚙️ Tùy Chọn Quản Trò</h3>
+        <div class="toggle-group">
+            <div class="toggle-item">
+                <span class="toggle-label">Người chết xem lịch sử ván</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="deadViewGameHistory" onchange="toggleAdminOption('deadViewGameHistory', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-item">
+                <span class="toggle-label">Hiển thị danh sách sống/chết</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="showAliveDead" onchange="toggleAdminOption('showAliveDead', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Management Button -->
+    <a href="/ms/gameManagement" class="btn btn-primary">⚔️ Xử Lý Game & Vai Trò</a>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="showAliveDead" onchange="toggleAdminOption('showAliveDead', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
     </div>
 
     <div class="card" style="text-align: center;">
@@ -38,9 +100,51 @@
                     <span style="font-weight: 700; font-size: 1rem;"
                           th:text="${item.idPlayGame + '. ' + (item.nameMember != null ? item.nameMember : (item.ipData != null ? 'Ẩn danh' : 'Chưa nhận chức năng'))}"></span>
                     <span th:classappend="${#lists.contains(idSoi, item.id)} ? 'badge badge-red' : (${#lists.contains(idOutsider, item.id)} ? 'badge badge-orange' : 'badge badge-green')"
-                          th:utext="${item.location}"></span>
+                          th:utext="${item.role}"></span>
                 </div>
             </th:block>
+        </div>
+    </div>
+
+    <!-- Kill Management Section -->
+    <div class="kill-section">
+        <div class="kill-title">⚔️ Xử Lý Giết</div>
+        <p style="font-size: 0.85rem; color: #fbbf24; margin-bottom: 12px;">Chọn người chơi để giết, sau đó nhập lý do và xác nhận</p>
+        <table class="kill-table">
+            <thead>
+                <tr>
+                    <th style="width: 30px;">Chọn</th>
+                    <th>Tên/ID</th>
+                    <th>Chức Năng</th>
+                </tr>
+            </thead>
+            <tbody>
+                <th:block th:each="item : ${players}">
+                    <tr>
+                        <td><input type="checkbox" class="kill-checkbox" th:value="${item.ipData}" th:data-name="${item.nameMember != null ? item.nameMember : 'Ẩn danh'}"></td>
+                        <td th:text="${item.idPlayGame + '. ' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}"></td>
+                        <td th:utext="${item.role}" style="font-size: 0.85rem;"></td>
+                    </tr>
+                </th:block>
+            </tbody>
+        </table>
+        <input type="text" id="killReason" class="input-text" placeholder="Lý do giết (tùy chọn)" style="margin-top: 12px;">
+        <button class="kill-btn" onclick="executeKill()">Xác Nhận Giết</button>
+    </div>
+
+    <!-- Alive/Dead Lists -->
+    <div th:if="true" class="lists-container">
+        <div class="list-section">
+            <div class="list-title alive">Danh Sách Sống Sót</div>
+            <th:block th:each="item : ${players}">
+                <div class="list-item">
+                    <span class="list-item-name" th:text="${item.idPlayGame + '. ' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}"></span>
+                </div>
+            </th:block>
+        </div>
+        <div class="list-section">
+            <div class="list-title dead">Danh Sách Chết</div>
+            <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">Chưa có ai chết</div>
         </div>
     </div>
 
@@ -53,7 +157,7 @@
                     <option
                             th:if="${!#lists.contains(idSoi, item.id)}"
                             th:value="${item.idPlayGame}"
-                            th:text="${item.idPlayGame + '-' + item.location + '-' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}">
+                            th:text="${item.idPlayGame + '-' + item.role + '-' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}">
                     </option>
                 </th:block>
             </select>
@@ -82,7 +186,45 @@
             .catch(error => console.error('Error:', error));
         });
     </script>
-    <script>
+     <script>
+        function toggleAdminOption(option, value) {
+            fetch(`/ms/toggleAdminOptions?option=${option}&value=${value}`, { method: 'POST' })
+                .then(response => response.text())
+                .catch(error => console.error('Error:', error));
+        }
+        
+        function executeKill() {
+            const checkboxes = document.querySelectorAll('.kill-checkbox:checked');
+            const deviceIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (deviceIds.length === 0) {
+                alert('Vui lòng chọn ít nhất một người chơi để giết!');
+                return;
+            }
+            
+            const reason = document.getElementById('killReason').value || '';
+            const playerNames = Array.from(checkboxes).map(cb => cb.getAttribute('data-name')).join(', ');
+            
+            if (!confirm(`Bạn có chắc chắn muốn giết ${playerNames}? ${reason ? `Lý do: ${reason}` : ''}`)) {
+                return;
+            }
+            
+            fetch('/ms/kill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deviceIds: deviceIds, reason: reason })
+            })
+            .then(response => response.text())
+            .then(responseData => {
+                alert('Response: ' + responseData);
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Lỗi khi xử lý giết!');
+            });
+        }
+
         document.getElementById('endGame').addEventListener('click', function() {
             const userConfirmed = confirm("Bạn có chắc chắn muốn KẾT THÚC GAME?");
             if (userConfirmed) {

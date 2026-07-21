@@ -52,7 +52,7 @@
                     <div th:if="${#lists.contains(idSoi, item.id)}"
                          th:classappend="'role-card role-card-soi'">
                         <div style="padding-right: 10px; text-align: left;">
-                            <span class="role-title" style="color: #f87171;" th:text="${#strings.toUpperCase(item.location)}"></span>
+                            <span class="role-title" style="color: #f87171;" th:text="${#strings.toUpperCase(item.role)}"></span>
                             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
                         </div>
                         <div th:if="${item.id == '1' or item.id == '30'}">
@@ -70,7 +70,7 @@
                     <div th:if="${#lists.contains(idOutsider, item.id)}"
                          th:classappend="'role-card role-card-other'">
                         <div style="padding-right: 10px; text-align: left;">
-                            <span class="role-title" style="color: #fbbf24;" th:text="${#strings.toUpperCase(item.location)}"></span>
+                            <span class="role-title" style="color: #fbbf24;" th:text="${#strings.toUpperCase(item.role)}"></span>
                             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
                         </div>
                         <label class="switch">
@@ -82,7 +82,7 @@
                     <div th:if="${not #lists.contains(idSoi, item.id) and not #lists.contains(idOutsider, item.id)}"
                          th:classappend="'role-card role-card-dan'">
                         <div style="padding-right: 10px; text-align: left;">
-                            <span class="role-title" style="color: #34d399;" th:text="${#strings.toUpperCase(item.location)}"></span>
+                            <span class="role-title" style="color: #34d399;" th:text="${#strings.toUpperCase(item.role)}"></span>
                             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
                         </div>
                         <div th:if="${item.id == '1' or item.id == '30'}">
@@ -213,6 +213,10 @@
                 .then(response => response.text())
                 .then(data => {
                     if (data.includes('ERROR')) { alert(data); }
+                    else if (data.includes('ALERT')) {
+                        alert(data);
+                        window.location.href = '/ms/admin';
+                    }
                     else { window.location.href = '/ms/admin'; }
                 })
                 .catch(error => console.error('Error:', error));
