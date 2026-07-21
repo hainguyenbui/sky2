@@ -6,9 +6,6 @@
     <title>Quản Trò Ma Sói</title>
     <th:block th:replace="~{fragments/styles :: css}"></th:block>
     <style>
-        #cupid { color: #f59e0b; font-style: normal; font-weight: 500; font-size: 0.8rem; display: block; margin-top: 4px; }
-        .history-game-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; background: rgba(30,41,59,0.3); }
-        
         /* Toggle Switches */
         .toggle-group { display: flex; gap: 12px; flex-direction: column; margin-bottom: 16px; }
         .toggle-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(30,41,59,0.4); border-radius: 10px; border: 1px solid var(--card-border); }
@@ -21,24 +18,50 @@
         .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
         
         /* Kill Management */
-        .kill-section { background: rgba(239,68,68,0.08); border: 2px solid rgba(239,68,68,0.3); border-radius: 16px; padding: 16px; margin-top: 16px; }
-        .kill-title { color: #f87171; font-weight: 700; margin-bottom: 12px; font-size: 1.1rem; }
-        .kill-table { width: 100%; border-collapse: collapse; }
-        .kill-table th, .kill-table td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(239,68,68,0.2); font-size: 0.9rem; }
-        .kill-table th { background: rgba(239,68,68,0.1); font-weight: 600; color: #f87171; }
-        .kill-checkbox { width: 18px; height: 18px; cursor: pointer; }
-        .kill-btn { background: linear-gradient(135deg, var(--danger), var(--danger-hover)); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; margin-top: 12px; width: 100%; }
-        .kill-btn:active { transform: scale(0.98); }
-        
-        /* Alive/Dead Lists */
-        .lists-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-        .list-section { background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; }
-        .list-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; padding: 8px; border-radius: 8px; }
-        .list-title.alive { background: rgba(16,185,129,0.2); color: #34d399; }
-        .list-title.dead { background: rgba(239,68,68,0.2); color: #f87171; }
-        .list-item { padding: 8px; background: rgba(30,41,59,0.5); border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
-        .list-item-name { font-weight: 500; }
-        .list-item-role { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .qr-container { display:flex; justify-content:center; margin:10px 0; }
+        .qr-image { width:120px; height:120px; border-radius:12px; border:3px solid var(--card-bg); }
+        .super-section { background:rgba(139,92,246,0.1); border:2px solid rgba(139,92,246,0.3); border-radius:12px; padding:14px; margin-bottom:16px; }
+        .super-title { font-weight:700; color:#a5b4fc; margin-bottom:10px; font-size:0.9rem; }
+        .super-item { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:rgba(30,41,59,0.5); border-radius:8px; border-left:4px solid #a5b4fc; margin-bottom:6px; }
+        .super-info { display:flex; flex-direction:column; gap:2px; }
+        .super-name { font-weight:600; font-size:0.9rem; }
+        .super-role { font-size:0.75rem; color:var(--text-muted); }
+        .tbl-wrap { overflow-x:auto; margin-top:12px; }
+        .gtbl { border-collapse:collapse; background:rgba(30,41,59,0.4); border:1px solid var(--card-border); min-width:100%; }
+        .gtbl thead { background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(139,92,246,0.15)); }
+        .gtbl th { padding:9px 10px; text-align:center; font-weight:600; font-size:0.8rem; color:#60a5fa; border-right:1px solid rgba(99,102,241,0.2); border-bottom:2px solid rgba(99,102,241,0.3); white-space:nowrap; position:sticky; top:0; z-index:2; background:rgba(20,30,50,0.97); }
+        .gtbl thead tr:nth-child(2) th { top:38px; }
+        .gtbl th.col-disabled { background:rgba(245,158,11,0.2) !important; color:#fbbf24 !important; }
+        .gtbl th:last-child { border-right:none; }
+        .gtbl th.th-player { text-align:left; min-width:120px; position:sticky; left:0; top:0; z-index:4; background:rgba(20,30,50,0.97); }
+        .gtbl tbody tr { border-bottom:1px solid rgba(99,102,241,0.1); }
+        .gtbl tbody tr:hover { background:rgba(59,130,246,0.05); }
+        .gtbl td { padding:7px 8px; text-align:center; border-right:1px solid rgba(99,102,241,0.1); }
+        .gtbl td:first-child { text-align:left; position:sticky; left:0; z-index:2; background:rgba(30,41,59,0.95); padding:8px 10px; }
+        .gtbl td:last-child { border-right:none; }
+        .pname { display:flex; flex-direction:column; gap:2px; }
+        .pid { font-size:0.7rem; color:var(--text-muted); }
+        .tog { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; border:2px solid var(--card-border); background:rgba(30,41,59,0.5); cursor:pointer; transition:all 0.2s; font-size:1rem; user-select:none; }
+        .tog:hover:not(.locked):not(.col-disabled) { border-color:var(--primary); }
+        .tog.on { background:linear-gradient(135deg,var(--danger),var(--danger-hover)); border-color:var(--danger); color:white; box-shadow:0 0 10px rgba(239,68,68,0.35); }
+        .tog.on.recruit { background:linear-gradient(135deg,var(--warning),var(--warning-hover)); border-color:var(--warning); box-shadow:0 0 10px rgba(245,158,11,0.35); }
+        .tog.on.prot { background:linear-gradient(135deg,var(--success),var(--success-hover)); border-color:var(--success); box-shadow:0 0 10px rgba(16,185,129,0.35); }
+        .tog.on.conn { background:linear-gradient(135deg,#8b5cf6,#7c3aed); border-color:#8b5cf6; box-shadow:0 0 10px rgba(139,92,246,0.35); }
+        .tog.locked { opacity:0.4; cursor:not-allowed; }
+        .tog.col-disabled { opacity:0.35; cursor:not-allowed; border-color:rgba(245,158,11,0.3); }
+        .process-btn { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; padding:12px 26px; border-radius:10px; font-weight:600; cursor:pointer; margin-top:14px; margin-bottom:15px; width:100%; font-size:1rem; }
+        .process-btn:active { transform:scale(0.98); }
+        .kill-section { background:rgba(239,68,68,0.08); border:2px solid rgba(239,68,68,0.3); border-radius:14px; padding:14px; margin-top:16px; }
+        .kill-title { color:#f87171; font-weight:700; margin-bottom:10px; font-size:1rem; }
+        .ktbl { width:100%; border-collapse:collapse; }
+        .ktbl th, .ktbl td { padding:8px; text-align:left; border-bottom:1px solid rgba(239,68,68,0.2); font-size:0.85rem; }
+        .ktbl th { background:rgba(239,68,68,0.1); font-weight:600; color:#f87171; }
+        .kbtn { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; border:2px solid rgba(239,68,68,0.4); background:transparent; font-size:0; transition:all 0.2s; }
+        .kbtn.sel { background:rgba(239,68,68,0.8); border-color:#f87171; box-shadow:0 0 8px rgba(239,68,68,0.5); }
+        .kbtn.sel::after { content:''; display:block; width:6px; height:10px; border:2px solid white; border-top:none; border-left:none; transform:rotate(45deg) translate(-1px,-1px); }
+        .kill-btn { background:linear-gradient(135deg,var(--danger),var(--danger-hover)); color:white; border:none; padding:11px 20px; border-radius:10px; font-weight:600; cursor:pointer; margin-top:10px; width:100%; }
+        .kill-btn:active { transform:scale(0.98); }
+        .help { font-size:0.78rem; color:var(--text-muted); padding:8px 10px; background:rgba(30,41,59,0.3); border-radius:8px; margin-bottom:12px; }
     </style>
 </head>
 <body>
@@ -55,29 +78,27 @@
             <div class="toggle-item">
                 <span class="toggle-label">Người chết xem lịch sử ván</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="deadViewGameHistory" onchange="toggleAdminOption('deadViewGameHistory', this.checked)">
+                    <input type="checkbox" id="deadViewGameHistory" th:checked="${deadViewHistory}" onchange="toggleAdminOption('deadViewGameHistory', this.checked)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
             <div class="toggle-item">
                 <span class="toggle-label">Hiển thị danh sách sống/chết</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="showAliveDead" onchange="toggleAdminOption('showAliveDead', this.checked)">
+                    <input type="checkbox" id="showAliveDead" th:checked="${showAliveDead}" onchange="toggleAdminOption('showAliveDead', this.checked)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
         </div>
     </div>
 
-    <!-- Game Management Button -->
-    <a href="/ms/gameManagement" class="btn btn-primary">⚔️ Xử Lý Game & Vai Trò</a>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="showAliveDead" onchange="toggleAdminOption('showAliveDead', this.checked)">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-        </div>
+    <div th:if="${not #strings.isEmpty(activeRoles)}" class="card" style="margin-bottom: 16px;">
+        <h3 style="margin-bottom: 6px; font-size: 0.95rem; color: var(--text-muted);">Vai trò đặc biệt trong ván:</h3>
+        <p style="font-weight: 600; font-size: 1rem; color: #a5b4fc;" th:text="${activeRoles}"></p>
     </div>
+
+    <!-- Game Management Button -->
+<!--    <a href="/ms/gameManagement" class="btn btn-primary">⚔️ Xử Lý Game & Vai Trò</a>-->
 
     <div class="card" style="text-align: center;">
         <div class="qr-container">
@@ -86,106 +107,209 @@
         <p class="desc" style="font-size: 0.8rem; margin-top: 5px;">Quét mã QR để người chơi tham gia</p>
     </div>
 
-    <div th:if="${not #strings.isEmpty(activeRoles)}" class="card" style="margin-bottom: 16px;">
-        <h3 style="margin-bottom: 6px; font-size: 0.95rem; color: var(--text-muted);">Vai trò đặc biệt trong ván:</h3>
-        <p style="font-weight: 600; font-size: 1rem; color: #a5b4fc;" th:text="${activeRoles}"></p>
-    </div>
-
-    <div class="card">
-        <h3 style="margin-bottom: 14px; font-size: 1.1rem;">Danh sách người chơi</h3>
-        <div class="item-list">
-            <th:block th:each="item : ${players}">
-                <div th:classappend="${#lists.contains(idSoi, item.id)} ? 'item-row' : 'item-row'"
-                     th:style="${#lists.contains(idSoi, item.id)} ? 'border-left: 4px solid var(--danger); padding: 12px 16px;' : (${#lists.contains(idOutsider, item.id)} ? 'border-left: 4px solid var(--warning); padding: 12px 16px;' : 'border-left: 4px solid var(--success); padding: 12px 16px;')">
-                    <span style="font-weight: 700; font-size: 1rem;"
-                          th:text="${item.idPlayGame + '. ' + (item.nameMember != null ? item.nameMember : (item.ipData != null ? 'Ẩn danh' : 'Chưa nhận chức năng'))}"></span>
-                    <span th:classappend="${#lists.contains(idSoi, item.id)} ? 'badge badge-red' : (${#lists.contains(idOutsider, item.id)} ? 'badge badge-orange' : 'badge badge-green')"
-                          th:utext="${item.role}"></span>
+    <div th:if="${hasSuperProtectedPlayers}" class="super-section">
+        <div class="super-title">🛡️ Bảo Vệ Tối Cao — Khi BẬT: khóa toàn bộ toggle trong bảng</div>
+        <th:block th:each="p : ${players}" th:if="${p['hasSuperProtected']}">
+            <div class="super-item">
+                <div class="super-info">
+                    <span class="super-name" th:text="${p['name']}"></span>
+                    <span class="super-role" th:text="${'#' + p['idPlayGame'] + ' — ' + p['roleName']}"></span>
                 </div>
-            </th:block>
+                <div th:class="'tog'"
+                     th:id="${'sp-' + p['deviceId']}"
+                     th:data-device="${p['deviceId']}"
+                     th:data-name="${p['name']}"
+                     th:data-roleid="${p['id']}"
+                     th:data-rolename="${p['roleName']}"
+                     th:onclick="'toggleSuper(this)'">🛡️</div>
+            </div>
+        </th:block>
+        <div class="toggle-item" style="margin-top:10px;" th:if="${showSoiNguyen}">
+            <span class="toggle-label">🐺 Sói cắn = Recruit (Sói Nguyền)</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="recruitMode">
+                <span class="toggle-slider"></span>
+            </label>
         </div>
     </div>
 
-    <!-- Kill Management Section -->
-    <div class="kill-section">
-        <div class="kill-title">⚔️ Xử Lý Giết</div>
-        <p style="font-size: 0.85rem; color: #fbbf24; margin-bottom: 12px;">Chọn người chơi để giết, sau đó nhập lý do và xác nhận</p>
-        <table class="kill-table">
+    <div class="help">💡 Chọn mục tiêu cho từng hành động đêm nay. Mỗi cột chỉ chọn 1 người.</div>
+
+    <div id="thead-clone" style="overflow:hidden; position:sticky; top:0; z-index:10; margin-top:12px;"></div>
+    <div class="tbl-wrap" th:if="${not #lists.isEmpty(players) and not #lists.isEmpty(columns)}">
+        <table class="gtbl" id="roleTable">
             <thead>
-                <tr>
-                    <th style="width: 30px;">Chọn</th>
-                    <th>Tên/ID</th>
-                    <th>Chức Năng</th>
-                </tr>
+            <tr>
+                <th class="th-player" rowspan="2">Người Chơi</th>
+                <th:block th:each="col : ${columns}">
+                    <th th:if="${col['subCols'] == 1}" rowspan="2"
+                        th:class="${col['disabled']} ? 'col-disabled' : ''"
+                        th:text="${col['label']}"></th>
+                    <th th:if="${col['subCols'] > 1}"
+                        th:colspan="${col['subCols']}"
+                        th:class="${col['disabled']} ? 'col-disabled' : ''"
+                        th:text="${col['label']}"></th>
+                </th:block>
+            </tr>
+            <tr>
+                <th:block th:each="col : ${columns}" th:if="${col['subCols'] > 1}">
+                    <th th:if="${col['isSoi']}"  th:class="${col['disabled']} ? 'col-disabled' : ''">🐺 Cắn</th>
+                    <th th:if="${col['hasKill']}" th:class="${col['disabled']} ? 'col-disabled' : ''">⚔️ Giết</th>
+                    <th th:if="${col['hasProt']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🛡️ Cứu</th>
+                    <th th:if="${col['hasConn']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🔗 Chọn</th>
+                </th:block>
+            </tr>
             </thead>
             <tbody>
-                <th:block th:each="item : ${players}">
-                    <tr>
-                        <td><input type="checkbox" class="kill-checkbox" th:value="${item.ipData}" th:data-name="${item.nameMember != null ? item.nameMember : 'Ẩn danh'}"></td>
-                        <td th:text="${item.idPlayGame + '. ' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}"></td>
-                        <td th:utext="${item.role}" style="font-size: 0.85rem;"></td>
-                    </tr>
-                </th:block>
+            <th:block th:each="p : ${players}">
+                <tr>
+                    <td>
+                        <div class="pname">
+                            <span th:text="${p['name']}"
+                                  th:style="${#lists.contains(idSoi, p['id'])} ? 'color:#f87171' : (${#lists.contains(idOutsider, p['id'])} ? 'color:#fbbf24' : '')"></span>
+                            <span class="pid" th:text="${'#' + p['idPlayGame'] + ' · ' + p['roleName']}"></span>
+                        </div>
+                    </td>
+                    <th:block th:each="col : ${columns}">
+                        <th:block th:if="${col['subCols'] == 1}">
+                            <td th:if="${col['isSoi']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'soi_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🐺</div>
+                            </td>
+                            <td th:if="${col['hasKill'] and !col['isSoi'] and !col['hasProt'] and !col['hasConn']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'kill_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">⚔️</div>
+                            </td>
+                            <td th:if="${col['hasProt'] and !col['isSoi'] and !col['hasKill'] and !col['hasConn']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'prot_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🛡️</div>
+                            </td>
+                            <td th:if="${col['hasConn'] and !col['isSoi'] and !col['hasKill'] and !col['hasProt']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'conn_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-connvalue="${col['connValue']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🔗</div>
+                            </td>
+                        </th:block>
+                        <th:block th:if="${col['subCols'] > 1}">
+                            <td th:if="${col['isSoi']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'soi_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🐺</div>
+                            </td>
+                            <td th:if="${col['hasKill']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'kill_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">⚔️</div>
+                            </td>
+                            <td th:if="${col['hasProt']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'prot_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🛡️</div>
+                            </td>
+                            <td th:if="${col['hasConn']}">
+                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                     th:data-col="${'conn_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-connvalue="${col['connValue']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🔗</div>
+                            </td>
+                        </th:block>
+                    </th:block>
+                </tr>
+            </th:block>
             </tbody>
         </table>
-        <input type="text" id="killReason" class="input-text" placeholder="Lý do giết (tùy chọn)" style="margin-top: 12px;">
-        <button class="kill-btn" onclick="executeKill()">Xác Nhận Giết</button>
+        <button class="process-btn" onclick="processNight()">🌙 Xử Lý Đêm</button>
     </div>
 
-    <!-- Alive/Dead Lists -->
-    <div th:if="true" class="lists-container">
-        <div class="list-section">
-            <div class="list-title alive">Danh Sách Sống Sót</div>
-            <th:block th:each="item : ${players}">
-                <div class="list-item">
-                    <span class="list-item-name" th:text="${item.idPlayGame + '. ' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}"></span>
-                </div>
+    <div class="kill-section" th:if="${!dayKill}">
+        <div class="kill-title">⚔️ Xử Lý Giết (thủ công)</div>
+        <table class="ktbl" onclick="toggleKill(event.target.closest('tr'))">
+            <thead>
+            <tr>
+                <th style="width:36px;">Chọn</th>
+                <th>Tên / ID</th>
+                <th>Vai Trò</th>
+            </tr>
+            </thead>
+            <tbody>
+            <th:block th:each="p : ${players}">
+                <tr>
+                    <td>
+                        <div class="kbtn"
+                             th:data-device="${p['deviceId']}"
+                             th:data-name="${p['name']}"></div>
+                    </td>
+                    <td th:text="${p['idPlayGame'] + '. ' + p['name']}"></td>
+                    <td th:text="${p['roleName']}" style="font-size:0.8rem;color:var(--text-muted);"></td>
+                </tr>
             </th:block>
-        </div>
-        <div class="list-section">
-            <div class="list-title dead">Danh Sách Chết</div>
-            <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">Chưa có ai chết</div>
-        </div>
-    </div>
-
-    <!-- Soi Nguyen section -->
-    <div th:if="${showSoiNguyen}" class="card" style="margin-top: 16px; text-align: center;">
-        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Nguyền chúc của Sói</h3>
-        <div style="display: flex; gap: 8px; justify-content: center;">
-            <select class="selectSoiNguyen input-text" style="flex: 1; min-width: 150px; padding: 12px;">
-                <th:block th:each="item : ${players}">
-                    <option
-                            th:if="${!#lists.contains(idSoi, item.id)}"
-                            th:value="${item.idPlayGame}"
-                            th:text="${item.idPlayGame + '-' + item.role + '-' + (item.nameMember != null ? item.nameMember : 'Ẩn danh')}">
-                    </option>
-                </th:block>
-            </select>
-            <button id="addSoiNguyen" class="btn btn-primary" style="width: auto; padding: 12px 20px;">Nguyền</button>
-        </div>
+            </tbody>
+        </table>
+        <button class="kill-btn" onclick="executeKill()">⚔️ Xác Nhận Giết</button>
     </div>
 
     <button id="endGame" class="btn btn-danger" style="margin-top: 24px;">Kết Thúc Ván Đấu</button>
 
-    <script th:if="${showSoiNguyen}">
-        document.getElementById('addSoiNguyen').addEventListener('click', function() {
-            var soiNguyen = document.querySelector('.selectSoiNguyen');
-            var data = { soiNguyen: soiNguyen.value };
-            var playerText = soiNguyen.options[soiNguyen.selectedIndex].text;
-            if (!confirm("Bạn có muốn nguyền chúc người chơi " + playerText + "?")) {
-                return;
-            }
-
-            fetch('/ms/soiNguyen', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.text())
-            .then(responseData => { alert('Response: ' + responseData); window.location.reload(); })
-            .catch(error => console.error('Error:', error));
-        });
-    </script>
      <script>
         function toggleAdminOption(option, value) {
             fetch(`/ms/toggleAdminOptions?option=${option}&value=${value}`, { method: 'POST' })
@@ -237,6 +361,152 @@
                     .catch(error => console.error('Error:', error));
             }
         });
+    </script>
+    <script th:inline="javascript">
+        const spDevices = /*[[${superProtectedDevices}]]*/ [];
+        const idSoi = /*[[${idSoi}]]*/ [];
+        const idOutsider = /*[[${idOutsider}]]*/ [];
+
+        function isSuperLocked() {
+            return spDevices.some(dev => {
+                const el = document.getElementById('sp-' + dev);
+                return el && el.classList.contains('on');
+            });
+        }
+
+        function toggleSuper(el) {
+            el.classList.toggle('on');
+            updateLock();
+        }
+
+        function updateLock() {
+            const locked = isSuperLocked();
+    <!--        document.querySelectorAll('#roleTable .tog:not(.col-disabled)').forEach(b => b.classList.toggle('locked', locked));-->
+        }
+
+        function toggleCol(el) {
+            if (el.classList.contains('locked') || el.classList.contains('col-disabled')) return;
+            const colKey = el.dataset.col;
+            const colType = colKey.split('_')[0];
+            const isOn = el.classList.contains('on');
+            document.querySelectorAll(`#roleTable .tog[data-col="${colKey}"]`).forEach(b => {
+                b.classList.remove('on', 'recruit', 'prot', 'conn');
+            });
+            if (!isOn) {
+                const isRecruit = document.getElementById('recruitMode')?.checked;
+                el.classList.add('on');
+                if (colType === 'soi' && isRecruit) el.classList.add('recruit');
+                else if (colType === 'prot') el.classList.add('prot');
+                else if (colType === 'conn') el.classList.add('conn');
+            }
+        }
+
+        function processNight() {
+            const onToggles = document.querySelectorAll('#roleTable .tog.on');
+
+            const isRecruit = document.getElementById('recruitMode')?.checked;
+            const actions = Array.from(onToggles).map(el => ({
+                targetDeviceId:   el.dataset.devicetarget,
+                targetName: el.dataset.name,
+                targetRoleId: el.dataset.targetroleid,
+                targetRoleName: el.dataset.targetrole,
+                roleId:     el.dataset.roleid,
+                deviceId:   el.dataset.device,
+                roleName:   el.dataset.rolename,
+                colType:    el.dataset.col.split('_')[0] === 'soi' && isRecruit ? 'recruit' : el.dataset.col.split('_')[0],
+                connValue:  el.dataset.connvalue || null
+            }));
+
+            // Thêm trạng thái superProtected  vào actions
+            document.querySelectorAll('[id^="sp-"]').forEach(el => {
+                actions.push({
+                    targetDeviceId:   el.dataset.device,
+                    targetName: el.dataset.name,
+                    roleId:     el.dataset.roleid,
+                    roleName:   el.dataset.rolename,
+                    colType:    'superProt',
+                    connValue:  el.classList.contains('on') ? 'ON' : 'OFF'
+                });
+            });
+
+            if (!actions.length) { alert('Chưa chọn hành động nào!'); return; }
+
+            const summary = actions.map(a => {
+                const icon = a.colType === 'soi' ? '🐺' : a.colType === 'kill' ? '⚔️' : a.colType === 'prot' ? '🛡️' : '🔗';
+                return `${icon} ${a.roleName} → ${a.targetName}`;
+            }).join('\n');
+
+            if (!confirm(`Kết quả đêm nay:\n${summary}\n\nXác nhận xử lý?`)) return;
+
+            fetch('/ms/processNight', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(actions)
+            }).then(r => r.text()).then(res => {
+                // Reset conn cols theo connValue: 1/3/7 → off, 2 → giữ nguyên
+                alert(res);
+                window.location.reload();
+            }).catch(() => alert('Lỗi khi xử lý!'));
+        }
+
+        function toggleKill(el) {
+            const btn = el.closest('tr').querySelector('.kbtn');
+            const alreadySel = btn.classList.contains('sel');
+            document.querySelectorAll('.kbtn.sel').forEach(b => b.classList.remove('sel'));
+            if (!alreadySel) btn.classList.add('sel');
+        }
+
+        function executeKill() {
+            const selected  = document.querySelectorAll('.kbtn.sel');
+            const deviceIds = Array.from(selected).map(b => b.dataset.device);
+            if (!deviceIds.length) { alert('Chọn ít nhất 1 người!'); return; }
+            const names  = Array.from(selected).map(b => b.dataset.name).join(', ');
+            if (confirm('Bạn muốn vote: ' + names + '?')) {
+                fetch('/ms/kill', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({deviceIds})
+                     }).then(r => r.text()).then(res => { alert(res.replace(/<br\s*\/?>/gi, "\n")); window.location.reload(); })
+              .catch(() => alert('Lỗi khi giết!'));
+            }
+        }
+
+        updateLock();
+
+        document.querySelectorAll('#roleTable tbody td[data-id]').forEach(td => {
+            const id = td.dataset.id;
+            if (idSoi.includes(id)) td.querySelector('span').style.color = '#f87171';
+            else if (idOutsider.includes(id)) td.querySelector('span').style.color = '#fbbf24';
+        });
+
+        document.getElementById('recruitMode')?.addEventListener('change', function() {
+            document.querySelectorAll('#roleTable .tog.on[data-col^="soi_"]').forEach(el => {
+                el.classList.toggle('recruit', this.checked);
+            });
+        });
+
+        // Sticky thead clone
+        const wrap = document.querySelector('.tbl-wrap');
+        const table = document.getElementById('roleTable');
+        const clone = document.getElementById('thead-clone');
+        if (wrap && table && clone) {
+            const cloneTable = document.createElement('table');
+            cloneTable.className = 'gtbl';
+            cloneTable.style.cssText = 'margin:0; border-bottom:none;';
+            cloneTable.appendChild(table.querySelector('thead').cloneNode(true));
+            clone.appendChild(cloneTable);
+            clone.style.display = 'none';
+            wrap.addEventListener('scroll', () => { cloneTable.style.marginLeft = -wrap.scrollLeft + 'px'; });
+            window.addEventListener('scroll', () => {
+                const rect = wrap.getBoundingClientRect();
+                const theadH = table.querySelector('thead').getBoundingClientRect().height;
+                if (rect.top < 0 && rect.bottom > theadH) {
+                    clone.style.display = 'block';
+                    clone.style.width = wrap.clientWidth + 'px';
+                    cloneTable.style.marginLeft = -wrap.scrollLeft + 'px';
+                } else {
+                    clone.style.display = 'none';
+                }
+            });
+        }
     </script>
 </div>
 </body>

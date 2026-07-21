@@ -39,6 +39,8 @@ public class DataMember {
 
     boolean isDead = false;
 
+    String detailShow;
+
     /**
      * 1 cupid
      */

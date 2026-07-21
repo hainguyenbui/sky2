@@ -72,6 +72,7 @@ public class MaSoiController {
             }
             model.addAttribute("role", member.getRole());
             model.addAttribute("desc", member.getDescription());
+            model.addAttribute("dataMore", member.getDetailShow());
             model.addAttribute("showRoles", maSoiService.getListShowForMember());
             model.addAttribute("image", maSoiService.getImage());
             model.addAttribute("gameNumber", maSoiService.getGameNumber());
@@ -99,25 +100,32 @@ public class MaSoiController {
     String admin(Model model) {
         List<DataMember> players = maSoiService.getPls();
         players.sort(Comparator.comparing(DataMember::getId));
-        model.addAttribute("players", players);
+        model.addAttribute("playersData", players);
         model.addAttribute("activeRoles", maSoiService.getActiveRolesString());
         model.addAttribute("showSoiNguyen", maSoiService.isShowSoiNguyen());
         model.addAttribute("image", maSoiService.getImage());
         model.addAttribute("idSoi", maSoiService.ID_SOI);
         model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
+        model.addAttribute("deadViewHistory", maSoiService.isAllowDeadViewGameHistory());
+        model.addAttribute("showAliveDead", maSoiService.isAllowShowAliveDead());
+
+        model.addAllAttributes(maSoiService.getGameManagementData());
+        model.addAttribute("image", maSoiService.getImage());
+        model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
         return "masoi/admin";
     }
-
-    @GetMapping("/admin2")
-    String admin2(Model model) throws Exception {
-        model.addAttribute("datas", maSoiService.getDatas());
-        model.addAttribute("idSoi", maSoiService.ID_SOI);
-        model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
-        return "masoi/admin2";
-    }
+//
+//    @GetMapping("/admin2")
+//    String admin2(Model model) throws Exception {
+//        model.addAttribute("datas", maSoiService.getDatas());
+//        model.addAttribute("idSoi", maSoiService.ID_SOI);
+//        model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
+//        return "masoi/admin2";
+//    }
 
     @PostMapping("/showHistory")
     String showHistory(Model model) {
+        model.addAllAttributes(maSoiService.getGameHistoryData());
         model.addAllAttributes(maSoiService.getGameHistoryData());
         return "masoi/history";
     }
@@ -126,12 +134,6 @@ public class MaSoiController {
     @ResponseBody
     String endGame() {
         return maSoiService.endGame();
-    }
-
-    @PostMapping("/soiNguyen")
-    @ResponseBody
-    String soiNguyen(@RequestBody SoiNguyenDto soiNguyen) {
-        return maSoiService.soiNguyen(soiNguyen);
     }
 
     @PostMapping("/processNight")
@@ -143,8 +145,7 @@ public class MaSoiController {
     @PostMapping("/kill")
     @ResponseBody
     String kill(@RequestBody KillDto killDto) {
-        return null;
-//        return maSoiService.kill(killDto.getDeviceIds(), killDto.getReason());
+        return maSoiService.kill(killDto.getDeviceIds());
     }
 
     @PostMapping("/toggleAdminOptions")
@@ -171,6 +172,7 @@ public class MaSoiController {
     String gameManagement(Model model) {
         model.addAllAttributes(maSoiService.getGameManagementData());
         model.addAttribute("image", maSoiService.getImage());
+        model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
         return "masoi/gameManagement";
     }
 }

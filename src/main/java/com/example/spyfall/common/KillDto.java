@@ -13,5 +13,4 @@ import java.util.List;
 @NoArgsConstructor
 public class KillDto {
     private List<String> deviceIds;
-    private String reason;
 }

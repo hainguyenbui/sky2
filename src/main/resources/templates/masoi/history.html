@@ -126,7 +126,11 @@
     <div th:if="${not #lists.isEmpty(games)}">
         <div th:each="game : ${games}" class="game-card">
             <div class="game-number">Ván <span th:text="${game.gameNumber}"></span></div>
-            
+            <div th:each="entry : ${game.details}">
+                <span th:text="${entry.key}"></span>
+                : <br>
+                <span th:utext="${entry.value}"></span>
+            </div>
             <div th:each="player : ${game.players}" 
                  th:classappend="${player.isSoi} ? 'soi' : (${player.isOutsider} ? 'outsider' : 'dan')"
                  class="player-row">
