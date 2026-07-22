@@ -55,11 +55,11 @@
                             <span class="role-title" style="color: #f87171;" th:text="${#strings.toUpperCase(item.role)}"></span>
                             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
                         </div>
-                        <div th:if="${item.id == '1' or item.id == '30'}">
+                        <div th:if="${item.id == 1 or item.id == 30}">
                             <input type="number" min="0" value="0" th:id="${item.id}" th:name="${item.id}"
                                    class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" oninput="updateSum()">
                         </div>
-                        <div th:unless="${item.id == '1' or item.id == '30'}">
+                        <div th:unless="${item.id == 1 or item.id == 30}">
                             <label class="switch">
                                 <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
                                 <span class="slider"></span>
@@ -85,11 +85,11 @@
                             <span class="role-title" style="color: #34d399;" th:text="${#strings.toUpperCase(item.role)}"></span>
                             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
                         </div>
-                        <div th:if="${item.id == '1' or item.id == '30'}">
+                        <div th:if="${item.id == 1 or item.id == 30}">
                             <input type="number" min="0" value="0" th:id="${item.id}" th:name="${item.id}"
                                    class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" oninput="updateSum()">
                         </div>
-                        <div th:unless="${item.id == '1' or item.id == '30'}">
+                        <div th:unless="${item.id == 1 or item.id == 30}">
                             <label class="switch">
                                 <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
                                 <span class="slider"></span>

@@ -112,6 +112,8 @@ public class MaSoiController {
         model.addAllAttributes(maSoiService.getGameManagementData());
         model.addAttribute("image", maSoiService.getImage());
         model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
+        model.addAttribute("detailNight", maSoiService.historyAdmin);
+        model.addAttribute("detailDay", maSoiService.detailGameDay);
         return "masoi/admin";
     }
 //

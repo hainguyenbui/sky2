@@ -964,7 +964,7 @@ public class DataInputService {
 
             datas.add(createDM(30, "Dân", "Dân giàu nước mạnh", null));
             datas.add(createDM(31, "Phù thủy", "Có 1 bình cứu và 1 bình giết. Khi đã sài phép cứu thì sẽ ko biết ai bị giết nữa", Map.of("killSkill", 1, "protectedSkill", 1)));
-            datas.add(createDM(32, "Tiên tri", "Soi 1 người có phải Sói hay ko", null));
+            datas.add(createDM(32, "Tiên tri", "Soi 1 người có phải Sói/Sát thủ hay ko", null));
             datas.add(createDM(33, "Bảo vệ", "Mỗi đêm bảo vệ 1 người, ko bảo vệ 1 người 2 đêm liên tiếp", Map.of("protectedSkill", 9999)));
             datas.add(createDM(34, "Thợ săn", "Ghim 1 người, chỉ trong đêm nếu bạn chết người đó chết theo", Map.of("connectSkill", 1)));
             datas.add(createDM(35, "Thanh niên cứng", "Khi bị treo cổ có quyền lật bài và giết 1 người, bạn vẫn sống như bình thường", null));

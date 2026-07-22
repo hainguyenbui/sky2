@@ -100,6 +100,23 @@
     <!-- Game Management Button -->
 <!--    <a href="/ms/gameManagement" class="btn btn-primary">⚔️ Xử Lý Game & Vai Trò</a>-->
 
+    <!-- Detail Buttons -->
+    <div style="display:flex; gap:10px; margin-bottom:16px;">
+        <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('day')">☀️ Chi Tiết Ngày</button>
+        <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('night')">🌙 Chi Tiết Đêm</button>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; padding:20px; overflow-y:auto;" onclick="if(event.target===this)this.style.display='none'">
+        <div style="background:rgba(15,23,42,0.97); border:1px solid var(--card-border); border-radius:16px; padding:20px; max-width:480px; margin:0 auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h3 id="detailTitle" style="font-size:1rem; color:#a5b4fc;"></h3>
+                <button onclick="document.getElementById('detailModal').style.display='none'" style="background:none; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer;">✕</button>
+            </div>
+            <div id="detailContent" style="font-size:0.88rem; line-height:1.7; color:var(--text-primary);"></div>
+        </div>
+    </div>
+
     <div class="card" style="text-align: center;">
         <div class="qr-container">
             <img th:src="${image}" alt="QR Code" class="qr-image" style="width: 150px; height: 150px;">
@@ -366,6 +383,25 @@
         const spDevices = /*[[${superProtectedDevices}]]*/ [];
         const idSoi = /*[[${idSoi}]]*/ [];
         const idOutsider = /*[[${idOutsider}]]*/ [];
+        const detailDay = /*[[${detailDay}]]*/ '';
+        const detailNight = /*[[${detailNight}]]*/ [];
+
+        function showDetail(type) {
+            const modal = document.getElementById('detailModal');
+            const title = document.getElementById('detailTitle');
+            const content = document.getElementById('detailContent');
+            const empty = '<em style="color:var(--text-muted)">Chưa có dữ liệu</em>';
+            if (type === 'day') {
+                title.textContent = '☀️ Chi Tiết Ngày';
+                content.innerHTML = detailDay || empty;
+            } else {
+                title.textContent = '🌙 Chi Tiết Đêm';
+                content.innerHTML = detailNight.length
+                    ? detailNight.map(s => `<div>- ${s}</div>`).join('')
+                    : empty;
+            }
+            modal.style.display = 'block';
+        }
 
         function isSuperLocked() {
             return spDevices.some(dev => {

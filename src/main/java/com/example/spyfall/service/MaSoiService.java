@@ -39,7 +39,7 @@ public class MaSoiService {
     public boolean dayIsReadyKill = false;
     private final String image = "/qrcode.png";
     private Map<String, List<String>> linkRole = new HashMap<>();// Liên kết sinh mệnh chức năng nếu key chết value sẽ có chức năng;
-    private List<String> historyAdmin = new ArrayList<>();
+    public List<String> historyAdmin = new ArrayList<>();
     private List<String> howToDie = List.of(" bị thủ tiêu vì biết quá nhiều", " không muốn chơi nữa", " bị thù ghét", " nói quá nhiều");
     public int countNight = 1;
 
@@ -159,11 +159,6 @@ public class MaSoiService {
                     return dataMember;
                 }
             }
-        }
-        for (int i = 0; i < pls.size() - 1; i++) {
-            DataMember data = pls.get(i);
-            data.setIpData("dfafsfdsfdsf" + (i+1));
-            data.setNameMember("h" + (i +1) );
         }
 
         Collections.shuffle(pls);
