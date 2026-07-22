@@ -30,6 +30,7 @@ public class MaSoiService {
     private boolean allowDeadViewGameHistory = false;
     @Getter
     private boolean allowShowAliveDead = false;
+    public StringBuilder nightStory;
     private Map<Integer, List<DataMember>> detailEachGame = new TreeMap<>(Comparator.reverseOrder());
     @Getter
     private Map<String, String> detailOneGameHistory = new LinkedHashMap<>();
@@ -264,11 +265,14 @@ public class MaSoiService {
                 // neu là câm lặng thì check người bị câm lặng có phải là sói còn sống hay không
                 if (livingWolves.contains(a.getTargetDeviceId())) {
                     if (Objects.equals(a.getTargetDeviceId(), soiDauDanId)) {
-                        if (Objects.equals(a.getTargetRoleId(), 5)) {
-                            disabledRole.put(a.getTargetDeviceId(), a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
-                            continue;
-                        }
                         disabledRole.put("soi", a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
+                    }
+                    if (Objects.equals(a.getTargetRoleId(), 5)) {
+                        // nếu là sói sida
+                        disabledRole.put(a.getTargetDeviceId(), a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
+                    } else if (Objects.equals(a.getTargetRoleId(), 3)) {
+                        // nếu là sói nguyền
+                        disabledRole.put("soiNguyen", a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
                     }
                 } else {
                     disabledRole.put(a.getTargetDeviceId(), a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
@@ -305,6 +309,7 @@ public class MaSoiService {
         for (NightActionDto a : actions) {
             if (soiSida != null && !soiSida.isDisabledSkill() && Objects.equals(soiSida.getIpData(), a.getTargetDeviceId())) {
                 if (!disabledRole.containsKey(a.getTargetDeviceId())) {
+
                     toKill.put(a.getDeviceId(), "đụng phải Sói bị Sida");
                 }
                 isHaveSoiSida = true;
@@ -314,10 +319,14 @@ public class MaSoiService {
                     if (disabledRole.containsKey("soi")) break;
                     DataMember data = playerByIpData.get(a.getTargetDeviceId());
                     if (data != null && data.getId() == 40) {
-                        data.setId(1);
-                        data.setRole(data.getRole() + " + bạn đã là Sói");
-                        addHistory.add(a.getTargetName() + ": " + a.getTargetRoleName() + " đã trở thành Sói");
-                        break;
+                        if (disabledRole.containsKey(a.getTargetDeviceId())) {
+                            // nếu bị nguyền bị câm lặng thì chết
+                        } else {
+                            data.setId(1);
+                            data.setRole(data.getRole() + " + bạn đã là Sói");
+                            addHistory.add(a.getTargetName() + ": " + a.getTargetRoleName() + " đã trở thành Sói");
+                            break;
+                        }
                     } else if (data != null && data.getId() == 20) {
                         addHistory.add("Sói cắn hụt sát thủ");
                         break;
@@ -361,11 +370,12 @@ public class MaSoiService {
                     break;
                 case "recruit":
                     DataMember targetMember = playerByIpData.get(a.getTargetDeviceId());
+                    isHaveSoiNguyen = false;
+                    if(disabledRole.containsKey("soiNguyen")) break;
                     targetMember.setId(1);
                     targetMember.setRole(targetMember.getRole() + " - Soi");
                     historyAdmin.add(a.getTargetName() + " đã trở thành Sói");
                     addHistory.add(a.getTargetName() + " đã trở thành Sói");
-                    isHaveSoiNguyen = false;
             }
         }
         if (isHaveSoiSida) {
@@ -499,7 +509,7 @@ public class MaSoiService {
 
     public String kill(Map<String, String> toKill, Map<String, DataMember> playerByIpData, Map<String, String> toSave,
                        Map<String, String> disabledRole, Map<String, String> disabledRoleNextDay, List<String> addHistory) {
-        StringBuilder nightStory = new StringBuilder();
+        nightStory = new StringBuilder();
 
         addHistory.forEach(s -> nightStory.append(" - ").append(s).append("<br>"));
         disabledRole.forEach((k, v) -> {
@@ -631,6 +641,26 @@ public class MaSoiService {
 
     private DataMember createDM(DataMember d, Integer total) {
         return DataMember.builder().id(d.getId()).role(d.getRole()).description(d.getDescription()).total(String.valueOf(total)).build();
+    }
+
+    public void createTest(int totalTest) {
+        String[] FIRST_NAMES = {
+                "An", "Bình", "Chi", "Dũng", "Hà",
+                "Hải", "Hùng", "Lan", "Linh", "Mai",
+                "Minh", "Nam", "Ngọc", "Phong", "Quân",
+                "Sơn", "Thảo", "Trang", "Tuấn", "Việt",
+                "Sơn", "Thảo", "Trang", "Tuấn", "Việt"
+        };
+        try {
+            for (int i = 0; i < totalTest; i++) {
+                DataMember data = pls.get(i);
+                data.setIpData(UUID.randomUUID().toString());
+                data.setNameMember(FIRST_NAMES[i] + " " + (i +1) );
+            }
+        } catch (Exception ignored) {
+            System.out.println(ignored.getMessage());
+        }
+
     }
 }
 

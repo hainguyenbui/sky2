@@ -114,6 +114,7 @@ public class MaSoiController {
         model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
         model.addAttribute("detailNight", maSoiService.historyAdmin);
         model.addAttribute("detailDay", maSoiService.detailGameDay);
+        model.addAttribute("gameDetailNight", maSoiService.nightStory != null ? maSoiService.nightStory.toString() : "");
         return "masoi/admin";
     }
 //
@@ -176,5 +177,12 @@ public class MaSoiController {
         model.addAttribute("image", maSoiService.getImage());
         model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
         return "masoi/gameManagement";
+    }
+
+    @GetMapping("/test")
+    @ResponseBody
+    String forTest(@RequestParam int total) {
+        maSoiService.createTest(total);
+        return "Success tạo người chơi : " + total;
     }
 }

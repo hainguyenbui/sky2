@@ -104,6 +104,7 @@
     <div style="display:flex; gap:10px; margin-bottom:16px;">
         <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('day')">☀️ Chi Tiết Ngày</button>
         <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('night')">🌙 Chi Tiết Đêm</button>
+        <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('game')">📋 Game Detail</button>
     </div>
 
     <!-- Detail Modal -->
@@ -325,6 +326,11 @@
         <button class="kill-btn" onclick="executeKill()">⚔️ Xác Nhận Giết</button>
     </div>
 
+    <div style="display:flex; gap:8px; margin-top:16px;">
+        <input type="text" id="testInput" class="input-text" style="width:50%; padding:10px;" placeholder="Nhập giá trị...">
+        <button class="btn btn-primary" style="width:50%; white-space:nowrap;" onclick="fetch('/ms/test?total='+document.getElementById('testInput').value).then(r=>r.text()).then(responseData => { alert(responseData); window.location.reload(); })">Tạo User Test</button>
+    </div>
+
     <button id="endGame" class="btn btn-danger" style="margin-top: 24px;">Kết Thúc Ván Đấu</button>
 
      <script>
@@ -385,6 +391,7 @@
         const idOutsider = /*[[${idOutsider}]]*/ [];
         const detailDay = /*[[${detailDay}]]*/ '';
         const detailNight = /*[[${detailNight}]]*/ [];
+        const gameDetail = /*[[${gameDetailNight}]]*/ '';
 
         function showDetail(type) {
             const modal = document.getElementById('detailModal');
@@ -394,11 +401,14 @@
             if (type === 'day') {
                 title.textContent = '☀️ Chi Tiết Ngày';
                 content.innerHTML = detailDay || empty;
-            } else {
+            } else if (type === 'night') {
                 title.textContent = '🌙 Chi Tiết Đêm';
                 content.innerHTML = detailNight.length
                     ? detailNight.map(s => `<div>- ${s}</div>`).join('')
                     : empty;
+            } else {
+                title.textContent = '📋 Game Detail';
+                content.innerHTML = gameDetail || empty;
             }
             modal.style.display = 'block';
         }
@@ -435,6 +445,22 @@
                 else if (colType === 'prot') el.classList.add('prot');
                 else if (colType === 'conn') el.classList.add('conn');
             }
+            if (parseInt(el.dataset.roleid) === 38) updateSilenced();
+        }
+
+        function updateSilenced() {
+            const silencedDevices = new Set(
+                Array.from(document.querySelectorAll('#roleTable .tog.on[data-roleid="38"]'))
+                    .map(el => el.dataset.devicetarget)
+            );
+            document.querySelectorAll('#roleTable tbody tr').forEach(tr => {
+                const device = tr.querySelector('.tog')?.dataset.devicetarget;
+                const nameSpan = tr.querySelector('td:first-child span:first-child');
+                if (nameSpan) {
+                    const td = tr.querySelector('td:first-child');
+                    td.style.backgroundColor = silencedDevices.has(device) ? 'rgba(251,191,36,0.25)' : '';
+                }
+            });
         }
 
         function processNight() {

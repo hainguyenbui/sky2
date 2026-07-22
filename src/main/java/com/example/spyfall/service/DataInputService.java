@@ -976,7 +976,7 @@ public class DataInputService {
             datas.add(createDM(41, "Người bệnh", "Nếu sói/sát thủ cắn bạn, thì đêm sau sói/sát thủ không giết được ai", Map.of("connectSkill", 6)));
             datas.add(createDM(42, "Nhân bản", "Chọn 1 người, nếu người đó chết bạn sẽ nhận chức năng người đó", Map.of("connectSkill", 2)));
             datas.add(createDM(43, "Độc tài", "Duy nhất: giết 1 người chơi, nếu không phải dân bạn sống, nếu dân bạn cùng chết. Nếu được bảo vệ bạn sẽ sống", Map.of("killSkill", 1)));
-            datas.add(createDM(44, "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm", Map.of("superProtectedSkill", true)));
+            datas.add(createDM(44, "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm, ko thể bị cấm phép", Map.of("superProtectedSkill", true)));
             datas.add(createDM(45, "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng", Map.of("connectSkill", 3)));
             datas.add(createDM(46, "Boooooom", "Duy nhất chọn 1 người chơi giao bom, mỗi đêm bạn có quyền kích nổ hoặc ko", Map.of("killSkill", 1)));
         }
