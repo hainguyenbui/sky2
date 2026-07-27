@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -427,8 +428,9 @@ public class MaSoiService {
         dayIsReadyKill = true;
         StringBuilder detailDay = new StringBuilder();
         Map<String, DataMember> tokill = new LinkedHashMap<>();
+        Map<String, DataMember> playerByIpData = pls.stream().collect(Collectors.toMap(DataMember::getIpData, player -> player));
         deviceIds.forEach(deviceId -> {
-            DataMember player = pls.stream().filter(item -> Objects.equals(item.getIpData(), deviceId)).findFirst().orElse(null);
+            DataMember player = playerByIpData.get(deviceId);
             if (player != null) {
                 Random random = new Random();
                 int number = random.nextInt(howToDie.size());
@@ -451,31 +453,32 @@ public class MaSoiService {
             }
         });
         tokill.forEach((k, dieMember) -> {
-            if (linkRole.containsKey(k)) {
-                List<String> linkedDevices = linkRole.get(k);
-                for (String linkedDevice : linkedDevices) {
-                    DataMember linkedPlayer = pls.stream().filter(player -> Objects.equals(player.getIpData(), linkedDevice)).findFirst().orElse(null);
-                    if (!ObjectUtils.isEmpty(linkedPlayer)) {
-                        linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
-                        linkedPlayer.setId(dieMember.getId());
-                        linkedPlayer.setKillSkill(dieMember.getKillSkill());
-                        linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
-                        linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
-                        linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
-                        linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
-                        detailDay.append("Nhân bản đã trở thành ").append(dieMember.getDetailShow()).append("<br>");
-
-                    }
-                }
-            }
-
-            if (dieMember.getId() == 32) {
-                // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
-                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
-                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
-                    detailDay.append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
-                });
-            }
+            kill(k, dieMember, playerByIpData, msg -> detailDay.append(msg).append("<br>"));
+//            if (linkRole.containsKey(k)) {
+//                List<String> linkedDevices = linkRole.get(k);
+//                for (String linkedDevice : linkedDevices) {
+//                    DataMember linkedPlayer = pls.stream().filter(player -> Objects.equals(player.getIpData(), linkedDevice)).findFirst().orElse(null);
+//                    if (!ObjectUtils.isEmpty(linkedPlayer)) {
+//                        linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
+//                        linkedPlayer.setId(dieMember.getId());
+//                        linkedPlayer.setKillSkill(dieMember.getKillSkill());
+//                        linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
+//                        linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
+//                        linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
+//                        linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
+//                        detailDay.append("Nhân bản đã trở thành ").append(dieMember.getDetailShow()).append("<br>");
+//
+//                    }
+//                }
+//            }
+//
+//            if (dieMember.getId() == 32) {
+//                // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
+//                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
+//                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
+//                    detailDay.append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
+//                });
+//            }
         });
         if (!detailDay.isEmpty()) {
             detailGameDay = detailDay.toString();
@@ -529,32 +532,37 @@ public class MaSoiService {
             deadPls.add(playerByIpData.get(k));
             historyAdmin.add(playerByIpData.get(k).getNameMember() + " bị loại");
             DataMember dieMember = playerByIpData.get(k);
-            if (linkRole.containsKey(k)) {
-                List<String> linkedDevices = linkRole.get(k);
-                for (String linkedDevice : linkedDevices) {
-                    DataMember linkedPlayer = playerByIpData.get(linkedDevice);
-                    if (!ObjectUtils.isEmpty(linkedPlayer) && !ObjectUtils.isEmpty(dieMember)) {
-                        linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
-                        linkedPlayer.setId(dieMember.getId());
-                        linkedPlayer.setKillSkill(dieMember.getKillSkill());
-                        linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
-                        linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
-                        linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
-                        linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
-                        addHistory.add("Nhân bản đã trở thành " + dieMember.getDetailShow());
-                        historyAdmin.add("Nhân bản đã trở thành " + dieMember.getDetailShow());
-                    }
-                }
-            }
-
-            if (dieMember.getId() == 32) {
-                // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
-                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
-                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
-                    historyAdmin.add("Tiên Tri Tập Sư trở thành " + dieMember.getDetailShow());
-                    nightStory.append(" - ").append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
-                });
-            }
+            kill(k, dieMember, playerByIpData, msg -> {
+                addHistory.add(msg);
+                historyAdmin.add(msg);
+                nightStory.append(" - ").append(msg).append("<br>");
+            });
+//            if (linkRole.containsKey(k)) {
+//                List<String> linkedDevices = linkRole.get(k);
+//                for (String linkedDevice : linkedDevices) {
+//                    DataMember linkedPlayer = playerByIpData.get(linkedDevice);
+//                    if (!ObjectUtils.isEmpty(linkedPlayer) && !ObjectUtils.isEmpty(dieMember)) {
+//                        linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
+//                        linkedPlayer.setId(dieMember.getId());
+//                        linkedPlayer.setKillSkill(dieMember.getKillSkill());
+//                        linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
+//                        linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
+//                        linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
+//                        linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
+//                        addHistory.add("Nhân bản đã trở thành " + dieMember.getDetailShow());
+//                        historyAdmin.add("Nhân bản đã trở thành " + dieMember.getDetailShow());
+//                    }
+//                }
+//            }
+//
+//            if (dieMember.getId() == 32) {
+//                // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
+//                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
+//                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
+//                    historyAdmin.add("Tiên Tri Tập Sư trở thành " + dieMember.getDetailShow());
+//                    nightStory.append(" - ").append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
+//                });
+//            }
         });
         disabledRoleNextDay.forEach((k, v) -> {
             nightStory.append(" - ").append(v).append("<br>");
@@ -562,6 +570,33 @@ public class MaSoiService {
         detailOneGameHistory.put("Đêm " + countNight++, nightStory.toString());
         if (toKill.isEmpty()) historyAdmin.add("Không có ai bị giết đêm nay");
         return "Detail: " + historyAdmin.stream().map(s -> System.lineSeparator() + s).collect(Collectors.joining());
+    }
+
+    public void kill(String k, DataMember dieMember, Map<String, DataMember> playerByIpData, Consumer<String> log) {
+        if (linkRole.containsKey(k)) {
+            List<String> linkedDevices = linkRole.get(k);
+            for (String linkedDevice : linkedDevices) {
+                DataMember linkedPlayer = playerByIpData.get(linkedDevice);
+                if (!ObjectUtils.isEmpty(linkedPlayer) && !ObjectUtils.isEmpty(dieMember)) {
+                    linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
+                    linkedPlayer.setId(dieMember.getId());
+                    linkedPlayer.setKillSkill(dieMember.getKillSkill());
+                    linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
+                    linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
+                    linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
+                    linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
+                    log.accept("Nhân bản đã trở thành " + dieMember.getDetailShow());
+                }
+            }
+        }
+
+        if (dieMember.getId() == 32) {
+            // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
+            pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
+                tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
+                log.accept("Tiên Tri Tập Sư trở thành " + dieMember.getDetailShow());
+            });
+        }
     }
 
     public Map<String, Object> getGameManagementData() {
