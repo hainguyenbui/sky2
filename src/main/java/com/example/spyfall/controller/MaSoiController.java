@@ -3,7 +3,6 @@ package com.example.spyfall.controller;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.NightActionDto;
 import com.example.spyfall.common.KillDto;
-import com.example.spyfall.common.SoiNguyenDto;
 import com.example.spyfall.service.MaSoiService;
 import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -148,7 +147,7 @@ public class MaSoiController {
     @PostMapping("/kill")
     @ResponseBody
     String kill(@RequestBody KillDto killDto) {
-        return maSoiService.kill(killDto.getDeviceIds());
+        return maSoiService.processDay(killDto.getDeviceIds());
     }
 
     @PostMapping("/toggleAdminOptions")

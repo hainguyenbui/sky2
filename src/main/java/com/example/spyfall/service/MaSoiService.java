@@ -3,16 +3,13 @@ package com.example.spyfall.service;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.LifeLinkDto;
 import com.example.spyfall.common.NightActionDto;
-import com.example.spyfall.common.SoiNguyenDto;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.LinkedHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -424,7 +421,7 @@ public class MaSoiService {
         return kill(toKill, playerByIpData, toSave, disabledRole, disabledRoleNextDay, addHistory);
     }
 
-    public String kill(List<String> deviceIds) {
+    public String processDay(List<String> deviceIds) {
         dayIsReadyKill = true;
         StringBuilder detailDay = new StringBuilder();
         Map<String, DataMember> tokill = new LinkedHashMap<>();
