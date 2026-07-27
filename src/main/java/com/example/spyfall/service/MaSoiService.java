@@ -471,8 +471,10 @@ public class MaSoiService {
 
             if (dieMember.getId() == 32) {
                 // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
-                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow()));
-                detailDay.append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
+                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
+                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
+                    detailDay.append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
+                });
             }
         });
         if (!detailDay.isEmpty()) {
@@ -547,9 +549,11 @@ public class MaSoiService {
 
             if (dieMember.getId() == 32) {
                 // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
-                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow()));
-                historyAdmin.add("Tiên Tri Tập Sư trở thành " + dieMember.getDetailShow());
-                nightStory.append(" - ").append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
+                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
+                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
+                    historyAdmin.add("Tiên Tri Tập Sư trở thành " + dieMember.getDetailShow());
+                    nightStory.append(" - ").append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
+                });
             }
         });
         disabledRoleNextDay.forEach((k, v) -> {
