@@ -29,21 +29,30 @@ public class DataMember {
     // Số thứ tự nhân vật
     String idPlayGame;
 
+    @Builder.Default
     int protectedSkill = 0;
 
+    @Builder.Default
     int killSkill = 0;
 
+    @Builder.Default
     boolean superProtectedSkill = false;
 
+    @Builder.Default
     boolean disabledSkill = false;
 
+    @Builder.Default
     boolean isDead = false;
+
+    @Builder.Default
+    boolean inspectSkill = false;
 
     String detailShow;
 
     /**
      * 1 cupid
      */
+    @Builder.Default
     int lifeLink = 0;
     List<Integer> lifeLinkIds;
 
@@ -56,6 +65,7 @@ public class DataMember {
      * 6 bị nguyền
      * 7 silent
      */
+    @Builder.Default
     int connectSkill = 0;
 
     public DataMember(Integer id, String role) {

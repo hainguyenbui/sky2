@@ -7,7 +7,10 @@
     <th:block th:replace="~{fragments/styles :: css}"></th:block>
     <style>
         #cupid { color: #f59e0b; font-style: normal; font-weight: 500; font-size: 0.8rem; display: block; margin-top: 4px; }
-        .history-game-card { border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; background: rgba(30,41,59,0.3); }
+        .history-timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+        .history-game-card { border-left: 3px solid #8b5cf6; border-radius: 0 12px 12px 0; padding: 12px 14px; background: rgba(30,41,59,0.4); }
+        .history-game-card strong { color: #c4b5fd; display: block; margin-bottom: 5px; }
+        .history-event { color: var(--text-primary); font-size: 0.88rem; line-height: 1.5; }
         .role-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; }
         .role-card-soi { border-left: 4px solid var(--danger); }
         .role-card-dan { border-left: 4px solid var(--success); }
@@ -23,21 +26,43 @@
         .list-item { padding: 8px; background: rgba(30,41,59,0.5); border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
         .list-item-name { font-weight: 500; }
         .list-item-role { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.2); color: #60a5fa; }
+        .waiting-card { text-align:center; padding-top:26px; padding-bottom:26px; }
+        .waiting-icon { width:58px; height:58px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; border-radius:18px; background:rgba(59,130,246,0.14); border:1px solid rgba(96,165,250,0.28); font-size:1.65rem; }
+        .waiting-card h2 { font-size:1.25rem; margin-bottom:9px; color:#bfdbfe; }
+        .waiting-card .desc { max-width:330px; margin:0 auto; line-height:1.55; }
+        .waiting-pulse { display:inline-flex; align-items:center; gap:7px; margin-top:16px; color:#93c5fd; font-size:0.78rem; font-weight:600; }
+        .waiting-pulse::before { content:''; width:8px; height:8px; border-radius:50%; background:#60a5fa; box-shadow:0 0 0 0 rgba(96,165,250,0.55); animation:waiting-pulse 1.8s infinite; }
+        @keyframes waiting-pulse { 70% { box-shadow:0 0 0 8px rgba(96,165,250,0); } 100% { box-shadow:0 0 0 0 rgba(96,165,250,0); } }
+
+        .session-overlay[hidden] { display:none; }
+        .session-overlay { position:fixed; inset:0; z-index:2200; display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:20px; overflow-y:auto; background:#080f1d; }
+        .session-state-card { width:min(100%,420px); text-align:center; padding:28px 22px; border-radius:20px; border:1px solid rgba(148,163,184,0.2); background:linear-gradient(160deg,#172238,#101827); box-shadow:0 24px 70px rgba(0,0,0,0.48); }
+        .session-state-visual { width:64px; height:64px; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; border-radius:20px; color:#fde68a; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.28); font-size:1.75rem; }
+        .session-spinner { width:28px; height:28px; border:3px solid rgba(251,191,36,0.22); border-top-color:#fbbf24; border-radius:50%; animation:session-spin 0.8s linear infinite; }
+        @keyframes session-spin { to { transform:rotate(360deg); } }
+        .session-state-title { font-size:1.3rem; margin-bottom:9px; }
+        .session-state-message { color:var(--text-muted); font-size:0.9rem; line-height:1.6; }
+        .session-state-card.finished .session-state-visual { color:#bfdbfe; background:rgba(59,130,246,0.13); border-color:rgba(96,165,250,0.28); }
+        .session-lobby-link { margin-top:20px; }
+        .session-spinner[hidden], #sessionStateIcon[hidden], .session-lobby-link[hidden] { display:none; }
     </style>
 </head>
 <body>
 <div class="container">
     <!-- Not setup -->
-    <div th:if="${notSetup}" class="card" style="text-align: center;">
-        <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu chưa được setup</h2>
-        <p class="desc">Vui lòng liên hệ Admin để thiết lập phòng chơi mới.</p>
-        <a href="/" class="btn btn-primary" style="margin-top: 20px;">Về Trang Chủ</a>
+    <div th:if="${notSetup}" class="card waiting-card">
+        <div class="waiting-icon">⏳</div>
+        <h2>Admin đang chuẩn bị ván mới</h2>
+        <p class="desc">Bạn cứ giữ nguyên trang này. Role sẽ tự xuất hiện khi ván đấu sẵn sàng.</p>
+        <div class="waiting-pulse">Đang chờ thiết lập</div>
     </div>
-    <div th:if="${fullSlot}" class="card" style="text-align: center;">
-        <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu đã ĐẦY</h2>
-        <p class="desc">Vui lòng yêu cầu khứa admin SETUP lại.</p>
+    <div th:if="${fullSlot}" class="card waiting-card">
+        <div class="waiting-icon">👥</div>
+        <h2>Ván hiện tại đã đủ người</h2>
+        <p class="desc">Nếu admin thiết lập lại ván, trang này sẽ tự thử nhận role mới cho bạn.</p>
+        <div class="waiting-pulse">Đang theo dõi ván mới</div>
     </div>
-    <th:block th:unless="${notSetup == true and fullSlot == true}">
+    <th:block th:if="${notSetup != true and fullSlot != true}">
         <div class="header-section">
             <h1>Ma Sói</h1>
             <p class="desc" th:text="'Ván đấu ' + ${gameNumber}"></p>
@@ -62,11 +87,10 @@
     </div>
 
     <!-- Alive/Dead Lists -->
-    <div th:if="${historyGame}" class="lists-container">
-        <div th:each="entry : ${historyGame}">
-            <span th:text="${entry.key}"></span>
-            :<br>
-            <span th:utext="${entry.value}"></span>
+    <div th:if="${historyGame}" class="history-timeline">
+        <div th:each="round : ${historyGame}" class="history-game-card">
+            <strong th:text="${round.label}"></strong>
+            <div th:each="event : ${round.events}" class="history-event" th:text="${'- ' + event}"></div>
         </div>
     </div>
     <div th:if="${alivePlayer}" class="lists-container">
@@ -88,7 +112,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" th:if="${notSetup != true and fullSlot != true}">
         <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
         <div class="item-list">
             <th:block th:each="item : ${showRoles}">
@@ -102,7 +126,7 @@
         </div>
     </div>
 
-    <div class="card" style="text-align: center;">
+    <div class="card" style="text-align: center;" th:if="${notSetup != true and fullSlot != true}">
         <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
         <div class="qr-container">
             <img th:src="${image}" alt="QR Code" class="qr-image">
@@ -119,8 +143,21 @@
             <div id="popupContent" style="overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 16px;"></div>
         </div>
     </div>
+</div>
 
-    <script>
+<div id="gameSessionOverlay" class="session-overlay" role="status" aria-live="assertive" hidden>
+    <div id="gameSessionCard" class="session-state-card">
+        <div class="session-state-visual">
+            <div id="sessionSpinner" class="session-spinner"></div>
+            <span id="sessionStateIcon" hidden>✓</span>
+        </div>
+        <h2 id="sessionStateTitle" class="session-state-title">Admin đang thiết lập lại ván</h2>
+        <p id="sessionStateMessage" class="session-state-message">Role cũ đã được thu hồi. Bạn cứ giữ nguyên trang này để tự nhận role trong ván mới.</p>
+        <a id="sessionLobbyLink" href="/ms/play" class="btn btn-primary session-lobby-link" hidden>Về sảnh Ma Sói</a>
+    </div>
+</div>
+
+<script>
         document.getElementById('showHistory').onclick = function() {
             const popupModal = document.getElementById('popupModal');
             const popupContent = document.getElementById('popupContent');
@@ -140,7 +177,95 @@
             if (event.target == modal) { modal.style.display = 'none'; }
         };
     </script>
-</div>
+<script th:inline="javascript">
+        const renderedGameSessionId = /*[[${gameSessionId != null ? gameSessionId : 0}]]*/ 0;
+        const sessionPageMode = /*[[${sessionPageMode != null ? sessionPageMode : 'notSetup'}]]*/ 'notSetup';
+        const sessionOverlay = document.getElementById('gameSessionOverlay');
+        const sessionCard = document.getElementById('gameSessionCard');
+        const sessionSpinner = document.getElementById('sessionSpinner');
+        const sessionStateIcon = document.getElementById('sessionStateIcon');
+        const sessionStateTitle = document.getElementById('sessionStateTitle');
+        const sessionStateMessage = document.getElementById('sessionStateMessage');
+        const sessionLobbyLink = document.getElementById('sessionLobbyLink');
+        const playerPageContent = document.querySelector('.container');
+        let sessionCheckInFlight = false;
+        let sessionReloading = false;
+        let sessionPollingTimer;
+
+        function reloadPlayerPage() {
+            if (sessionReloading) return;
+            sessionReloading = true;
+            window.location.replace(window.location.pathname + window.location.search);
+        }
+
+        function lockPlayerPageContent() {
+            playerPageContent.setAttribute('inert', '');
+            playerPageContent.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function showResettingState(replacementReady) {
+            sessionOverlay.hidden = false;
+            lockPlayerPageContent();
+            sessionCard.classList.remove('finished');
+            sessionSpinner.hidden = false;
+            sessionStateIcon.hidden = true;
+            sessionLobbyLink.hidden = true;
+            sessionStateTitle.textContent = replacementReady
+                ? 'Ván mới đã sẵn sàng'
+                : 'Admin đang thiết lập lại ván';
+            sessionStateMessage.textContent = replacementReady
+                ? 'Đang nhận role mới cho bạn...'
+                : 'Role cũ đã được thu hồi. Bạn cứ giữ nguyên trang này để tự nhận role trong ván mới.';
+        }
+
+        function showFinishedState() {
+            sessionOverlay.hidden = false;
+            lockPlayerPageContent();
+            sessionCard.classList.add('finished');
+            sessionSpinner.hidden = true;
+            sessionStateIcon.hidden = false;
+            sessionStateIcon.textContent = '✓';
+            sessionLobbyLink.hidden = false;
+            sessionStateTitle.textContent = 'Ván đấu đã kết thúc';
+            sessionStateMessage.textContent = 'Cảm ơn bạn đã tham gia. Role của ván này không còn hiệu lực.';
+            if (sessionPollingTimer) window.clearInterval(sessionPollingTimer);
+        }
+
+        function handleSessionState(state) {
+            if (sessionPageMode === 'assigned') {
+                if (state.requestedSessionDiscarded) {
+                    showResettingState(state.replacementReady);
+                    if (state.replacementReady) window.setTimeout(reloadPlayerPage, 450);
+                    return;
+                }
+                if (state.requestedSessionFinished) showFinishedState();
+                return;
+            }
+
+            if (state.active && state.currentSessionId !== renderedGameSessionId) {
+                reloadPlayerPage();
+            }
+        }
+
+        async function checkGameSession() {
+            if (sessionCheckInFlight || sessionReloading) return;
+            sessionCheckInFlight = true;
+            try {
+                const response = await fetch('/ms/session-state?sessionId=' + encodeURIComponent(renderedGameSessionId), {
+                    cache: 'no-store'
+                });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                handleSessionState(await response.json());
+            } catch (error) {
+                console.debug('Chưa thể đồng bộ trạng thái ván:', error);
+            } finally {
+                sessionCheckInFlight = false;
+            }
+        }
+
+        checkGameSession();
+        sessionPollingTimer = window.setInterval(checkGameSession, 1500);
+</script>
 </body>
 </html>
-

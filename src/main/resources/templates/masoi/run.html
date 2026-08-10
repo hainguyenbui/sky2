@@ -105,16 +105,6 @@
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 <div class="role-card" style="border-left: 4px solid var(--warning);">
                     <div>
-                        <span class="role-title">SÓI NGUYỀN</span>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">Cho phép Sói nguyền hóa 1 người chơi thành Sói</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="checkSoi" name="checkSoi" value="1">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="role-card" style="border-left: 4px solid var(--warning);">
-                    <div>
                         <span class="role-title">CUPID (TÌNH YÊU)</span>
                         <p style="font-size: 0.75rem; color: var(--text-muted);">Ghép đôi ngẫu nhiên 2 người chơi</p>
                     </div>
@@ -176,7 +166,7 @@
             var sumTotal = 0;
             var inputs = document.querySelectorAll('input[type="number"]:not(#total)');
             inputs.forEach(function(input) { sumTotal += parseFloat(input.value) || 0; });
-            var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkSoi):not(#checkCupid):checked');
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkCupid):checked');
             checkboxes.forEach(function(checkbox) { sumTotal += parseInt(checkbox.value) || 0; });
             document.getElementById('sum').value = sumTotal;
             saveSetupState();
@@ -203,11 +193,10 @@
             inputs.forEach(function(input) { formData.append(input.name, input.value); });
             var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
             checkboxes.forEach(function(checkbox) {
-                if (checkbox.id !== 'checkSoi' && checkbox.id !== 'checkCupid') {
+                if (checkbox.id !== 'checkCupid') {
                     formData.append(checkbox.name, 1);
                 }
             });
-            formData.append('checkSoi', document.getElementById('checkSoi').checked ? 'true' : 'false');
             formData.append('checkCupid', document.getElementById('checkCupid').checked ? 'true' : 'false');
             fetch('/ms/create?' + formData.toString(), { method: 'GET' })
                 .then(response => response.text())
@@ -225,4 +214,3 @@
 </div>
 </body>
 </html>
-

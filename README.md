@@ -13,7 +13,7 @@ Built with **Spring Boot 3** and optimized with a modern mobile-first, dark-mode
 * **Features**:
   * Visual Admin/Moderator dashboard to control the game and randomize roles.
   * Supports **Cupid** (romantic coupling) and **Werewolf Curse** (turning a villager into a werewolf during the game).
-  * Comprehensive match history logs to review previous rounds.
+  * Comprehensive match history logs to review previous rounds. Werewolf history is kept in application memory and is cleared when the process restarts.
 
 ### 2. 🕵️ Spyfall (Gián điệp v1)
 * **Gameplay**: Most players receive a common location (e.g., Airport, Hospital, Prison...), while the Spy receives a different location or none at all. Players ask each other questions to identify the Spy, while the Spy tries to guess the location.
@@ -51,7 +51,7 @@ Ensure you have **Java 17** and **Maven** installed on your system.
    ```
 3. Run the application:
    ```bash
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8083
    ```
 4. The application starts on port **`8083`**. Access the game hub via your browser at:
    * **Game Hub**: [http://localhost:8083](http://localhost:8083)
@@ -93,7 +93,7 @@ sky2-v2/
 │   │   │   ├── util/               # Helper utilities (HtmlTemplate wrapper for responsive layout)
 │   │   │   └── SpyfallApplication  # Main Spring Boot Application starter
 │   │   └── resources/
-│   │       ├── picture/            # QR Code images & asset directory
+│   │       ├── picture/            # Image asset directory
 │   │       ├── application.properties # Server port configuration (8083)
 │   │       └── messages.properties
 ├── pom.xml                         # Maven dependencies config

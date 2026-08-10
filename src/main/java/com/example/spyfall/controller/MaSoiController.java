@@ -1,8 +1,10 @@
 package com.example.spyfall.controller;
 
 import com.example.spyfall.common.DataMember;
-import com.example.spyfall.common.NightActionDto;
+import com.example.spyfall.common.DayActionDto;
+import com.example.spyfall.common.GameSessionState;
 import com.example.spyfall.common.KillDto;
+import com.example.spyfall.common.NightActionDto;
 import com.example.spyfall.service.MaSoiService;
 import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -54,40 +55,48 @@ public class MaSoiController {
     String play(HttpServletRequest request, HttpServletResponse response, @PathVariable(required = false) String name, Model model) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
-            DataMember member = maSoiService.getOrAssignRole(deviceId, name);
-            if (member == null) {
-                if (!ObjectUtils.isEmpty(name)) {
-                    model.addAttribute("notSetup", true);
+            synchronized (maSoiService) {
+                DataMember member = maSoiService.getOrAssignRole(deviceId, name);
+                model.addAttribute("gameSessionId", maSoiService.getCurrentGameSessionId());
+                if (member == null) {
+                    if (!ObjectUtils.isEmpty(name)) {
+                        model.addAttribute("notSetup", true);
+                        model.addAttribute("sessionPageMode", "notSetup");
+                        model.addAttribute("image", maSoiService.getImage());
+                        return "masoi/play";
+                    }
+                    // Not setup - redirect to lobby
+                    model.addAttribute("image", maSoiService.getImage());
+                    return "masoi/lobby";
+                }
+                if (ObjectUtils.isEmpty(member.getRole())) {
+                    model.addAttribute("fullSlot", true);
+                    model.addAttribute("sessionPageMode", "fullSlot");
                     model.addAttribute("image", maSoiService.getImage());
                     return "masoi/play";
                 }
-                // Not setup - redirect to lobby
-                model.addAttribute("image", maSoiService.getImage());
-                return "masoi/lobby";
-            } else if (ObjectUtils.isEmpty(member.getRole())) {
-                model.addAttribute("fullSlot", true);
-                model.addAttribute("image", maSoiService.getImage());
-                return "masoi/play";
-            }
-            model.addAttribute("role", member.getRole());
-            model.addAttribute("desc", member.getDescription());
-            model.addAttribute("dataMore", member.getDetailShow());
-            model.addAttribute("showRoles", maSoiService.getListShowForMember());
-            model.addAttribute("image", maSoiService.getImage());
-            model.addAttribute("gameNumber", maSoiService.getGameNumber());
-            model.addAttribute("idSoi", maSoiService.ID_SOI);
-            model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
-            model.addAttribute("isDead", maSoiService.getDeadPls().contains(member));
-            if (maSoiService.getDeadPls().contains(member)) {
-                if (maSoiService.isAllowDeadViewGameHistory()) {
-                    model.addAttribute("historyGame", maSoiService.getDetailOneGameHistory());
-                }
-                if (maSoiService.isAllowShowAliveDead()) {
-                    model.addAttribute("deadPlayer", maSoiService.getDeadPls());
-                    model.addAttribute("alivePlayer", maSoiService.getPls());
-                }
-            }
 
+                boolean isDead = maSoiService.getDeadPls().contains(member);
+                model.addAttribute("sessionPageMode", "assigned");
+                model.addAttribute("role", member.getRole());
+                model.addAttribute("desc", member.getDescription());
+                model.addAttribute("dataMore", member.getDetailShow());
+                model.addAttribute("showRoles", List.copyOf(maSoiService.getListShowForMember()));
+                model.addAttribute("image", maSoiService.getImage());
+                model.addAttribute("gameNumber", maSoiService.getGameNumber());
+                model.addAttribute("idSoi", maSoiService.ID_SOI);
+                model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
+                model.addAttribute("isDead", isDead);
+                if (isDead) {
+                    if (maSoiService.isAllowDeadViewGameHistory()) {
+                        model.addAttribute("historyGame", maSoiService.getPlayerCurrentHistory());
+                    }
+                    if (maSoiService.isAllowShowAliveDead()) {
+                        model.addAttribute("deadPlayer", List.copyOf(maSoiService.getDeadPls()));
+                        model.addAttribute("alivePlayer", List.copyOf(maSoiService.getPls()));
+                    }
+                }
+            }
         } catch (Exception e) {
             model.addAttribute("image", maSoiService.getImage());
             return "masoi/lobby";
@@ -97,23 +106,16 @@ public class MaSoiController {
 
     @GetMapping("/admin")
     String admin(Model model) {
-        List<DataMember> players = maSoiService.getPls();
-        players.sort(Comparator.comparing(DataMember::getId));
-        model.addAttribute("playersData", players);
-        model.addAttribute("activeRoles", maSoiService.getActiveRolesString());
-        model.addAttribute("showSoiNguyen", maSoiService.isShowSoiNguyen());
-        model.addAttribute("image", maSoiService.getImage());
-        model.addAttribute("idSoi", maSoiService.ID_SOI);
-        model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
-        model.addAttribute("deadViewHistory", maSoiService.isAllowDeadViewGameHistory());
-        model.addAttribute("showAliveDead", maSoiService.isAllowShowAliveDead());
-
-        model.addAllAttributes(maSoiService.getGameManagementData());
-        model.addAttribute("image", maSoiService.getImage());
-        model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
-        model.addAttribute("detailNight", maSoiService.historyAdmin);
-        model.addAttribute("detailDay", maSoiService.detailGameDay);
-        model.addAttribute("gameDetailNight", maSoiService.nightStory != null ? maSoiService.nightStory.toString() : "");
+        synchronized (maSoiService) {
+            model.addAttribute("activeRoles", maSoiService.getActiveRolesString());
+            model.addAttribute("image", maSoiService.getImage());
+            model.addAttribute("idSoi", maSoiService.ID_SOI);
+            model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
+            model.addAttribute("deadViewHistory", maSoiService.isAllowDeadViewGameHistory());
+            model.addAttribute("showAliveDead", maSoiService.isAllowShowAliveDead());
+            model.addAllAttributes(maSoiService.getGameManagementData());
+            model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
+        }
         return "masoi/admin";
     }
 //
@@ -128,7 +130,6 @@ public class MaSoiController {
     @PostMapping("/showHistory")
     String showHistory(Model model) {
         model.addAllAttributes(maSoiService.getGameHistoryData());
-        model.addAllAttributes(maSoiService.getGameHistoryData());
         return "masoi/history";
     }
 
@@ -136,6 +137,18 @@ public class MaSoiController {
     @ResponseBody
     String endGame() {
         return maSoiService.endGame();
+    }
+
+    @PostMapping("/discard")
+    @ResponseBody
+    String discardSetup() {
+        return maSoiService.discardSetup();
+    }
+
+    @GetMapping("/session-state")
+    @ResponseBody
+    GameSessionState sessionState(@RequestParam(defaultValue = "0") long sessionId) {
+        return maSoiService.getGameSessionState(sessionId);
     }
 
     @PostMapping("/processNight")
@@ -148,6 +161,12 @@ public class MaSoiController {
     @ResponseBody
     String kill(@RequestBody KillDto killDto) {
         return maSoiService.processDay(killDto.getDeviceIds());
+    }
+
+    @PostMapping("/processDayRole")
+    @ResponseBody
+    String processDayRole(@RequestBody DayActionDto action) {
+        return maSoiService.processDayRole(action);
     }
 
     @PostMapping("/toggleAdminOptions")

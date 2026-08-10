@@ -33,11 +33,11 @@
         .gtbl thead tr:nth-child(2) th { top:38px; }
         .gtbl th.col-disabled { background:rgba(245,158,11,0.2) !important; color:#fbbf24 !important; }
         .gtbl th:last-child { border-right:none; }
-        .gtbl th.th-player { text-align:left; min-width:120px; position:sticky; left:0; top:0; z-index:4; background:rgba(20,30,50,0.97); }
+        .gtbl th.th-player { text-align:left; min-width:120px; position:sticky; left:0; top:0; z-index:4; background:#141e32; }
         .gtbl tbody tr { border-bottom:1px solid rgba(99,102,241,0.1); }
         .gtbl tbody tr:hover { background:rgba(59,130,246,0.05); }
         .gtbl td { padding:7px 8px; text-align:center; border-right:1px solid rgba(99,102,241,0.1); }
-        .gtbl td:first-child { text-align:left; position:sticky; left:0; z-index:2; background:rgba(30,41,59,0.95); padding:8px 10px; }
+        .gtbl td:first-child { text-align:left; position:sticky; left:0; z-index:2; background:#1e293b; padding:8px 10px; }
         .gtbl td:last-child { border-right:none; }
         .pname { display:flex; flex-direction:column; gap:2px; }
         .pid { font-size:0.7rem; color:var(--text-muted); }
@@ -47,6 +47,7 @@
         .tog.on.recruit { background:linear-gradient(135deg,var(--warning),var(--warning-hover)); border-color:var(--warning); box-shadow:0 0 10px rgba(245,158,11,0.35); }
         .tog.on.prot { background:linear-gradient(135deg,var(--success),var(--success-hover)); border-color:var(--success); box-shadow:0 0 10px rgba(16,185,129,0.35); }
         .tog.on.conn { background:linear-gradient(135deg,#8b5cf6,#7c3aed); border-color:#8b5cf6; box-shadow:0 0 10px rgba(139,92,246,0.35); }
+        .tog.on.inspect { background:linear-gradient(135deg,#0ea5e9,#6366f1); border-color:#38bdf8; box-shadow:0 0 10px rgba(56,189,248,0.35); }
         .tog.locked { opacity:0.4; cursor:not-allowed; }
         .tog.col-disabled { opacity:0.35; cursor:not-allowed; border-color:rgba(245,158,11,0.3); }
         .process-btn { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; padding:12px 26px; border-radius:10px; font-weight:600; cursor:pointer; margin-top:14px; margin-bottom:15px; width:100%; font-size:1rem; }
@@ -62,17 +63,111 @@
         .kill-btn { background:linear-gradient(135deg,var(--danger),var(--danger-hover)); color:white; border:none; padding:11px 20px; border-radius:10px; font-weight:600; cursor:pointer; margin-top:10px; width:100%; }
         .kill-btn:active { transform:scale(0.98); }
         .help { font-size:0.78rem; color:var(--text-muted); padding:8px 10px; background:rgba(30,41,59,0.3); border-radius:8px; margin-bottom:12px; }
+        .history-section { margin-top:16px; }
+        .history-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+        .timeline { display:flex; flex-direction:column; gap:10px; }
+        .timeline-round { border-left:3px solid #8b5cf6; background:rgba(30,41,59,0.45); border-radius:0 10px 10px 0; padding:10px 12px; }
+        .timeline-label { color:#c4b5fd; font-weight:700; font-size:0.9rem; margin-bottom:6px; }
+        .timeline-event { color:var(--text-primary); font-size:0.82rem; line-height:1.55; padding-left:14px; position:relative; }
+        .timeline-event::before { content:'•'; position:absolute; left:2px; color:#8b5cf6; }
+        .history-empty { color:var(--text-muted); font-size:0.85rem; text-align:center; padding:18px 10px; }
+        .archive { margin-top:12px; border:1px solid var(--card-border); border-radius:10px; overflow:hidden; }
+        .archive summary { cursor:pointer; padding:11px 12px; background:rgba(59,130,246,0.08); color:#93c5fd; font-weight:600; }
+        .archive-content { padding:12px; }
+        .archive-players { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+        .archive-player { font-size:0.72rem; color:var(--text-muted); background:rgba(15,23,42,0.55); border:1px solid var(--card-border); border-radius:999px; padding:4px 8px; }
+
+        /* Pre-game reset */
+        .setup-reset-card { border:1px solid rgba(245,158,11,0.42); background:linear-gradient(155deg,rgba(69,48,20,0.66),rgba(30,41,59,0.96)); }
+        .setup-reset-heading { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+        .setup-reset-icon { width:44px; height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:center; border-radius:12px; color:#fde68a; background:rgba(245,158,11,0.16); border:1px solid rgba(245,158,11,0.32); font-size:1.35rem; }
+        .setup-reset-status { color:#fbbf24; font-size:0.7rem; font-weight:800; letter-spacing:0.08em; }
+        .setup-reset-title { margin-top:2px; font-size:1.12rem; }
+        .setup-reset-copy { color:var(--text-muted); font-size:0.86rem; line-height:1.55; margin-bottom:14px; }
+        .setup-reset-note { color:#fcd34d; font-size:0.74rem; line-height:1.45; margin-top:9px; text-align:center; }
+        .btn-warning { color:#1c1917; background:linear-gradient(135deg,#fbbf24,#f59e0b); border:none; }
+        .btn-warning:hover { background:linear-gradient(135deg,#fcd34d,#fbbf24); }
+        .btn-warning:disabled { opacity:0.58; cursor:wait; }
+
+        /* Guided moderator workflow */
+        .guide-card { border:1px solid rgba(124,58,237,0.38); background:linear-gradient(160deg,rgba(30,41,59,0.96),rgba(24,32,53,0.96)); }
+        .guide-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+        .guide-kicker { color:#a78bfa; font-size:0.72rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+        .guide-count { color:var(--text-muted); font-size:0.75rem; white-space:nowrap; padding-top:3px; }
+        .guide-progress { display:flex; gap:5px; margin-bottom:18px; }
+        .guide-progress-dot { height:5px; flex:1; border-radius:999px; background:rgba(148,163,184,0.18); transition:background 0.2s; }
+        .guide-progress-dot.done { background:#7c3aed; }
+        .guide-progress-dot.current { background:#a78bfa; box-shadow:0 0 9px rgba(167,139,250,0.55); }
+        .guide-step { display:none; }
+        .guide-step.active { display:block; animation:guide-in 0.2s ease-out; }
+        @keyframes guide-in { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+        .guide-title-row { display:flex; gap:12px; align-items:center; margin-bottom:10px; }
+        .guide-icon { width:44px; height:44px; flex:0 0 44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.35rem; background:rgba(124,58,237,0.16); border:1px solid rgba(167,139,250,0.28); }
+        .guide-title { font-size:1.2rem; line-height:1.25; }
+        .guide-prompt { color:var(--text-muted); font-size:0.88rem; line-height:1.55; margin-bottom:14px; }
+        .guide-action { padding:12px; border-radius:11px; background:rgba(15,23,42,0.46); border:1px solid var(--card-border); margin-top:10px; }
+        .guide-action.silenced-action { opacity:0.5; border-color:rgba(245,158,11,0.4); }
+        .guide-action-label { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:0.86rem; font-weight:700; margin-bottom:9px; }
+        .guide-action-status { color:#fbbf24; font-size:0.7rem; font-weight:600; }
+        .guide-targets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+        .guide-target { border:1px solid rgba(148,163,184,0.22); background:rgba(30,41,59,0.75); color:var(--text-primary); border-radius:9px; padding:9px 8px; text-align:left; cursor:pointer; min-width:0; transition:all 0.18s; }
+        .guide-target:hover:not(.disabled) { border-color:#8b5cf6; transform:translateY(-1px); }
+        .guide-target.selected { border-color:#a78bfa; background:rgba(124,58,237,0.28); box-shadow:0 0 0 1px rgba(167,139,250,0.22); }
+        .guide-target.disabled { opacity:0.32; cursor:not-allowed; transform:none; }
+        .guide-target-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.82rem; font-weight:650; }
+        .guide-target-id { display:block; color:var(--text-muted); font-size:0.66rem; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .guide-toggle { width:100%; border:1px solid rgba(16,185,129,0.34); background:rgba(16,185,129,0.1); color:#6ee7b7; border-radius:10px; padding:11px; font-weight:700; cursor:pointer; }
+        .guide-toggle.selected { background:rgba(16,185,129,0.3); border-color:#34d399; color:#ecfdf5; }
+        .guide-toggle.disabled { opacity:0.35; cursor:not-allowed; }
+        .guide-note { display:none; border-radius:9px; padding:10px; margin-top:10px; font-size:0.8rem; line-height:1.45; }
+        .guide-note.visible { display:block; }
+        .wolf-victim { color:#fca5a5; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.22); }
+        .seer-result { color:#bae6fd; background:rgba(14,165,233,0.1); border:1px solid rgba(56,189,248,0.24); }
+        .seer-warning { display:block; color:#fca5a5; margin-top:4px; }
+        .guide-sleep { color:#c4b5fd; font-size:0.82rem; font-weight:600; margin-top:14px; padding:9px 10px; border-left:3px solid #8b5cf6; background:rgba(124,58,237,0.08); }
+        .guide-nav { display:grid; grid-template-columns:1fr 1.55fr; gap:8px; margin-top:16px; }
+        .guide-nav.single { grid-template-columns:1fr; }
+        .guide-nav button { border:0; border-radius:10px; padding:11px 9px; font-weight:700; cursor:pointer; }
+        .guide-back { color:var(--text-primary); background:rgba(148,163,184,0.13); }
+        .guide-next { color:white; background:linear-gradient(135deg,#7c3aed,#6d28d9); }
+        .guide-skip { display:block; margin:10px auto 0; border:0; background:transparent; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline; }
+        .guide-review-list { display:flex; flex-direction:column; gap:7px; margin-top:12px; }
+        .guide-review-item { padding:9px 10px; border-radius:9px; background:rgba(30,41,59,0.62); font-size:0.8rem; }
+        .guide-review-empty { color:var(--text-muted); text-align:center; padding:16px 8px; font-size:0.83rem; }
+        .advanced-panel { margin:14px 0; border:1px solid var(--card-border); border-radius:12px; overflow:hidden; }
+        .advanced-panel > summary { cursor:pointer; padding:12px 14px; color:#93c5fd; background:rgba(59,130,246,0.07); font-weight:650; font-size:0.86rem; }
+        .advanced-content { padding:0 12px 12px; }
+        .day-guide { border:1px solid rgba(245,158,11,0.38); background:linear-gradient(160deg,rgba(51,39,24,0.62),rgba(30,41,59,0.96)); }
+        .day-targets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-top:12px; }
+        .day-target { border:1px solid rgba(245,158,11,0.25); background:rgba(30,41,59,0.72); color:var(--text-primary); border-radius:9px; padding:9px; cursor:pointer; text-align:left; }
+        .day-target.selected { border-color:#f59e0b; background:rgba(245,158,11,0.2); }
+        .day-target.disabled { opacity:0.3; cursor:not-allowed; }
+        .phase-banner { display:flex; align-items:center; gap:10px; border-radius:11px; padding:11px 12px; margin-bottom:14px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); color:#fde68a; font-size:0.84rem; }
+        @media (max-width:380px) { .guide-targets,.day-targets { grid-template-columns:1fr; } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header-section">
         <h1>Quản Trò Ma Sói</h1>
-        <p class="desc">Bảng điều khiển ván đấu hiện tại</p>
+        <p class="desc" th:text="${gameActive} ? 'Bảng điều khiển ván đấu hiện tại' : 'Lịch sử các ván đã kết thúc'"></p>
+    </div>
+
+    <div class="card setup-reset-card" th:if="${gameActive and canResetSetup}">
+        <div class="setup-reset-heading">
+            <div class="setup-reset-icon">↻</div>
+            <div>
+                <div class="setup-reset-status">CHƯA BẮT ĐẦU</div>
+                <h2 class="setup-reset-title">Cần thay đổi số người hoặc role?</h2>
+            </div>
+        </div>
+        <p class="setup-reset-copy">Hủy phần chia role hiện tại và quay lại màn hình thiết lập. Người chơi đang mở trang role sẽ được thông báo tự động.</p>
+        <button type="button" id="discardSetup" class="btn btn-warning">↻ Thiết lập lại ván</button>
+        <p class="setup-reset-note">Thao tác này không kết thúc ván, không tăng số ván và không lưu vào lịch sử.</p>
     </div>
 
     <!-- Admin Options -->
-    <div class="card">
+    <div class="card" th:if="${gameActive}">
         <h3 style="margin-bottom: 14px; font-size: 1.1rem;">⚙️ Tùy Chọn Quản Trò</h3>
         <div class="toggle-group">
             <div class="toggle-item">
@@ -100,62 +195,157 @@
     <!-- Game Management Button -->
 <!--    <a href="/ms/gameManagement" class="btn btn-primary">⚔️ Xử Lý Game & Vai Trò</a>-->
 
-    <!-- Detail Buttons -->
-    <div style="display:flex; gap:10px; margin-bottom:16px;">
-        <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('day')">☀️ Chi Tiết Ngày</button>
-        <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('night')">🌙 Chi Tiết Đêm</button>
-        <button class="btn btn-primary" style="flex:1; font-size:0.9rem;" onclick="showDetail('game')">📋 Game Detail</button>
-    </div>
+    <button class="btn btn-primary" style="margin-bottom:16px;" onclick="document.getElementById('adminHistory').scrollIntoView({behavior:'smooth'})">📜 Xem Lịch Sử Quản Trò</button>
 
-    <!-- Detail Modal -->
-    <div id="detailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; padding:20px; overflow-y:auto;" onclick="if(event.target===this)this.style.display='none'">
-        <div style="background:rgba(15,23,42,0.97); border:1px solid var(--card-border); border-radius:16px; padding:20px; max-width:480px; margin:0 auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                <h3 id="detailTitle" style="font-size:1rem; color:#a5b4fc;"></h3>
-                <button onclick="document.getElementById('detailModal').style.display='none'" style="background:none; border:none; color:var(--text-muted); font-size:1.3rem; cursor:pointer;">✕</button>
-            </div>
-            <div id="detailContent" style="font-size:0.88rem; line-height:1.7; color:var(--text-primary);"></div>
-        </div>
-    </div>
+    <a th:if="${!gameActive}" href="/ms/run" class="btn btn-primary" style="margin-bottom:16px;">🎮 Tạo Ván Mới</a>
 
-    <div class="card" style="text-align: center;">
+    <div class="card" style="text-align: center;" th:if="${gameActive}">
         <div class="qr-container">
             <img th:src="${image}" alt="QR Code" class="qr-image" style="width: 150px; height: 150px;">
         </div>
         <p class="desc" style="font-size: 0.8rem; margin-top: 5px;">Quét mã QR để người chơi tham gia</p>
     </div>
 
+    <div id="nightGuide" class="card guide-card" th:if="${gameActive and !dayPhaseActive}">
+        <div class="guide-header">
+            <div>
+                <div class="guide-kicker">Trình tự gọi ban đêm</div>
+                <h3 style="font-size:1.05rem;margin-top:3px;">🌙 Hướng dẫn quản trò</h3>
+            </div>
+            <span id="guideCount" class="guide-count"></span>
+        </div>
+
+        <div id="guideProgress" class="guide-progress">
+            <span th:each="step : ${nightGuideSteps}" class="guide-progress-dot"></span>
+            <span class="guide-progress-dot"></span>
+        </div>
+
+        <section th:each="step : ${nightGuideSteps}" class="guide-step" th:data-step-key="${step.key}">
+            <div class="guide-title-row">
+                <div class="guide-icon" th:text="${step.icon}"></div>
+                <div>
+                    <div class="guide-kicker">Gọi role tiếp theo</div>
+                    <h3 class="guide-title" th:text="${step.title}"></h3>
+                </div>
+            </div>
+            <p class="guide-prompt" th:text="${step.prompt}"></p>
+
+            <div th:each="action : ${step.actions}" class="guide-action"
+                 th:data-action-container="${action.key}"
+                 th:data-actor-device="${action.actorDeviceId}"
+                 th:data-base-disabled="${action.disabled}">
+                <div class="guide-action-label">
+                    <span th:text="${action.icon + ' ' + action.label}"></span>
+                    <span class="guide-action-status" th:text="${action.disabled} ? 'Đang mất chức năng' : ''"></span>
+                </div>
+
+                <button th:if="${action.toggleOnly}" type="button" class="guide-toggle"
+                        th:classappend="${action.disabled} ? ' disabled' : ''"
+                        th:disabled="${action.disabled}"
+                        th:data-col="${action.key}"
+                        th:data-roleid="${action.roleId}"
+                        th:data-rolename="${action.roleName}"
+                        th:data-device="${action.actorDeviceId}"
+                        th:data-device-target="${action.actorDeviceId}"
+                        th:data-name="${action.roleName}"
+                        th:data-target-role-id="${action.roleId}"
+                        th:data-target-role="${action.roleName}"
+                        th:data-col-type="${action.type}"
+                        th:data-connvalue="${action.connectionValue}"
+                        onclick="toggleGuidePower(this)">Bật bảo vệ toàn bộ đêm</button>
+
+                <div th:if="${!action.toggleOnly}" class="guide-targets">
+                    <button th:each="p : ${players}" type="button" class="guide-target"
+                            th:with="baseBlocked=${action.disabled
+                                or ((action.targetPolicy == 'noSelf' or action.targetPolicy == 'silence' or action.targetPolicy == 'recruit') and p['deviceId'] == action.actorDeviceId)
+                                or (action.targetPolicy == 'silence' and p['id'] == 44)
+                                or (action.targetPolicy == 'recruit' and p['wolfFaction'])},
+                                blocked=${baseBlocked or action.targetPolicy == 'witchSave'}"
+                            th:classappend="${blocked} ? ' disabled' : ''"
+                            th:disabled="${blocked}"
+                            th:data-base-disabled="${baseBlocked}"
+                            th:data-policy="${action.targetPolicy}"
+                            th:data-col="${action.key}"
+                            th:data-roleid="${action.roleId}"
+                            th:data-rolename="${action.roleName}"
+                            th:data-device="${action.actorDeviceId}"
+                            th:data-device-target="${p['deviceId']}"
+                            th:data-name="${p['name']}"
+                            th:data-target-role-id="${p['id']}"
+                            th:data-target-role="${p['roleName']}"
+                            th:data-col-type="${action.type}"
+                            th:data-connvalue="${action.connectionValue}"
+                            th:data-inspect-result="${p['inspectResult']}"
+                            th:data-contact-warning="${p['contactWarning']}"
+                            th:onclick="${blocked and action.targetPolicy != 'witchSave'} ? '' : 'selectGuideTarget(this)'">
+                        <span class="guide-target-name" th:text="${p['name']}"></span>
+                        <span class="guide-target-id" th:text="${'#' + p['idPlayGame'] + ' - ' + p['roleName']}"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div th:if="${step.key == 'witch'}" id="wolfVictimNote" class="guide-note wolf-victim"></div>
+            <div th:if="${step.key == 'seer'}" id="seerResultNote" class="guide-note seer-result"></div>
+            <div class="guide-sleep" th:text="${step.sleepPrompt}"></div>
+            <div class="guide-nav">
+                <button type="button" class="guide-back" onclick="moveGuide(-1)">← Quay lại</button>
+                <button type="button" class="guide-next" onclick="moveGuide(1)">Xong, gọi role tiếp →</button>
+            </div>
+            <button type="button" class="guide-skip" onclick="skipGuideStep()">Bỏ qua role này</button>
+        </section>
+
+        <section class="guide-step" data-step-key="review">
+            <div class="guide-title-row">
+                <div class="guide-icon">✅</div>
+                <div>
+                    <div class="guide-kicker">Bước cuối</div>
+                    <h3 class="guide-title">Kiểm tra hành động</h3>
+                </div>
+            </div>
+            <p class="guide-prompt">Đảm bảo tất cả role đã nhắm mắt, sau đó kiểm tra lại trước khi xử lý đêm.</p>
+            <div id="guideReviewList" class="guide-review-list"></div>
+            <div class="guide-nav">
+                <button type="button" class="guide-back" onclick="moveGuide(-1)">← Quay lại</button>
+                <button type="button" class="guide-next" onclick="processNight()">🌙 Xử lý đêm</button>
+            </div>
+        </section>
+    </div>
+
+    <details class="advanced-panel"
+             th:if="${gameActive and !dayPhaseActive and (hasSuperProtectedPlayers or (not #lists.isEmpty(players) and not #lists.isEmpty(columns)))}">
+        <summary>⚙️ Chế độ nâng cao - Bảng tổng hợp</summary>
+        <div class="advanced-content">
     <div th:if="${hasSuperProtectedPlayers}" class="super-section">
-        <div class="super-title">🛡️ Bảo Vệ Tối Cao — Khi BẬT: khóa toàn bộ toggle trong bảng</div>
+        <div class="super-title">🛡️ Bảo Vệ Tối Cao - Khi BẬT: ngăn toàn bộ cái chết trong đêm</div>
         <th:block th:each="p : ${players}" th:if="${p['hasSuperProtected']}">
             <div class="super-item">
                 <div class="super-info">
                     <span class="super-name" th:text="${p['name']}"></span>
-                    <span class="super-role" th:text="${'#' + p['idPlayGame'] + ' — ' + p['roleName']}"></span>
+                    <span class="super-role" th:text="${'#' + p['idPlayGame'] + ' - ' + p['roleName']}"></span>
                 </div>
                 <div th:class="'tog'"
                      th:id="${'sp-' + p['deviceId']}"
+                     th:data-col="${'superProt_44'}"
                      th:data-device="${p['deviceId']}"
+                     th:data-device-target="${p['deviceId']}"
                      th:data-name="${p['name']}"
                      th:data-roleid="${p['id']}"
                      th:data-rolename="${p['roleName']}"
+                     th:data-target-role-id="${p['id']}"
+                     th:data-target-role="${p['roleName']}"
+                     th:data-col-type="${'superProt'}"
+                     th:data-connvalue="${'ON'}"
                      th:onclick="'toggleSuper(this)'">🛡️</div>
             </div>
         </th:block>
-        <div class="toggle-item" style="margin-top:10px;" th:if="${showSoiNguyen}">
-            <span class="toggle-label">🐺 Sói cắn = Recruit (Sói Nguyền)</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="recruitMode">
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
     </div>
 
-    <div class="help">💡 Chọn mục tiêu cho từng hành động đêm nay. Mỗi cột chỉ chọn 1 người.</div>
+    <div class="help" th:if="${gameActive}">💡 Chọn mục tiêu cho từng hành động đêm nay. Mỗi cột chỉ chọn 1 người.</div>
 
     <div id="thead-clone" style="overflow:hidden; position:sticky; top:0; z-index:10; margin-top:12px;"></div>
-    <div class="tbl-wrap" th:if="${not #lists.isEmpty(players) and not #lists.isEmpty(columns)}">
-        <table class="gtbl" id="roleTable">
+    <div th:if="${not #lists.isEmpty(players) and not #lists.isEmpty(columns)}">
+        <div class="tbl-wrap">
+            <table class="gtbl" id="roleTable">
             <thead>
             <tr>
                 <th class="th-player" rowspan="2">Người Chơi</th>
@@ -175,6 +365,8 @@
                     <th th:if="${col['hasKill']}" th:class="${col['disabled']} ? 'col-disabled' : ''">⚔️ Giết</th>
                     <th th:if="${col['hasProt']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🛡️ Cứu</th>
                     <th th:if="${col['hasConn']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🔗 Chọn</th>
+                    <th th:if="${col['hasInspect']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🔮 Soi</th>
+                    <th th:if="${col['hasRecruit']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🌘 Nguyền</th>
                 </th:block>
             </tr>
             </thead>
@@ -202,7 +394,7 @@
                                      th:data-targetRole="${p['roleName']}"
                                      th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🐺</div>
                             </td>
-                            <td th:if="${col['hasKill'] and !col['isSoi'] and !col['hasProt'] and !col['hasConn']}">
+                            <td th:if="${col['hasKill'] and !col['isSoi'] and !col['hasProt'] and !col['hasConn'] and !col['hasInspect'] and !col['hasRecruit']}">
                                 <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
                                      th:data-col="${'kill_' + col['roleId']}"
                                      th:data-roleid="${col['roleId']}"
@@ -214,7 +406,7 @@
                                      th:data-targetRole="${p['roleName']}"
                                      th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">⚔️</div>
                             </td>
-                            <td th:if="${col['hasProt'] and !col['isSoi'] and !col['hasKill'] and !col['hasConn']}">
+                            <td th:if="${col['hasProt'] and !col['isSoi'] and !col['hasKill'] and !col['hasConn'] and !col['hasInspect'] and !col['hasRecruit']}">
                                 <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
                                      th:data-col="${'prot_' + col['roleId']}"
                                      th:data-roleid="${col['roleId']}"
@@ -226,8 +418,8 @@
                                      th:data-targetRole="${p['roleName']}"
                                      th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🛡️</div>
                             </td>
-                            <td th:if="${col['hasConn'] and !col['isSoi'] and !col['hasKill'] and !col['hasProt']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                            <td th:if="${col['hasConn'] and !col['isSoi'] and !col['hasKill'] and !col['hasProt'] and !col['hasInspect'] and !col['hasRecruit']}">
+                                <div th:class="'tog' + (${col['disabled'] or (col['roleId'] == 42 and p['deviceId'] == col['deviceId'])} ? ' col-disabled' : '')"
                                      th:data-col="${'conn_' + col['roleId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
@@ -237,7 +429,31 @@
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🔗</div>
+                                     th:onclick="${col['disabled'] or (col['roleId'] == 42 and p['deviceId'] == col['deviceId'])} ? '' : 'toggleCol(this)'">🔗</div>
+                            </td>
+                            <td th:if="${col['hasInspect'] and !col['isSoi'] and !col['hasKill'] and !col['hasProt'] and !col['hasConn'] and !col['hasRecruit']}">
+                                <div th:class="'tog' + (${col['disabled'] or p['deviceId'] == col['deviceId']} ? ' col-disabled' : '')"
+                                     th:data-col="${'inspect_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled'] or p['deviceId'] == col['deviceId']} ? '' : 'toggleCol(this)'">🔮</div>
+                            </td>
+                            <td th:if="${col['hasRecruit'] and !col['isSoi'] and !col['hasKill'] and !col['hasProt'] and !col['hasConn'] and !col['hasInspect']}">
+                                <div th:class="'tog' + (${col['disabled'] or p['wolfFaction'] or p['deviceId'] == col['deviceId']} ? ' col-disabled' : '')"
+                                     th:data-col="${'recruit_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled'] or p['wolfFaction'] or p['deviceId'] == col['deviceId']} ? '' : 'toggleCol(this)'">🌘</div>
                             </td>
                         </th:block>
                         <th:block th:if="${col['subCols'] > 1}">
@@ -278,7 +494,7 @@
                                      th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🛡️</div>
                             </td>
                             <td th:if="${col['hasConn']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
+                                <div th:class="'tog' + (${col['disabled'] or (col['roleId'] == 42 and p['deviceId'] == col['deviceId'])} ? ' col-disabled' : '')"
                                      th:data-col="${'conn_' + col['roleId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
@@ -288,18 +504,74 @@
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🔗</div>
+                                     th:onclick="${col['disabled'] or (col['roleId'] == 42 and p['deviceId'] == col['deviceId'])} ? '' : 'toggleCol(this)'">🔗</div>
+                            </td>
+                            <td th:if="${col['hasInspect']}">
+                                <div th:class="'tog' + (${col['disabled'] or p['deviceId'] == col['deviceId']} ? ' col-disabled' : '')"
+                                     th:data-col="${'inspect_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled'] or p['deviceId'] == col['deviceId']} ? '' : 'toggleCol(this)'">🔮</div>
+                            </td>
+                            <td th:if="${col['hasRecruit']}">
+                                <div th:class="'tog' + (${col['disabled'] or p['wolfFaction'] or p['deviceId'] == col['deviceId']} ? ' col-disabled' : '')"
+                                     th:data-col="${'recruit_' + col['roleId']}"
+                                     th:data-roleid="${col['roleId']}"
+                                     th:data-rolename="${col['label']}"
+                                     th:data-deviceTarget="${p['deviceId']}"
+                                     th:data-device="${col['deviceId']}"
+                                     th:data-name="${p['name']}"
+                                     th:data-targetRoleId="${p['id']}"
+                                     th:data-targetRole="${p['roleName']}"
+                                     th:onclick="${col['disabled'] or p['wolfFaction'] or p['deviceId'] == col['deviceId']} ? '' : 'toggleCol(this)'">🌘</div>
                             </td>
                         </th:block>
                     </th:block>
                 </tr>
             </th:block>
             </tbody>
-        </table>
+            </table>
+        </div>
         <button class="process-btn" onclick="processNight()">🌙 Xử Lý Đêm</button>
     </div>
+        </div>
+    </details>
 
-    <div class="kill-section" th:if="${!dayKill}">
+    <div th:if="${gameActive and dayPhaseActive}" class="phase-banner">
+        <span style="font-size:1.2rem;">☀️</span>
+        <span th:text="${oldWitchAction != null}
+            ? 'Pha ban ngày - xử lý Phù thủy già trước, sau đó biểu quyết hoặc chuyển thẳng sang đêm.'
+            : 'Pha ban ngày - biểu quyết hoặc chuyển thẳng sang đêm.'"></span>
+    </div>
+
+    <div class="card day-guide" th:if="${oldWitchAction != null}">
+        <div class="guide-kicker" style="color:#fbbf24;">Bước 1 - Hành động ban ngày</div>
+        <h3 style="margin-top:4px;">🧙 Phù thủy già</h3>
+        <p class="guide-prompt" style="margin-top:8px;margin-bottom:0;">Gọi Phù thủy già và chọn một người bị đuổi khỏi làng. Mỗi ngày chỉ được dùng một lần.</p>
+        <div class="day-targets">
+            <button th:each="p : ${players}" type="button" class="day-target"
+                    th:classappend="${p['deviceId'] == oldWitchAction['actorDeviceId']} ? ' disabled' : ''"
+                    th:disabled="${p['deviceId'] == oldWitchAction['actorDeviceId']}"
+                    th:data-device-target="${p['deviceId']}"
+                    th:data-name="${p['name']}"
+                    th:onclick="${p['deviceId'] == oldWitchAction['actorDeviceId']} ? '' : 'selectOldWitchTarget(this)'">
+                <span class="guide-target-name" th:text="${p['name']}"></span>
+                <span class="guide-target-id" th:text="${'#' + p['idPlayGame'] + ' - ' + p['roleName']}"></span>
+            </button>
+        </div>
+        <button type="button" class="process-btn" style="background:linear-gradient(135deg,#d97706,#b45309);margin-bottom:0;"
+                th:data-actor-device="${oldWitchAction['actorDeviceId']}"
+                id="executeOldWitch" onclick="executeOldWitchAction(this)">Đuổi người đã chọn</button>
+    </div>
+
+    <div class="kill-section" th:if="${gameActive and dayPhaseActive and not #lists.isEmpty(players)}">
+        <div class="guide-kicker" style="color:#fca5a5;margin-bottom:5px;"
+             th:text="${oldWitchAction != null} ? 'Bước 2 - Biểu quyết' : 'Biểu quyết ban ngày'"></div>
         <div class="kill-title">⚔️ Xử Lý Giết (thủ công)</div>
         <table class="ktbl" onclick="toggleKill(event.target.closest('tr'))">
             <thead>
@@ -324,14 +596,55 @@
             </tbody>
         </table>
         <button class="kill-btn" onclick="executeKill()">⚔️ Xác Nhận Giết</button>
+        <button class="guide-skip" style="margin-top:12px;color:#fca5a5;" onclick="skipDayVote()">Không treo ai - chuyển sang đêm</button>
     </div>
 
-    <div style="display:flex; gap:8px; margin-top:16px;">
+    <div class="card history-section" id="adminHistory">
+        <div class="history-heading">
+            <div>
+                <h3 style="font-size:1.05rem;">📜 Lịch Sử Quản Trò</h3>
+                <p class="desc" style="font-size:0.75rem;margin-top:3px;">Thông tin đầy đủ chỉ hiển thị trên màn hình admin</p>
+            </div>
+            <span th:if="${gameActive}" style="font-size:0.75rem;color:var(--text-muted);" th:text="${'Ván ' + gameNumber}"></span>
+            <span th:if="${!gameActive}" style="font-size:0.75rem;color:var(--text-muted);">Đã kết thúc</span>
+        </div>
+
+        <div th:if="${gameActive and #lists.isEmpty(currentAdminHistory)}" class="history-empty">Chưa có hành động nào trong ván hiện tại</div>
+        <div th:if="${!gameActive and #lists.isEmpty(archivedAdminGames)}" class="history-empty">Chưa có ván nào được lưu trong phiên chạy này</div>
+        <div th:if="${not #lists.isEmpty(currentAdminHistory)}" class="timeline">
+            <div th:each="round : ${currentAdminHistory}" class="timeline-round">
+                <div class="timeline-label" th:text="${round.label}"></div>
+                <div th:each="event : ${round.events}" class="timeline-event" th:text="${event}"></div>
+            </div>
+        </div>
+
+        <div th:if="${not #lists.isEmpty(archivedAdminGames)}" style="margin-top:16px;">
+            <h4 style="font-size:0.9rem;color:var(--text-muted);">Các ván đã kết thúc</h4>
+            <details th:each="game : ${archivedAdminGames}" class="archive">
+                <summary th:text="${'Ván ' + game['gameNumber']}"></summary>
+                <div class="archive-content">
+                    <div th:if="${#lists.isEmpty(game['rounds'])}" class="history-empty">Ván này chưa có lịch sử hành động</div>
+                    <div th:if="${not #lists.isEmpty(game['rounds'])}" class="timeline">
+                        <div th:each="round : ${game['rounds']}" class="timeline-round">
+                            <div class="timeline-label" th:text="${round.label}"></div>
+                            <div th:each="event : ${round.events}" class="timeline-event" th:text="${event}"></div>
+                        </div>
+                    </div>
+                    <div class="archive-players">
+                        <span th:each="player : ${game['players']}" class="archive-player"
+                              th:text="${player['name'] + ': ' + player['role']}"></span>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <div th:if="${gameActive}" style="display:flex; gap:8px; margin-top:16px;">
         <input type="text" id="testInput" class="input-text" style="width:50%; padding:10px;" placeholder="Nhập giá trị...">
         <button class="btn btn-primary" style="width:50%; white-space:nowrap;" onclick="fetch('/ms/test?total='+document.getElementById('testInput').value).then(r=>r.text()).then(responseData => { alert(responseData); window.location.reload(); })">Tạo User Test</button>
     </div>
 
-    <button id="endGame" class="btn btn-danger" style="margin-top: 24px;">Kết Thúc Ván Đấu</button>
+    <button th:if="${gameActive and gameStarted}" id="endGame" class="btn btn-danger" style="margin-top: 24px;">Kết Thúc Ván Đấu</button>
 
      <script>
         function toggleAdminOption(option, value) {
@@ -340,163 +653,350 @@
                 .catch(error => console.error('Error:', error));
         }
         
-        function executeKill() {
-            const checkboxes = document.querySelectorAll('.kill-checkbox:checked');
-            const deviceIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (deviceIds.length === 0) {
-                alert('Vui lòng chọn ít nhất một người chơi để giết!');
-                return;
-            }
-            
-            const reason = document.getElementById('killReason').value || '';
-            const playerNames = Array.from(checkboxes).map(cb => cb.getAttribute('data-name')).join(', ');
-            
-            if (!confirm(`Bạn có chắc chắn muốn giết ${playerNames}? ${reason ? `Lý do: ${reason}` : ''}`)) {
-                return;
-            }
-            
-            fetch('/ms/kill', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deviceIds: deviceIds, reason: reason })
-            })
-            .then(response => response.text())
-            .then(responseData => {
-                alert('Response: ' + responseData);
-                window.location.reload();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Lỗi khi xử lý giết!');
-            });
-        }
-
-        document.getElementById('endGame').addEventListener('click', function() {
+        const endGameButton = document.getElementById('endGame');
+        if (endGameButton) endGameButton.addEventListener('click', function() {
             const userConfirmed = confirm("Bạn có chắc chắn muốn KẾT THÚC GAME?");
             if (userConfirmed) {
+                endGameButton.disabled = true;
                 fetch('/ms/end', { method: 'POST' })
                     .then(response => response.text())
                     .then(responseData => {
-                        alert('Response: ' + responseData);
-                        window.location.href = '/ms/run';
+                        alert(responseData);
+                        if (!responseData.startsWith('ERROR')) {
+                            window.location.href = '/ms/admin';
+                        } else {
+                            endGameButton.disabled = false;
+                        }
                     })
-                    .catch(error => console.error('Error:', error));
+                    .catch(error => {
+                        endGameButton.disabled = false;
+                        console.error('Error:', error);
+                    });
             }
+        });
+
+        const discardSetupButton = document.getElementById('discardSetup');
+        if (discardSetupButton) discardSetupButton.addEventListener('click', function() {
+            const userConfirmed = confirm(
+                'Hủy thiết lập hiện tại?\n\nCác role đã phát sẽ mất và ván này không được lưu vào lịch sử.'
+            );
+            if (!userConfirmed) return;
+
+            discardSetupButton.disabled = true;
+            discardSetupButton.textContent = 'Đang hủy thiết lập...';
+            fetch('/ms/discard', { method: 'POST' })
+                .then(response => response.text())
+                .then(responseData => {
+                    if (responseData.startsWith('ERROR')) {
+                        alert(responseData);
+                        discardSetupButton.disabled = false;
+                        discardSetupButton.textContent = '↻ Thiết lập lại ván';
+                        return;
+                    }
+                    window.location.href = '/ms/run';
+                })
+                .catch(error => {
+                    discardSetupButton.disabled = false;
+                    discardSetupButton.textContent = '↻ Thiết lập lại ván';
+                    console.error('Error:', error);
+                    alert('Không thể hủy thiết lập. Vui lòng thử lại.');
+                });
         });
     </script>
     <script th:inline="javascript">
-        const spDevices = /*[[${superProtectedDevices}]]*/ [];
-        const idSoi = /*[[${idSoi}]]*/ [];
-        const idOutsider = /*[[${idOutsider}]]*/ [];
-        const detailDay = /*[[${detailDay}]]*/ '';
-        const detailNight = /*[[${detailNight}]]*/ [];
-        const gameDetail = /*[[${gameDetailNight}]]*/ '';
+        const nightSelections = new Map();
+        let currentGuideStep = 0;
+        let oldWitchTarget = null;
 
-        function showDetail(type) {
-            const modal = document.getElementById('detailModal');
-            const title = document.getElementById('detailTitle');
-            const content = document.getElementById('detailContent');
-            const empty = '<em style="color:var(--text-muted)">Chưa có dữ liệu</em>';
-            if (type === 'day') {
-                title.textContent = '☀️ Chi Tiết Ngày';
-                content.innerHTML = detailDay || empty;
-            } else if (type === 'night') {
-                title.textContent = '🌙 Chi Tiết Đêm';
-                content.innerHTML = detailNight.length
-                    ? detailNight.map(s => `<div>- ${s}</div>`).join('')
-                    : empty;
-            } else {
-                title.textContent = '📋 Game Detail';
-                content.innerHTML = gameDetail || empty;
-            }
-            modal.style.display = 'block';
+        function readTargetDevice(el) {
+            if (!el) return '';
+            return el.dataset.deviceTarget || el.dataset.devicetarget || '';
         }
 
-        function isSuperLocked() {
-            return spDevices.some(dev => {
-                const el = document.getElementById('sp-' + dev);
-                return el && el.classList.contains('on');
-            });
+        function readTargetRoleId(el) {
+            if (!el) return 0;
+            return parseInt(el.dataset.targetRoleId || el.dataset.targetroleid || '0');
+        }
+
+        function readTargetRole(el) {
+            if (!el) return '';
+            return el.dataset.targetRole || el.dataset.targetrole || '';
+        }
+
+        function actionFromElement(el) {
+            const key = el.dataset.col;
+            return {
+                key,
+                targetDeviceId: readTargetDevice(el),
+                targetName: el.dataset.name || el.dataset.rolename,
+                targetRoleId: readTargetRoleId(el),
+                targetRoleName: readTargetRole(el),
+                roleId: parseInt(el.dataset.roleid || '0'),
+                deviceId: el.dataset.device,
+                roleName: el.dataset.rolename,
+                colType: el.dataset.colType || key.split('_')[0],
+                connValue: el.dataset.connvalue || null,
+                inspectResult: el.dataset.inspectResult || '',
+                contactWarning: el.dataset.contactWarning || ''
+            };
         }
 
         function toggleSuper(el) {
-            el.classList.toggle('on');
-            updateLock();
+            toggleNightSelection(actionFromElement(el));
         }
 
-        function updateLock() {
-            const locked = isSuperLocked();
-    <!--        document.querySelectorAll('#roleTable .tog:not(.col-disabled)').forEach(b => b.classList.toggle('locked', locked));-->
+        function toggleGuidePower(el) {
+            toggleNightSelection(actionFromElement(el));
         }
 
         function toggleCol(el) {
-            if (el.classList.contains('locked') || el.classList.contains('col-disabled')) return;
-            const colKey = el.dataset.col;
-            const colType = colKey.split('_')[0];
-            const isOn = el.classList.contains('on');
-            document.querySelectorAll(`#roleTable .tog[data-col="${colKey}"]`).forEach(b => {
-                b.classList.remove('on', 'recruit', 'prot', 'conn');
-            });
-            if (!isOn) {
-                const isRecruit = document.getElementById('recruitMode')?.checked;
-                el.classList.add('on');
-                if (colType === 'soi' && isRecruit) el.classList.add('recruit');
-                else if (colType === 'prot') el.classList.add('prot');
-                else if (colType === 'conn') el.classList.add('conn');
-            }
-            if (parseInt(el.dataset.roleid) === 38) updateSilenced();
+            if (el.classList.contains('locked') || el.classList.contains('col-disabled')
+                    || el.classList.contains('silenced-action')) return;
+            toggleNightSelection(actionFromElement(el));
         }
 
-        function updateSilenced() {
-            const silencedDevices = new Set(
-                Array.from(document.querySelectorAll('#roleTable .tog.on[data-roleid="38"]'))
-                    .map(el => el.dataset.devicetarget)
-            );
-            document.querySelectorAll('#roleTable tbody tr').forEach(tr => {
-                const device = tr.querySelector('.tog')?.dataset.devicetarget;
-                const nameSpan = tr.querySelector('td:first-child span:first-child');
-                if (nameSpan) {
-                    const td = tr.querySelector('td:first-child');
-                    td.style.backgroundColor = silencedDevices.has(device) ? 'rgba(251,191,36,0.25)' : '';
+        function selectGuideTarget(el) {
+            if (el.classList.contains('disabled')) return;
+            toggleNightSelection(actionFromElement(el));
+        }
+
+        function toggleNightSelection(action) {
+            const existing = nightSelections.get(action.key);
+            if (existing && existing.targetDeviceId === action.targetDeviceId) {
+                nightSelections.delete(action.key);
+            } else {
+                if (action.colType === 'soi') {
+                    Array.from(nightSelections.keys()).filter(key => key.startsWith('recruit_'))
+                        .forEach(key => nightSelections.delete(key));
+                } else if (action.colType === 'recruit') {
+                    Array.from(nightSelections.keys()).filter(key => key.startsWith('soi_'))
+                        .forEach(key => nightSelections.delete(key));
+                }
+                nightSelections.set(action.key, action);
+            }
+            normalizeNightSelections();
+            renderNightSelections();
+        }
+
+        function getSilencedDevices() {
+            return new Set(Array.from(nightSelections.values())
+                .filter(action => action.roleId === 38 && action.colType === 'conn')
+                .map(action => action.targetDeviceId));
+        }
+
+        function normalizeNightSelections() {
+            const silencedDevices = getSilencedDevices();
+            for (const [key, action] of Array.from(nightSelections.entries())) {
+                if (action.roleId !== 38 && silencedDevices.has(action.deviceId)) {
+                    nightSelections.delete(key);
+                }
+            }
+
+            const wolfBite = Array.from(nightSelections.values()).find(action => action.colType === 'soi');
+            for (const [key, action] of Array.from(nightSelections.entries())) {
+                if (key.startsWith('prot_31')
+                        && (!wolfBite || action.targetDeviceId !== wolfBite.targetDeviceId)) {
+                    nightSelections.delete(key);
+                }
+            }
+        }
+
+        function renderNightSelections() {
+            document.querySelectorAll('.tog').forEach(el => {
+                el.classList.remove('on', 'recruit', 'prot', 'conn', 'inspect', 'silenced-action');
+            });
+            document.querySelectorAll('.guide-target,.guide-toggle').forEach(el => el.classList.remove('selected'));
+
+            for (const action of nightSelections.values()) {
+                document.querySelectorAll(`[data-col="${action.key}"]`).forEach(el => {
+                    if (readTargetDevice(el) !== action.targetDeviceId) return;
+                    if (el.classList.contains('tog')) {
+                        el.classList.add('on');
+                        if (action.colType === 'recruit') el.classList.add('recruit');
+                        else if (action.colType === 'prot') el.classList.add('prot');
+                        else if (action.colType === 'conn') el.classList.add('conn');
+                        else if (action.colType === 'inspect') el.classList.add('inspect');
+                    } else {
+                        el.classList.add('selected');
+                    }
+                });
+            }
+
+            updateActionAvailability();
+            updateGuideNotes();
+            renderGuideReview();
+        }
+
+        function updateActionAvailability() {
+            const silencedDevices = getSilencedDevices();
+            const wolfBite = Array.from(nightSelections.values()).find(action => action.colType === 'soi');
+
+            document.querySelectorAll('.guide-action').forEach(container => {
+                const baseDisabled = container.dataset.baseDisabled === 'true';
+                const silenced = silencedDevices.has(container.dataset.actorDevice);
+                container.classList.toggle('silenced-action', silenced);
+                const status = container.querySelector('.guide-action-status');
+                if (status) status.textContent = silenced ? 'Bị câm - bỏ qua' : (baseDisabled ? 'Đang mất chức năng' : '');
+                const toggle = container.querySelector('.guide-toggle');
+                if (toggle) {
+                    const unavailable = baseDisabled || silenced;
+                    toggle.classList.toggle('disabled', unavailable);
+                    toggle.disabled = unavailable;
+                    toggle.setAttribute('aria-disabled', String(unavailable));
                 }
             });
+
+            document.querySelectorAll('.guide-target').forEach(el => {
+                const baseDisabled = el.dataset.baseDisabled === 'true';
+                const actorSilenced = silencedDevices.has(el.dataset.device);
+                const waitingForWolf = el.dataset.policy === 'witchSave'
+                    && (!wolfBite || readTargetDevice(el) !== wolfBite.targetDeviceId);
+                const unavailable = baseDisabled || actorSilenced || waitingForWolf;
+                el.classList.toggle('disabled', unavailable);
+                el.disabled = unavailable;
+                el.setAttribute('aria-disabled', String(unavailable));
+            });
+
+            document.querySelectorAll('#roleTable .tog').forEach(el => {
+                el.classList.toggle('silenced-action', silencedDevices.has(el.dataset.device));
+            });
+
+            document.querySelectorAll('#roleTable tbody tr').forEach(tr => {
+                const device = readTargetDevice(tr.querySelector('.tog'));
+                const td = tr.querySelector('td:first-child');
+                if (td) td.style.backgroundColor = silencedDevices.has(device) ? '#493f2a' : '#1e293b';
+            });
+        }
+
+        function updateGuideNotes() {
+            const wolfBite = Array.from(nightSelections.values()).find(action => action.colType === 'soi');
+            const victimNote = document.getElementById('wolfVictimNote');
+            if (victimNote) {
+                victimNote.classList.add('visible');
+                victimNote.textContent = wolfBite
+                    ? `Nạn nhân Sói cắn: ${wolfBite.targetName}. Bình Cứu chỉ có thể dùng cho người này.`
+                    : 'Không có mục tiêu Sói cắn. Bình Cứu chưa thể sử dụng.';
+            }
+
+            const seerAction = Array.from(nightSelections.values()).find(action => action.colType === 'inspect');
+            const seerNote = document.getElementById('seerResultNote');
+            if (seerNote) {
+                if (!seerAction) {
+                    seerNote.classList.remove('visible');
+                    seerNote.textContent = '';
+                } else {
+                    seerNote.classList.add('visible');
+                    seerNote.innerHTML = `<strong>Kết quả cần ra hiệu: ${escapeHtml(seerAction.inspectResult)}</strong>`
+                        + (seerAction.contactWarning
+                            ? `<span class="seer-warning">⚠️ ${escapeHtml(seerAction.contactWarning)}</span>` : '');
+                }
+            }
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value || '';
+            return div.innerHTML;
+        }
+
+        function guideSteps() {
+            return Array.from(document.querySelectorAll('#nightGuide .guide-step'));
+        }
+
+        function showGuideStep(index) {
+            const steps = guideSteps();
+            if (!steps.length) return;
+            currentGuideStep = Math.max(0, Math.min(index, steps.length - 1));
+            steps.forEach((step, i) => step.classList.toggle('active', i === currentGuideStep));
+            document.querySelectorAll('#guideProgress .guide-progress-dot').forEach((dot, i) => {
+                dot.classList.toggle('done', i < currentGuideStep);
+                dot.classList.toggle('current', i === currentGuideStep);
+            });
+            const count = document.getElementById('guideCount');
+            if (count) count.textContent = currentGuideStep === steps.length - 1
+                ? 'Tổng kết' : `Bước ${currentGuideStep + 1}/${steps.length}`;
+            const back = steps[currentGuideStep].querySelector('.guide-back');
+            if (back) {
+                const previous = availableGuideIndex(currentGuideStep - 1, -1);
+                const noPrevious = currentGuideStep === 0 || previous === currentGuideStep;
+                back.style.display = noPrevious ? 'none' : 'block';
+                back.parentElement.classList.toggle('single', noPrevious);
+            }
+            if (steps[currentGuideStep].dataset.stepKey === 'review') renderGuideReview();
+        }
+
+        function unavailableStepReason(step) {
+            if (!step || step.dataset.stepKey === 'review') return '';
+            const actions = Array.from(step.querySelectorAll('[data-action-container]'));
+            if (!actions.length) return '';
+            if (actions.every(action => action.classList.contains('silenced-action'))) return 'bị câm, không gọi';
+            if (actions.every(action => action.dataset.baseDisabled === 'true'
+                    || action.classList.contains('silenced-action'))) return 'đang mất chức năng, không gọi';
+            return '';
+        }
+
+        function availableGuideIndex(index, direction) {
+            const steps = guideSteps();
+            let candidate = index;
+            while (candidate >= 0 && candidate < steps.length - 1
+                    && unavailableStepReason(steps[candidate])) {
+                candidate += direction;
+            }
+            return candidate < 0 || candidate >= steps.length ? currentGuideStep : candidate;
+        }
+
+        function moveGuide(delta) {
+            showGuideStep(availableGuideIndex(currentGuideStep + delta, delta < 0 ? -1 : 1));
+            document.getElementById('nightGuide')?.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+
+        function skipGuideStep() {
+            const current = guideSteps()[currentGuideStep];
+            current?.querySelectorAll('[data-action-container]').forEach(container => {
+                nightSelections.delete(container.dataset.actionContainer);
+            });
+            normalizeNightSelections();
+            renderNightSelections();
+            moveGuide(1);
+        }
+
+        function renderGuideReview() {
+            const list = document.getElementById('guideReviewList');
+            if (!list) return;
+            const actions = Array.from(nightSelections.values());
+            const skipped = guideSteps()
+                .map(step => ({title:step.querySelector('.guide-title')?.textContent.trim(), reason:unavailableStepReason(step)}))
+                .filter(item => item.title && item.reason);
+            if (!actions.length && !skipped.length) {
+                list.innerHTML = '<div class="guide-review-empty">Không có hành động nào được chọn. Đêm vẫn có thể được xử lý.</div>';
+                return;
+            }
+            const selectedItems = actions.map(action => {
+                const icon = action.colType === 'soi' ? '🐺'
+                    : action.colType === 'recruit' ? '🌘'
+                    : action.colType === 'inspect' ? '🔮'
+                    : action.colType === 'kill' ? '⚔️'
+                    : action.colType === 'prot' || action.colType === 'superProt' ? '🛡️' : '🔗';
+                const roleName = action.colType === 'soi'
+                    ? action.roleName.replace(/^🐺\s*/, '') : action.roleName;
+                return `<div class="guide-review-item">${icon} ${escapeHtml(roleName)} → ${escapeHtml(action.targetName)}</div>`;
+            });
+            const skippedItems = skipped.map(item =>
+                `<div class="guide-review-item">🤫 ${escapeHtml(item.title)} - ${escapeHtml(item.reason)}</div>`);
+            list.innerHTML = selectedItems.concat(skippedItems).join('');
         }
 
         function processNight() {
-            const onToggles = document.querySelectorAll('#roleTable .tog.on');
+            const actions = Array.from(nightSelections.values()).map(({key, inspectResult, contactWarning, ...action}) => action);
 
-            const isRecruit = document.getElementById('recruitMode')?.checked;
-            const actions = Array.from(onToggles).map(el => ({
-                targetDeviceId:   el.dataset.devicetarget,
-                targetName: el.dataset.name,
-                targetRoleId: el.dataset.targetroleid,
-                targetRoleName: el.dataset.targetrole,
-                roleId:     el.dataset.roleid,
-                deviceId:   el.dataset.device,
-                roleName:   el.dataset.rolename,
-                colType:    el.dataset.col.split('_')[0] === 'soi' && isRecruit ? 'recruit' : el.dataset.col.split('_')[0],
-                connValue:  el.dataset.connvalue || null
-            }));
-
-            // Thêm trạng thái superProtected  vào actions
-            document.querySelectorAll('[id^="sp-"]').forEach(el => {
-                actions.push({
-                    targetDeviceId:   el.dataset.device,
-                    targetName: el.dataset.name,
-                    roleId:     el.dataset.roleid,
-                    roleName:   el.dataset.rolename,
-                    colType:    'superProt',
-                    connValue:  el.classList.contains('on') ? 'ON' : 'OFF'
-                });
-            });
-
-            if (!actions.length) { alert('Chưa chọn hành động nào!'); return; }
-
-            const summary = actions.map(a => {
-                const icon = a.colType === 'soi' ? '🐺' : a.colType === 'kill' ? '⚔️' : a.colType === 'prot' ? '🛡️' : '🔗';
+            const summary = actions.length ? actions.map(a => {
+                const icon = a.colType === 'soi' ? '🐺'
+                    : a.colType === 'recruit' ? '🌘'
+                    : a.colType === 'inspect' ? '🔮'
+                    : a.colType === 'kill' ? '⚔️'
+                    : a.colType === 'prot' || a.colType === 'superProt' ? '🛡️' : '🔗';
                 return `${icon} ${a.roleName} → ${a.targetName}`;
-            }).join('\n');
+            }).join('\n') : 'Không có hành động nào';
 
             if (!confirm(`Kết quả đêm nay:\n${summary}\n\nXác nhận xử lý?`)) return;
 
@@ -504,14 +1004,36 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(actions)
             }).then(r => r.text()).then(res => {
-                // Reset conn cols theo connValue: 1/3/7 → off, 2 → giữ nguyên
                 alert(res);
-                window.location.reload();
+                if (!res.startsWith('ERROR')) window.location.reload();
             }).catch(() => alert('Lỗi khi xử lý!'));
         }
 
+        function selectOldWitchTarget(el) {
+            if (el.classList.contains('disabled')) return;
+            const wasSelected = el.classList.contains('selected');
+            document.querySelectorAll('.day-target.selected').forEach(item => item.classList.remove('selected'));
+            oldWitchTarget = wasSelected ? null : readTargetDevice(el);
+            if (!wasSelected) el.classList.add('selected');
+        }
+
+        function executeOldWitchAction(button) {
+            if (!oldWitchTarget) { alert('Hãy chọn người bị đuổi khỏi làng.'); return; }
+            const target = document.querySelector(`.day-target[data-device-target="${oldWitchTarget}"]`);
+            const targetName = target?.dataset.name || 'mục tiêu đã chọn';
+            if (!confirm(`Phù thủy già đuổi ${targetName} khỏi làng?`)) return;
+            fetch('/ms/processDayRole', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({type:'oldWitch', actorDeviceId:button.dataset.actorDevice, targetDeviceId:oldWitchTarget})
+            }).then(r => r.text()).then(res => {
+                alert(res);
+                if (!res.startsWith('ERROR')) window.location.reload();
+            }).catch(() => alert('Lỗi khi xử lý Phù thủy già!'));
+        }
+
         function toggleKill(el) {
-            const btn = el.closest('tr').querySelector('.kbtn');
+            const btn = el?.closest('tr')?.querySelector('.kbtn');
+            if (!btn) return;
             const alreadySel = btn.classList.contains('sel');
             document.querySelectorAll('.kbtn.sel').forEach(b => b.classList.remove('sel'));
             if (!alreadySel) btn.classList.add('sel');
@@ -531,19 +1053,21 @@
             }
         }
 
-        updateLock();
+        function skipDayVote() {
+            if (!confirm('Không treo ai trong ngày này và chuyển sang đêm tiếp theo?')) return;
+            fetch('/ms/kill', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({deviceIds:[]})
+            }).then(r => r.text()).then(res => {
+                alert(res);
+                if (!res.startsWith('ERROR')) window.location.reload();
+            }).catch(() => alert('Lỗi khi chuyển pha!'));
+        }
 
-        document.querySelectorAll('#roleTable tbody td[data-id]').forEach(td => {
-            const id = td.dataset.id;
-            if (idSoi.includes(id)) td.querySelector('span').style.color = '#f87171';
-            else if (idOutsider.includes(id)) td.querySelector('span').style.color = '#fbbf24';
-        });
-
-        document.getElementById('recruitMode')?.addEventListener('change', function() {
-            document.querySelectorAll('#roleTable .tog.on[data-col^="soi_"]').forEach(el => {
-                el.classList.toggle('recruit', this.checked);
-            });
-        });
+        if (document.getElementById('nightGuide')) {
+            renderNightSelections();
+            showGuideStep(availableGuideIndex(0, 1));
+        }
 
         // Sticky thead clone
         const wrap = document.querySelector('.tbl-wrap');
@@ -573,4 +1097,3 @@
 </div>
 </body>
 </html>
-

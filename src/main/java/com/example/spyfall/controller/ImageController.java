@@ -1,86 +1,62 @@
 package com.example.spyfall.controller;
 
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Map;
 
 @RestController
 public class ImageController {
 
-    @GetMapping("/qrcode.png")
-    public ResponseEntity<Resource> getQRCode() {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/qrcode.png");
-
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/qrcode.png");
-        } else {
-            file = new File("/sdcard/java/qrcode.png");
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    @GetMapping(value = "/qrcode.png", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getQRCode() throws WriterException, IOException {
+        return createQRCode("/ms/play");
     }
 
-    @GetMapping("/spy.png")
-    public ResponseEntity<Resource> getQRCode2() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy.png");
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/spy.png");
-
-        } else {
-            file = new File("/sdcard/java/spy.png");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    @GetMapping(value = "/spy.png", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getSpyQRCode() throws WriterException, IOException {
+        return createQRCode("/sp");
     }
 
-    @GetMapping("/gDuck.png")
-    public ResponseEntity<Resource> getGDuck() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/gDuck.png");
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/gDuck.png");
-
-        } else {
-            file = new File("/sdcard/java/gDuck.png");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    @GetMapping(value = "/gDuck.png", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getGoldenDuckQRCode() throws WriterException, IOException {
+        return createQRCode("/gd/play");
     }
 
-    @GetMapping("/spy2.png")
-    public ResponseEntity<Resource> getSpy2() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy2.png");
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/spy2.png");
+    @GetMapping(value = "/spy2.png", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getSpy2QRCode() throws WriterException, IOException {
+        return createQRCode("/spy2");
+    }
 
-        } else {
-            file = new File("/sdcard/java/spy2.png");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    private ResponseEntity<byte[]> createQRCode(String targetPath) throws WriterException, IOException {
+        String targetUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path(targetPath)
+                .build()
+                .toUriString();
+        BitMatrix matrix = new MultiFormatWriter().encode(
+                targetUrl,
+                BarcodeFormat.QR_CODE,
+                300,
+                300,
+                Map.of(EncodeHintType.CHARACTER_SET, "UTF-8"));
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        MatrixToImageWriter.writeToStream(matrix, "PNG", output);
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.IMAGE_PNG)
+                .body(output.toByteArray());
     }
 }

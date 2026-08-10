@@ -14,6 +14,8 @@ public class Spy2 {
     String ipConfig;
     String userName;
     String keyword;
+    @Builder.Default
     boolean isRemove = false;
+    @Builder.Default
     String role = "Dân Thường";
 }
