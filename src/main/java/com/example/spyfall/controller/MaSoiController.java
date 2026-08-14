@@ -1,13 +1,13 @@
 package com.example.spyfall.controller;
 
 import com.example.spyfall.common.DataMember;
+import com.example.spyfall.common.GameSetupRequest;
 import com.example.spyfall.common.NightActionDto;
 import com.example.spyfall.common.KillDto;
 import com.example.spyfall.service.MaSoiService;
 import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.ObjectUtils;
@@ -27,26 +27,28 @@ import java.util.Map;
 @RequestMapping("/ms")
 public class MaSoiController {
 
-    @Autowired
-    private MaSoiService maSoiService;
+    private final MaSoiService maSoiService;
+
+    public MaSoiController(MaSoiService maSoiService) {
+        this.maSoiService = maSoiService;
+    }
 
     @GetMapping("/run")
     String run(Model model) throws Exception {
         model.addAttribute("datas", maSoiService.getDatas());
-        model.addAttribute("idSoi", maSoiService.ID_SOI);
-        model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
+        addRoleGroupAttributes(model);
         return "masoi/run";
     }
 
     @GetMapping("/create")
     @ResponseBody
     String create(@RequestParam Map<String, String> params) throws Exception {
-        return maSoiService.loadGame(params);
+        return maSoiService.loadGame(GameSetupRequest.fromQueryParams(params));
     }
 
     @GetMapping("/play")
     String playLobby(Model model) {
-        model.addAttribute("image", maSoiService.getImage());
+        addCommonAttributes(model);
         return "masoi/lobby";
     }
 
@@ -58,29 +60,28 @@ public class MaSoiController {
             if (member == null) {
                 if (!ObjectUtils.isEmpty(name)) {
                     model.addAttribute("notSetup", true);
-                    model.addAttribute("image", maSoiService.getImage());
+                    addCommonAttributes(model);
                     return "masoi/play";
                 }
                 // Not setup - redirect to lobby
-                model.addAttribute("image", maSoiService.getImage());
+                addCommonAttributes(model);
                 return "masoi/lobby";
             } else if (ObjectUtils.isEmpty(member.getRole())) {
                 model.addAttribute("fullSlot", true);
-                model.addAttribute("image", maSoiService.getImage());
+                addCommonAttributes(model);
                 return "masoi/play";
             }
             model.addAttribute("role", member.getRole());
             model.addAttribute("desc", member.getDescription());
             model.addAttribute("dataMore", member.getDetailShow());
             model.addAttribute("showRoles", maSoiService.getListShowForMember());
-            model.addAttribute("image", maSoiService.getImage());
+            addCommonAttributes(model);
             model.addAttribute("gameNumber", maSoiService.getGameNumber());
-            model.addAttribute("idSoi", maSoiService.ID_SOI);
-            model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
+            addRoleGroupAttributes(model);
             model.addAttribute("isDead", maSoiService.getDeadPls().contains(member));
             if (maSoiService.getDeadPls().contains(member)) {
                 if (maSoiService.isAllowDeadViewGameHistory()) {
-                    model.addAttribute("historyGame", maSoiService.getDetailOneGameHistory());
+                    model.addAttribute("historyGame", maSoiService.getCurrentGameHistory());
                 }
                 if (maSoiService.isAllowShowAliveDead()) {
                     model.addAttribute("deadPlayer", maSoiService.getDeadPls());
@@ -89,7 +90,7 @@ public class MaSoiController {
             }
 
         } catch (Exception e) {
-            model.addAttribute("image", maSoiService.getImage());
+            addCommonAttributes(model);
             return "masoi/lobby";
         }
         return "masoi/play";
@@ -102,32 +103,21 @@ public class MaSoiController {
         model.addAttribute("playersData", players);
         model.addAttribute("activeRoles", maSoiService.getActiveRolesString());
         model.addAttribute("showSoiNguyen", maSoiService.isShowSoiNguyen());
-        model.addAttribute("image", maSoiService.getImage());
-        model.addAttribute("idSoi", maSoiService.ID_SOI);
-        model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
+        addCommonAttributes(model);
+        addRoleGroupAttributes(model);
         model.addAttribute("deadViewHistory", maSoiService.isAllowDeadViewGameHistory());
         model.addAttribute("showAliveDead", maSoiService.isAllowShowAliveDead());
 
         model.addAllAttributes(maSoiService.getGameManagementData());
-        model.addAttribute("image", maSoiService.getImage());
-        model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
-        model.addAttribute("detailNight", maSoiService.historyAdmin);
-        model.addAttribute("detailDay", maSoiService.detailGameDay);
-        model.addAttribute("gameDetailNight", maSoiService.nightStory != null ? maSoiService.nightStory.toString() : "");
+        model.addAttribute("dayKill", maSoiService.isDayKillProcessed());
+        model.addAttribute("detailNight", maSoiService.getHistoryAdmin());
+        model.addAttribute("detailDay", maSoiService.getDayDetails());
+        model.addAttribute("gameDetailNight", maSoiService.getNightDetails());
         return "masoi/admin";
     }
 //
-//    @GetMapping("/admin2")
-//    String admin2(Model model) throws Exception {
-//        model.addAttribute("datas", maSoiService.getDatas());
-//        model.addAttribute("idSoi", maSoiService.ID_SOI);
-//        model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
-//        return "masoi/admin2";
-//    }
-
     @PostMapping("/showHistory")
     String showHistory(Model model) {
-        model.addAllAttributes(maSoiService.getGameHistoryData());
         model.addAllAttributes(maSoiService.getGameHistoryData());
         return "masoi/history";
     }
@@ -164,17 +154,11 @@ public class MaSoiController {
         return "OK";
     }
 //
-//    @PostMapping("/assignPower")
-//    @ResponseBody
-//    String assignPower(@RequestBody PowerAssignDto dto) {
-//        return maSoiService.assignPower(dto.getDeviceId(), dto.getRoleId(), dto.getRoleName(), dto.getSkillType(), dto.isEnabled());
-//    }
-
     @GetMapping("/gameManagement")
     String gameManagement(Model model) {
         model.addAllAttributes(maSoiService.getGameManagementData());
-        model.addAttribute("image", maSoiService.getImage());
-        model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
+        addCommonAttributes(model);
+        model.addAttribute("dayKill", maSoiService.isDayKillProcessed());
         return "masoi/gameManagement";
     }
 
@@ -183,5 +167,14 @@ public class MaSoiController {
     String forTest(@RequestParam int total) {
         maSoiService.createTest(total);
         return "Success tạo người chơi : " + total;
+    }
+
+    private void addCommonAttributes(Model model) {
+        model.addAttribute("image", maSoiService.getImage());
+    }
+
+    private void addRoleGroupAttributes(Model model) {
+        model.addAttribute("idSoi", MaSoiService.WOLF_ROLE_IDS);
+        model.addAttribute("idOutsider", MaSoiService.OUTSIDER_ROLE_IDS);
     }
 }

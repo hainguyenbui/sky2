@@ -1,702 +1,796 @@
 package com.example.spyfall.service;
 
 import com.example.spyfall.common.DataMember;
-import com.example.spyfall.common.LifeLinkDto;
+import com.example.spyfall.common.GameSetupRequest;
 import com.example.spyfall.common.NightActionDto;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
 public class MaSoiService {
 
-    private List<DataMember> datas = new ArrayList<>();
-    private List<DataMember> pls = new ArrayList<>();
-    private List<DataMember> deadPls = new ArrayList<>();
-    private List<DataMember> listShowForMember = new ArrayList<>();
-    private boolean checkDecreaseSoi = false;
-    private boolean isGameEnd = true;
-    private boolean isAddSoiNguyen = false;
-    private boolean isHaveSoiNguyen = false;
+    public static final List<Integer> WOLF_ROLE_IDS = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+    public static final List<Integer> OUTSIDER_ROLE_IDS = List.of(21, 20, 22);
+
+    private static final String IMAGE_PATH = "/qrcode.png";
+    private static final List<String> DAY_DEATH_REASONS = List.of(
+            " bị thủ tiêu vì biết quá nhiều", " không muốn chơi nữa", " bị thù ghét", " nói quá nhiều");
+
+    private final DataInputService dataInputService;
+    private final List<DataMember> roleCatalog = new ArrayList<>();
+    private final List<DataMember> players = new ArrayList<>();
+    private final List<DataMember> deadPlayers = new ArrayList<>();
+    private final List<DataMember> visibleRoles = new ArrayList<>();
+    private final Map<String, List<String>> copyLinks = new HashMap<>();
+    private final List<String> adminHistory = new ArrayList<>();
+    private final Map<Integer, List<DataMember>> completedGames = new TreeMap<>(Comparator.reverseOrder());
+    private final Map<Integer, Map<String, String>> completedGameDetails = new LinkedHashMap<>();
     @Getter
-    private boolean allowDeadViewGameHistory = false;
+    private final Map<String, String> currentGameHistory = new LinkedHashMap<>();
+
+    private boolean gameEnded = true;
+    private boolean wolfWasRemovedDuringSetup;
+    private boolean curseAvailable;
     @Getter
-    private boolean allowShowAliveDead = false;
-    public StringBuilder nightStory;
-    private Map<Integer, List<DataMember>> detailEachGame = new TreeMap<>(Comparator.reverseOrder());
+    private boolean allowDeadViewGameHistory;
     @Getter
-    private Map<String, String> detailOneGameHistory = new LinkedHashMap<>();
-    public String detailGameDay = "";
-    @Getter
-    private Map<Integer, Map<String, String>> detailAllGame = new LinkedHashMap<>();
-    public boolean dayIsReadyKill = false;
-    private final String image = "/qrcode.png";
-    private Map<String, List<String>> linkRole = new HashMap<>();// Liên kết sinh mệnh chức năng nếu key chết value sẽ có chức năng;
-    public List<String> historyAdmin = new ArrayList<>();
-    private List<String> howToDie = List.of(" bị thủ tiêu vì biết quá nhiều", " không muốn chơi nữa", " bị thù ghét", " nói quá nhiều");
-    public int countNight = 1;
+    private boolean allowShowAliveDead;
+    private boolean dayKillProcessed;
+    private int nightNumber = 1;
+    private String nightDetails = "";
+    private String dayDetails = "";
 
-    public final List<Integer> ID_SOI = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-    public final List<Integer> ID_OUTSIDER = List.of(21, 20, 22);
-
-    public String getImage() { return image; }
-    public List<DataMember> getDatas() throws Exception { dataInputService.prepareDataMaSoi(datas); return datas; }
-    public List<DataMember> getPls() { return pls; }
-    public List<DataMember> getDeadPls() { return deadPls; }
-    public List<DataMember> getListShowForMember() { return listShowForMember; }
-    public int getGameNumber() { return detailEachGame.size() + 1; }
-    public void setAllowDeadViewGameHistory(boolean value) { allowDeadViewGameHistory = value; }
-    public void setAllowShowAliveDead(boolean value) { allowShowAliveDead = value; }
-
-
-    @Autowired
-    DataInputService dataInputService;
-
-    public boolean isShowSoiNguyen() {
-        return isHaveSoiNguyen && !isAddSoiNguyen;
+    public MaSoiService(DataInputService dataInputService) {
+        this.dataInputService = dataInputService;
     }
 
-    public String loadGame(Map<String, String> params) throws Exception{
-        if (!isGameEnd) return "ALERT GAME NOT END YES";
-        int totalPlay = Integer.parseInt(ObjectUtils.isEmpty(params.get("total")) ? "0" : params.get("total"));
-        if (totalPlay == 0) return "ERROR LỖI KHÔNG TỔNG NGƯỜI";
+    public String getImage() {
+        return IMAGE_PATH;
+    }
 
-        boolean isSoiNguyen = Boolean.parseBoolean(params.get("checkSoi"));
-        boolean isCupid = Boolean.parseBoolean(params.get("checkCupid"));
+    public List<DataMember> getDatas() throws Exception {
+        dataInputService.prepareDataMaSoi(roleCatalog);
+        return roleCatalog;
+    }
 
-        isGameEnd = false;
-        dataInputService.prepareDataMaSoi(datas);
-        pls.clear();
-        deadPls.clear();
-        listShowForMember.clear();
-        checkDecreaseSoi = false;
-        isHaveSoiNguyen = false;
-        allowDeadViewGameHistory = false;
-        allowShowAliveDead = false;
-        countNight = 1;
+    public List<DataMember> getPls() {
+        return players;
+    }
 
-        int totalRole = 0;
-        for (DataMember data : datas) {
-            int total = 0;
-            if (params.get(String.valueOf(data.getId())) != null) {
-                total = Integer.parseInt(params.get(String.valueOf(data.getId())));
-            }
-            if (total >= 1) {
-                listShowForMember.add(createDM(data, total));
-            }
-            for (int i = 0; i < total; i++) {
-                data.setIpData("play");
-                pls.add(DataMember.builder()
-                        .id(data.getId()).idPlayGame(String.valueOf(pls.size() + 1))
-                        .role(data.getRole()).description(data.getDescription())
-                        .killSkill(data.getKillSkill()).protectedSkill(data.getProtectedSkill())
-                        .connectSkill(data.getConnectSkill()).superProtectedSkill(data.isSuperProtectedSkill())
-                        .detailShow(data.getRole())
-                        .build());
-            }
-            totalRole += total;
+    public List<DataMember> getDeadPls() {
+        return deadPlayers;
+    }
+
+    public List<DataMember> getListShowForMember() {
+        return visibleRoles;
+    }
+
+    public List<String> getHistoryAdmin() {
+        return adminHistory;
+    }
+
+    public String getNightDetails() {
+        return nightDetails;
+    }
+
+    public String getDayDetails() {
+        return dayDetails;
+    }
+
+    public boolean isDayKillProcessed() {
+        return dayKillProcessed;
+    }
+
+    public int getGameNumber() {
+        return completedGames.size() + 1;
+    }
+
+    public void setAllowDeadViewGameHistory(boolean value) {
+        allowDeadViewGameHistory = value;
+    }
+
+    public void setAllowShowAliveDead(boolean value) {
+        allowShowAliveDead = value;
+    }
+
+    public boolean isShowSoiNguyen() {
+        return curseAvailable;
+    }
+
+    public String loadGame(Map<String, String> params) throws Exception {
+        return loadGame(GameSetupRequest.fromQueryParams(params));
+    }
+
+    public String loadGame(GameSetupRequest setup) throws Exception {
+        if (!gameEnded) {
+            return "ALERT GAME NOT END YES";
+        }
+        if (setup.getTotalPlayers() == 0) {
+            return "ERROR LỖI KHÔNG TỔNG NGƯỜI";
         }
 
-        Random random = new Random();
-        for (int i = 0; i < totalRole - totalPlay; i++) {
-            int indexMember = random.nextInt(pls.size());
-            if (ID_SOI.contains(pls.get(indexMember).getId())) checkDecreaseSoi = true;
-            pls.remove(indexMember);
-        }
-
-        pls.forEach(item -> {
-            if (Objects.equals(item.getId(), 3)) isHaveSoiNguyen = true;
-        });
-
-        if (isSoiNguyen || checkDecreaseSoi) {
-            for (DataMember item : pls) {
-                if (ID_SOI.contains(item.getId())) {
-                    item.setRole(item.getRole() + " + Sói Nguyền");
-                    item.setDescription(item.getDescription() + "sói nguyền");
-                    isHaveSoiNguyen = true;
-                }
-            }
-        }
-
-        if (isCupid) {
-            Collections.shuffle(pls);
-            List<DataMember> cupid = pls.subList(0, 2);
-            String c1 = cupid.get(0).getRole(), c2 = cupid.get(1).getRole();
-
-            DataMember data1 = cupid.get(0), data2 = cupid.get(1);
-            data1.setRole(c1 + " cặp đôi với " + c2);
-            data1.setLifeLink(1);
-            data1.setLifeLinkIds(List.of(data2.getId()));
-            data2.setRole(c2 + " cặp đôi với " + c1);
-            data2.setLifeLink(1);
-            data2.setLifeLinkIds(List.of(data1.getId()));
-        }
+        resetGame(setup);
+        createPlayers(setup);
+        removeExtraRoles(setup.getTotalPlayers());
+        applyOptionalSetupRules(setup);
         return "OK load";
     }
 
-    /**
-     * Get or assign role for the player. Returns DataMember assigned or null if not set up.
-     */
-    public DataMember getOrAssignRole(String clientIp, String name) {
-        if (pls.isEmpty()) return null;
-        else {
-            List<DataMember> sois = pls.stream().filter(player -> player.getId() < 15).toList();
-            for (DataMember dataMember : pls) {
-                if (clientIp.equals(dataMember.getIpData())) {
-                    if (name != null) dataMember.setNameMember(name);
-                    if (dataMember.getId() == 15) {
-                        // neu la ke phan boi thi thay dc cac con soi
-                        dataMember.setDetailShow("Sói là: " + sois.stream()
-                                .map(DataMember::getNameMember)
-                                .collect(Collectors.joining(", ")));
-                    }
-                    return dataMember;
-                }
+    private void resetGame(GameSetupRequest setup) throws Exception {
+        gameEnded = false;
+        dataInputService.prepareDataMaSoi(roleCatalog);
+        players.clear();
+        deadPlayers.clear();
+        visibleRoles.clear();
+        copyLinks.clear();
+        adminHistory.clear();
+        currentGameHistory.clear();
+        wolfWasRemovedDuringSetup = false;
+        curseAvailable = false;
+        allowDeadViewGameHistory = false;
+        allowShowAliveDead = false;
+        dayKillProcessed = false;
+        nightNumber = 1;
+        nightDetails = "";
+        dayDetails = "";
+    }
+
+    private void createPlayers(GameSetupRequest setup) {
+        for (DataMember role : roleCatalog) {
+            int count = setup.getRoleCount(role.getId());
+            if (count > 0) {
+                visibleRoles.add(roleSummary(role, count));
+            }
+            for (int index = 0; index < count; index++) {
+                players.add(createPlayer(role));
             }
         }
+    }
 
-        Collections.shuffle(pls);
-        pls.sort(Comparator.comparing(DataMember::getIpData, Comparator.nullsFirst(String::compareTo)));
-        DataMember yourLocation = pls.get(0);
-        if (yourLocation.getIpData() != null) {
+    private DataMember createPlayer(DataMember role) {
+        return DataMember.builder()
+                .id(role.getId())
+                .idPlayGame(String.valueOf(players.size() + 1))
+                .role(role.getRole())
+                .description(role.getDescription())
+                .killSkill(role.getKillSkill())
+                .protectedSkill(role.getProtectedSkill())
+                .connectSkill(role.getConnectSkill())
+                .superProtectedSkill(role.isSuperProtectedSkill())
+                .detailShow(role.getRole())
+                .build();
+    }
+
+    private void removeExtraRoles(int requestedPlayerCount) {
+        Random random = new Random();
+        while (players.size() > requestedPlayerCount) {
+            DataMember removed = players.remove(random.nextInt(players.size()));
+            wolfWasRemovedDuringSetup |= isWolf(removed);
+        }
+    }
+
+    private void applyOptionalSetupRules(GameSetupRequest setup) {
+        curseAvailable = players.stream().anyMatch(player -> player.getId() == 3);
+        if (setup.isSoiNguyenEnabled() || wolfWasRemovedDuringSetup) {
+            players.stream().filter(this::isWolf).forEach(this::addWolfCurse);
+        }
+        if (setup.isCupidEnabled() && players.size() >= 2) {
+            linkCupidPair();
+        }
+    }
+
+    private void addWolfCurse(DataMember player) {
+        player.setRole(player.getRole() + " + Sói Nguyền");
+        player.setDescription(player.getDescription() + "sói nguyền");
+        curseAvailable = true;
+    }
+
+    private void linkCupidPair() {
+        Collections.shuffle(players);
+        DataMember first = players.get(0);
+        DataMember second = players.get(1);
+        first.setRole(first.getRole() + " cặp đôi với " + second.getRole());
+        first.setLifeLink(1);
+        first.setLifeLinkIds(List.of(second.getId()));
+        second.setRole(second.getRole() + " cặp đôi với " + first.getRole());
+        second.setLifeLink(1);
+        second.setLifeLinkIds(List.of(first.getId()));
+    }
+
+    public DataMember getOrAssignRole(String deviceId, String playerName) {
+        if (players.isEmpty()) {
+            return null;
+        }
+        Optional<DataMember> existingPlayer = players.stream()
+                .filter(player -> Objects.equals(deviceId, player.getIpData()))
+                .findFirst();
+        if (existingPlayer.isPresent()) {
+            DataMember player = existingPlayer.get();
+            if (playerName != null) {
+                player.setNameMember(playerName);
+            }
+            updateTraitorDetails(player);
+            return player;
+        }
+
+        Collections.shuffle(players);
+        players.sort(Comparator.comparing(DataMember::getIpData, Comparator.nullsFirst(String::compareTo)));
+        DataMember availablePlayer = players.get(0);
+        if (availablePlayer.getIpData() != null) {
             return new DataMember();
         }
-        yourLocation.setIpData(clientIp);
-        yourLocation.setNameMember(name);
-        return yourLocation;
+        availablePlayer.setIpData(deviceId);
+        availablePlayer.setNameMember(playerName);
+        return availablePlayer;
+    }
+
+    private void updateTraitorDetails(DataMember player) {
+        if (player.getId() == 15) {
+            String wolves = players.stream()
+                    .filter(candidate -> candidate.getId() < 15)
+                    .map(DataMember::getNameMember)
+                    .collect(Collectors.joining(", "));
+            player.setDetailShow("Sói là: " + wolves);
+        }
     }
 
     public Map<String, Object> getGameHistoryData() {
         List<Map<String, Object>> games = new ArrayList<>();
-        detailEachGame.forEach((key, value) -> {
+        completedGames.forEach((gameNumber, gamePlayers) -> {
+            List<Map<String, Object>> playerViews = gamePlayers.stream()
+                    .sorted(Comparator.comparing(DataMember::getId))
+                    .map(this::historyPlayerView)
+                    .toList();
             Map<String, Object> game = new HashMap<>();
-            game.put("gameNumber", key);
-            
-            List<Map<String, Object>> players = new ArrayList<>();
-            value.sort(Comparator.comparing(DataMember::getId));
-            value.forEach(item -> {
-                Map<String, Object> player = new HashMap<>();
-                String displayLocation = item.getRole().replaceAll("<[^>]*>", "");
-                String name = item.getNameMember() != null ? item.getNameMember() : (item.getIpData() != null ? "Ẩn danh" : "Chưa nhận");
-                
-                player.put("id", item.getId());
-                player.put("displayName", name);
-                player.put("displayLocation", displayLocation);
-                player.put("isSoi", ID_SOI.contains(item.getId()));
-                player.put("isOutsider", ID_OUTSIDER.contains(item.getId()));
-                players.add(player);
-            });
-            game.put("details", detailAllGame.get(key));
-            game.put("players", players);
+            game.put("gameNumber", gameNumber);
+            game.put("details", completedGameDetails.get(gameNumber));
+            game.put("players", playerViews);
             games.add(game);
         });
-        
-        Map<String, Object> result = new HashMap<>();
-        result.put("games", games);
-        return result;
+        return Map.of("games", games);
+    }
+
+    private Map<String, Object> historyPlayerView(DataMember player) {
+        String name = player.getNameMember() != null ? player.getNameMember()
+                : player.getIpData() != null ? "Ẩn danh" : "Chưa nhận";
+        return Map.of(
+                "id", player.getId(),
+                "displayName", name,
+                "displayLocation", removeHtml(player.getRole()),
+                "isSoi", isWolf(player),
+                "isOutsider", OUTSIDER_ROLE_IDS.contains(player.getId())
+        );
     }
 
     public String endGame() {
-        detailEachGame.put(detailEachGame.size() + 1, new ArrayList<>(pls));
-        detailAllGame.put(detailEachGame.size(), new LinkedHashMap<>(detailOneGameHistory));
-        isGameEnd = true;
-        isAddSoiNguyen = false;
-        pls.clear();
-        listShowForMember.clear();
-        checkDecreaseSoi = false;
-        countNight = 1;
-        detailOneGameHistory.clear();
-        dayIsReadyKill = false;
-        return "End Game : " + detailEachGame.size();
+        int gameNumber = completedGames.size() + 1;
+        completedGames.put(gameNumber, new ArrayList<>(players));
+        completedGameDetails.put(gameNumber, new LinkedHashMap<>(currentGameHistory));
+        gameEnded = true;
+        players.clear();
+        visibleRoles.clear();
+        copyLinks.clear();
+        dayKillProcessed = false;
+        nightNumber = 1;
+        currentGameHistory.clear();
+        return "End Game : " + completedGames.size();
     }
 
     public String getActiveRolesString() {
-        Set<String> roleAll = new LinkedHashSet<>();
-        pls.sort(Comparator.comparing(DataMember::getId));
-        List<Integer> notShow = List.of(21,30, 35, 41);
-        for (DataMember item : pls) {
-            if (item.getId() < 15) {
-                roleAll.add("Soi");
-            } else if (!notShow.contains(item.getId())) {
-                roleAll.add(item.getRole());
+        Set<String> activeRoles = new LinkedHashSet<>();
+        List<Integer> hiddenRoleIds = List.of(21, 30, 35, 41);
+        players.stream().sorted(Comparator.comparing(DataMember::getId)).forEach(player -> {
+            if (player.getId() < 15) {
+                activeRoles.add("Soi");
+            } else if (!hiddenRoleIds.contains(player.getId())) {
+                activeRoles.add(player.getRole());
             }
-        }
-        return String.join(", ", roleAll);
+        });
+        return String.join(", ", activeRoles);
     }
 
     public String processNight(List<NightActionDto> actions) {
-        dayIsReadyKill = false;
-        // BE nhận toàn bộ hành động đêm, tự xử lý logic ai chết ai không
-        // FE đã gửi: deviceId (mục tiêu), roleId, roleName, colType (soi/kill/prot/conn), connValue
-        Map<String, String> disabledRole = new LinkedHashMap<>(); // kiem tra role nao mat phep
-        Map<String, String> disabledRoleNextDay = new LinkedHashMap<>(); // kiem tra role nao ngay hom sau mat phep
-        Map<String, String> toKill  = new LinkedHashMap<>();
-        Map<String, String> toSupperKill  = new LinkedHashMap<>();
-        Map<String, String> toSave  = new LinkedHashMap<>();
-        Map<String, LifeLinkDto> toLifeLink  = new LinkedHashMap<>();
-//        Map<Integer, DataMember> playerByRoles = pls.stream().collect(Collectors.toMap(DataMember::getId, player -> player));
-        Map<String, DataMember> playerByIpData = pls.stream().collect(Collectors.toMap(DataMember::getIpData, player -> player));
-        boolean isSuperProtectedSkill = false;
-        List<String> addHistory = new ArrayList<>();
-        pls.forEach(player -> {
-            if (player.getId() != 41 && player.getId() != 5) {
-                player.setDisabledSkill(false);
+        dayKillProcessed = false;
+        Map<String, DataMember> playersByDevice = playersByDevice();
+        NightResolution resolution = new NightResolution();
+        List<NightActionDto> submittedActions = actions == null ? List.of() : actions;
+
+        resetNightSkillBlocks();
+        adminHistory.clear();
+        evaluatePreNightEffects(submittedActions, playersByDevice, resolution);
+        evaluateNightActions(submittedActions, playersByDevice, resolution);
+        resolveNightDeaths(playersByDevice, resolution);
+        return publishNightResult(playersByDevice, resolution);
+    }
+
+    private void evaluatePreNightEffects(List<NightActionDto> actions, Map<String, DataMember> playersByDevice,
+                                         NightResolution resolution) {
+        Set<String> wolfDevices = livingWolves().stream().map(DataMember::getIpData).collect(Collectors.toSet());
+        String alphaWolfDevice = alphaWolfDevice();
+        for (NightActionDto action : actions) {
+            if (action.getRoleId() == 38) {
+                applySilence(action, wolfDevices, alphaWolfDevice, resolution);
+            } else if (action.getRoleId() == 42) {
+                registerCopyLink(action, playersByDevice, resolution);
+            } else if (action.getRoleId() == 44 && "ON".equals(action.getConnValue())) {
+                resolution.superProtectionActive = true;
+                resolution.events.add("Thiên thần đã bảo vệ lượt này");
+                findPlayerByRole(44).ifPresent(player -> player.setSuperProtectedSkill(false));
+            } else {
+                applySicknessPenalty(action, playersByDevice, resolution);
+            }
+        }
+    }
+
+    private void evaluateNightActions(List<NightActionDto> actions, Map<String, DataMember> playersByDevice,
+                                      NightResolution resolution) {
+        DataMember sickWolf = findPlayerByRole(5).orElse(null);
+        for (NightActionDto action : actions) {
+            applySickWolfRetaliation(action, sickWolf, resolution);
+            switch (action.actionType()) {
+                case SOI -> applyWolfBite(action, playersByDevice, resolution);
+                case KILL -> applyKillAction(action, playersByDevice, resolution);
+                case PROTECT -> applyProtection(action, playersByDevice, resolution);
+                case CONNECT -> applyConnection(action, resolution);
+                case RECRUIT -> applyRecruitment(action, playersByDevice, resolution);
+                default -> { }
+            }
+        }
+        if (resolution.sickWolfWasTargeted && sickWolf != null) {
+            sickWolf.setDisabledSkill(true);
+        }
+    }
+
+    private void applySilence(NightActionDto action, Set<String> wolfDevices, String alphaWolfDevice,
+                              NightResolution resolution) {
+        String message = action.getTargetName() + ": " + action.getTargetRoleName() + " bị câm lặng";
+        if (!wolfDevices.contains(action.getTargetDeviceId())) {
+            resolution.disabledRoles.put(action.getTargetDeviceId(), message);
+        } else {
+            if (Objects.equals(action.getTargetDeviceId(), alphaWolfDevice)) {
+                resolution.disabledRoles.put("soi", message);
+            }
+            if (action.getTargetRoleId() == 5) {
+                resolution.disabledRoles.put(action.getTargetDeviceId(), message);
+            } else if (action.getTargetRoleId() == 3) {
+                resolution.disabledRoles.put("soiNguyen", message);
+            }
+        }
+    }
+
+    private void registerCopyLink(NightActionDto action, Map<String, DataMember> playersByDevice,
+                                  NightResolution resolution) {
+        DataMember copycat = playersByDevice.get(action.getDeviceId());
+        if (copycat == null) {
+            return;
+        }
+        copycat.setDisabledSkill(true);
+        copyLinks.put(action.getTargetDeviceId(), List.of(copycat.getIpData()));
+        resolution.events.add("Nhân bản đã chọn " + action.getTargetRoleName());
+    }
+
+    private void applySicknessPenalty(NightActionDto action, Map<String, DataMember> playersByDevice,
+                                      NightResolution resolution) {
+        DataMember target = playersByDevice.get(action.getTargetDeviceId());
+        if (target == null || target.getId() != 41 || resolution.superProtectionActive) {
+            return;
+        }
+        if (action.getRoleId() == 1) {
+            livingWolves().forEach(player -> player.setDisabledSkill(true));
+            resolution.nextDayBlocks.put("Soi", "Sói cạp trúng người bệnh");
+        } else if (action.getRoleId() == 20) {
+            DataMember attacker = playersByDevice.get(action.getDeviceId());
+            if (attacker != null) {
+                attacker.setDisabledSkill(true);
+                resolution.nextDayBlocks.put("Sát thủ", "Sát thủ cạp trúng người bệnh");
+            }
+        }
+    }
+
+    private void applySickWolfRetaliation(NightActionDto action, DataMember sickWolf, NightResolution resolution) {
+        if (sickWolf == null || sickWolf.isDisabledSkill()
+                || !Objects.equals(sickWolf.getIpData(), action.getTargetDeviceId())) {
+            return;
+        }
+        if (!resolution.disabledRoles.containsKey(action.getTargetDeviceId())) {
+            addReason(resolution.deaths, action.getDeviceId(), "đụng phải Sói bị Sida");
+        }
+        resolution.sickWolfWasTargeted = true;
+    }
+
+    private void applyWolfBite(NightActionDto action, Map<String, DataMember> playersByDevice,
+                               NightResolution resolution) {
+        if (resolution.disabledRoles.containsKey("soi")) {
+            return;
+        }
+        DataMember target = playersByDevice.get(action.getTargetDeviceId());
+        if (target != null && target.getId() == 40 && !resolution.disabledRoles.containsKey(action.getTargetDeviceId())) {
+            target.setId(1);
+            target.setRole(target.getRole() + " + bạn đã là Sói");
+            resolution.events.add(action.getTargetName() + ": " + action.getTargetRoleName() + " đã trở thành Sói");
+        } else if (target != null && target.getId() == 20) {
+            resolution.events.add("Sói cắn hụt sát thủ");
+        } else {
+            addReason(resolution.deaths, action.getTargetDeviceId(), "bị Soi Cắn");
+        }
+    }
+
+    private void applyKillAction(NightActionDto action, Map<String, DataMember> playersByDevice,
+                                 NightResolution resolution) {
+        DataMember attacker = playersByDevice.get(action.getDeviceId());
+        if (attacker == null) {
+            return;
+        }
+        attacker.decreaseKillSkill();
+        if (resolution.disabledRoles.containsKey(action.getDeviceId())) {
+            return;
+        }
+        if (action.getRoleId() == 31) {
+            addReason(resolution.unpreventableDeaths, action.getTargetDeviceId(), "bị " + action.getRoleName() + " quăng bình");
+        } else {
+            if (action.getRoleId() == 43 && action.getTargetRoleId() >= 30) {
+                addReason(resolution.deaths, action.getDeviceId(), " loại bỏ nhầm dân");
+            } else if (action.getRoleId() == 46 && action.getTargetRoleId() < 30) {
+                resolution.events.add("Boom giết phe không phải dân");
+                attacker.setKillSkill(1);
+            }
+            addReason(resolution.deaths, action.getTargetDeviceId(), "bị " + action.getRoleName() + " tác động vật lý");
+        }
+    }
+
+    private void applyProtection(NightActionDto action, Map<String, DataMember> playersByDevice,
+                                 NightResolution resolution) {
+        DataMember protector = playersByDevice.get(action.getDeviceId());
+        if (protector == null) {
+            return;
+        }
+        protector.decreaseProtectedSkill();
+        if (!resolution.disabledRoles.containsKey(action.getDeviceId())) {
+            addReason(resolution.savedPlayers, action.getTargetDeviceId(), "được " + action.getRoleName() + " bảo vệ");
+        }
+    }
+
+    private void applyConnection(NightActionDto action, NightResolution resolution) {
+        if (resolution.disabledRoles.containsKey(action.getDeviceId())) {
+            return;
+        }
+        if (action.getRoleId() == 34) {
+            resolution.hunterLinks.put(action.getDeviceId(), action.getTargetDeviceId());
+        } else if (action.getRoleId() == 45) {
+            adminHistory.add("Phù Thủy Già đuổi " + action.getTargetName() + " ra khòi làng");
+        }
+    }
+
+    private void applyRecruitment(NightActionDto action, Map<String, DataMember> playersByDevice,
+                                  NightResolution resolution) {
+        if (resolution.disabledRoles.containsKey("soiNguyen")) {
+            return;
+        }
+        DataMember target = playersByDevice.get(action.getTargetDeviceId());
+        if (target == null) {
+            return;
+        }
+        curseAvailable = false;
+        target.setId(1);
+        target.setRole(target.getRole() + " - Soi");
+        String message = action.getTargetName() + " đã trở thành Sói";
+        adminHistory.add(message);
+        resolution.events.add(message);
+    }
+
+    private void resolveNightDeaths(Map<String, DataMember> playersByDevice, NightResolution resolution) {
+        resolution.savedPlayers.keySet().forEach(resolution.deaths::remove);
+        resolution.unpreventableDeaths.forEach((deviceId, reason) -> addReason(resolution.deaths, deviceId, reason));
+        expandLinkedDeaths(playersByDevice, resolution);
+        if (resolution.superProtectionActive) {
+            resolution.deaths.clear();
+        }
+    }
+
+    private void expandLinkedDeaths(Map<String, DataMember> playersByDevice, NightResolution resolution) {
+        int previousDeathCount;
+        do {
+            previousDeathCount = resolution.deaths.size();
+            resolution.hunterLinks.forEach((hunterDevice, targetDevice) -> {
+                if (resolution.deaths.containsKey(hunterDevice)) {
+                    addReason(resolution.deaths, targetDevice, "bị thợ săn ghim");
+                }
+            });
+            for (String deviceId : new ArrayList<>(resolution.deaths.keySet())) {
+                DataMember player = playersByDevice.get(deviceId);
+                if (player != null && player.getLifeLink() > 0) {
+                    findCupidPartner(player).ifPresent(partner -> resolution.deaths.putIfAbsent(partner.getIpData(), ""));
+                }
+            }
+        } while (previousDeathCount != resolution.deaths.size());
+    }
+
+    private String publishNightResult(Map<String, DataMember> playersByDevice, NightResolution resolution) {
+        StringBuilder story = new StringBuilder();
+        resolution.events.forEach(message -> appendStory(story, message));
+        resolution.disabledRoles.values().forEach(message -> appendStory(story, message));
+        resolution.savedPlayers.forEach((deviceId, reason) -> {
+            DataMember player = playersByDevice.get(deviceId);
+            if (player != null) {
+                appendStory(story, player.getNameMember() + ": " + player.getRole() + " " + reason);
             }
         });
-        historyAdmin.clear();
-        // loc lay soi con song la soi dau dan hoac la con soi duy nhat
-        String soiDauDanId = checkAlphaWolf();
-        List<String> livingWolves = pls.stream()
-                .filter(player -> ID_SOI.contains(player.getId()) && player.getId() != 15)
-                .map(DataMember::getIpData)
-                .toList();
-
-        // kiem tra cac chuc nang cam lang truoc
-        for (NightActionDto a : actions) {
-            if (a.getRoleId() == 38) {
-                // neu là câm lặng thì check người bị câm lặng có phải là sói còn sống hay không
-                if (livingWolves.contains(a.getTargetDeviceId())) {
-                    if (Objects.equals(a.getTargetDeviceId(), soiDauDanId)) {
-                        disabledRole.put("soi", a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
-                    }
-                    if (Objects.equals(a.getTargetRoleId(), 5)) {
-                        // nếu là sói sida
-                        disabledRole.put(a.getTargetDeviceId(), a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
-                    } else if (Objects.equals(a.getTargetRoleId(), 3)) {
-                        // nếu là sói nguyền
-                        disabledRole.put("soiNguyen", a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
-                    }
-                } else {
-                    disabledRole.put(a.getTargetDeviceId(), a.getTargetName() + ": " + a.getTargetRoleName() + " bị câm lặng");
-                }
-            } else if (a.getRoleId() == 42) {
-                // nếu là nhân bản thì liên kết sinh mệnh
-                DataMember dataMember = playerByIpData.get(a.getDeviceId());
-                dataMember.setDisabledSkill(true);
-                linkRole.put(a.getTargetDeviceId(), List.of(dataMember.getIpData()));
-                addHistory.add("Nhân bản đã chọn " + a.getTargetRoleName());
-            } else if (a.getRoleId() == 44 && Objects.equals(a.getConnValue(), "ON")) {
-                isSuperProtectedSkill = true;
-                addHistory.add("Thiên thần đã bảo vệ lượt này");
-                pls.stream().filter(player -> player.getId() == 44).findFirst().ifPresent(player -> player.setSuperProtectedSkill(false));
-            } else if (playerByIpData.get(a.getTargetDeviceId()) != null && Objects.equals(playerByIpData.get(a.getTargetDeviceId()).getId(), 41)) {
-                // nếu là người bệnh bị cắn thì disable chức năng của sói và sát thủ vào hôm sau
-                if (isSuperProtectedSkill) continue;
-                if (a.getRoleId() == 1) {
-                    pls.forEach(player -> {
-                        if (ID_SOI.contains(player.getId()) && player.getId() != 15) {
-                            player.setDisabledSkill(true);
-                        }
-                    });
-                    disabledRoleNextDay.put("Soi", "Sói cạp trúng người bệnh");
-                } else if (a.getRoleId() == 20) {
-                    playerByIpData.get(a.getDeviceId()).setDisabledSkill(true);
-                    disabledRoleNextDay.put("Sát thủ", "Sát thủ cạp trúng người bệnh");
-                }
+        resolution.deaths.forEach((deviceId, reason) -> {
+            DataMember player = playersByDevice.get(deviceId);
+            if (player == null) {
+                return;
             }
+            appendStory(story, player.getNameMember() + ": " + player.getRole() + " " + reason);
+            eliminatePlayer(player);
+            adminHistory.add(player.getNameMember() + " bị loại");
+            applyDeathConsequences(deviceId, player, playersByDevice, message -> {
+                adminHistory.add(message);
+                appendStory(story, message);
+            });
+        });
+        resolution.nextDayBlocks.values().forEach(message -> appendStory(story, message));
+        nightDetails = story.toString();
+        currentGameHistory.put("Đêm " + nightNumber++, nightDetails);
+        if (resolution.deaths.isEmpty()) {
+            adminHistory.add("Không có ai bị giết đêm nay");
         }
-
-        DataMember soiSida = pls.stream().filter(player -> player.getId() == 5).findFirst().orElse(null);
-        boolean isHaveSoiSida = false;
-        for (NightActionDto a : actions) {
-            if (soiSida != null && !soiSida.isDisabledSkill() && Objects.equals(soiSida.getIpData(), a.getTargetDeviceId())) {
-                if (!disabledRole.containsKey(a.getTargetDeviceId())) {
-
-                    toKill.put(a.getDeviceId(), "đụng phải Sói bị Sida");
-                }
-                isHaveSoiSida = true;
-            }
-            switch (a.getColType()) {
-                case "soi":
-                    if (disabledRole.containsKey("soi")) break;
-                    DataMember data = playerByIpData.get(a.getTargetDeviceId());
-                    if (data != null && data.getId() == 40) {
-                        if (disabledRole.containsKey(a.getTargetDeviceId())) {
-                            // nếu bị nguyền bị câm lặng thì chết
-                        } else {
-                            data.setId(1);
-                            data.setRole(data.getRole() + " + bạn đã là Sói");
-                            addHistory.add(a.getTargetName() + ": " + a.getTargetRoleName() + " đã trở thành Sói");
-                            break;
-                        }
-                    } else if (data != null && data.getId() == 20) {
-                        addHistory.add("Sói cắn hụt sát thủ");
-                        break;
-                    }
-                    toKill.merge(a.getTargetDeviceId(), "bị Soi Cắn", (oldValue, newValue) -> oldValue + " và " + newValue);
-                    break;
-                case "kill":
-                    playerByIpData.get(a.getDeviceId()).decreaseKillSkill();
-                    if (disabledRole.containsKey(a.getDeviceId())) break;
-                    if (a.getRoleId() == 31) {
-                        // dame phù thủy không thể cứu
-                        toSupperKill.put(a.getTargetDeviceId(), "bị " + a.getRoleName() + " quăng bình");
-                        break;
-                    } else if (a.getRoleId() == 43) {
-                        // neu la độc tài thì kiểm tra giết phải dân ko
-                        if (a.getTargetRoleId() >= 30) {
-                            toKill.put(a.getDeviceId(), " loại bỏ nhầm dân");
-                        }
-                    } else if (a.getTargetRoleId() < 30 && a.getRoleId() == 46) {
-                        addHistory.add("Boom giết phe không phải dân");
-                        DataMember dataMember = playerByIpData.get(a.getDeviceId());
-                        dataMember.setKillSkill(1);
-                    }
-
-                    toKill.merge(a.getTargetDeviceId(), "bị " + a.getRoleName() + " tác động vật lý", (oldValue, newValue) -> oldValue + " và " + newValue);
-                    break;
-                case "prot":
-                    playerByIpData.get(a.getDeviceId()).decreaseProtectedSkill();
-                    if (disabledRole.containsKey(a.getDeviceId())) break;
-                    toSave.merge(a.getTargetDeviceId(), "được " + a.getRoleName() + " bảo vệ", (oldValue, newValue) -> oldValue + " và " + newValue);
-                    break;
-                case "conn":
-                    if (disabledRole.containsKey(a.getDeviceId())) break;
-                    if (Objects.equals(a.getRoleId(), 34)) {
-                        // neu la tho san thi lien ket sinh mang
-                        toLifeLink.put(a.getDeviceId(), new LifeLinkDto(a.getTargetDeviceId(), "bị thợ săn ghim"));
-                    }
-                    if (Objects.equals(a.getRoleId(), 45)) {
-                        historyAdmin.add("Phù Thủy Già đuổi " + a.getTargetName() + " ra khòi làng");
-                    }
-                    break;
-                case "recruit":
-                    DataMember targetMember = playerByIpData.get(a.getTargetDeviceId());
-                    isHaveSoiNguyen = false;
-                    if(disabledRole.containsKey("soiNguyen")) break;
-                    targetMember.setId(1);
-                    targetMember.setRole(targetMember.getRole() + " - Soi");
-                    historyAdmin.add(a.getTargetName() + " đã trở thành Sói");
-                    addHistory.add(a.getTargetName() + " đã trở thành Sói");
-            }
-        }
-        if (isHaveSoiSida) {
-            soiSida.setDisabledSkill(true);
-        }
-
-        toSave.forEach((key, value) -> toKill.remove(key));
-        for (Map.Entry<String, String> entry : toSupperKill.entrySet()) {
-            if (toKill.containsKey(entry.getKey()) && toKill.get(entry.getKey()).contains(entry.getValue())) {
-                continue; // tránh lặp lại nếu đã có lý do chết
-            }
-            toKill.merge(entry.getKey(), entry.getValue(), (oldValue, newValue) -> oldValue + " và " + newValue);
-
-        }
-
-        int sizeKill;
-        do {
-            sizeKill = toKill.size();
-            // check co chết vì liên kết sinh mệnh thợ săn
-            for (Map.Entry<String, LifeLinkDto> entry : toLifeLink.entrySet()) {
-                if (toKill.containsKey(entry.getKey())) {
-                    if (toKill.containsKey(entry.getValue().getDeviceId()) && toKill.get(entry.getValue().getDeviceId()).contains(entry.getValue().getResonKill())) {
-                        continue; // tránh lặp lại nếu đã có lý do chết
-                    }
-                    toKill.merge(entry.getValue().getDeviceId(), entry.getValue().getResonKill() , (oldValue, newValue) -> oldValue + " và " + newValue);
-                }
-            }
-            // check co chết vì là cặp đôi
-            var listKeySet = new ArrayList<>(toKill.keySet());
-            for (String ipData : listKeySet) {
-                DataMember player = playerByIpData.get(ipData);
-                if (player != null && player.getLifeLink() > 0) {
-                    for (Integer linkedId : player.getLifeLinkIds()) {
-                        DataMember target = pls.stream().filter(playerLink -> playerLink.getId() == linkedId).findFirst().orElse(new DataMember());
-                        if (!ObjectUtils.isEmpty(target)) {
-                            toKill.merge(target.getIpData(), "", (oldValue, newValue) -> oldValue);
-                        }
-                    }
-                }
-            }
-        } while (sizeKill != toKill.size());
-        if (isSuperProtectedSkill) {
-            toKill.clear();// Thiên thần bảo vệ không ai phải chết
-        }
-        return kill(toKill, playerByIpData, toSave, disabledRole, disabledRoleNextDay, addHistory);
+        return "Detail: " + adminHistory.stream()
+                .map(message -> System.lineSeparator() + message)
+                .collect(Collectors.joining());
     }
 
     public String processDay(List<String> deviceIds) {
-        dayIsReadyKill = true;
-        StringBuilder detailDay = new StringBuilder();
-        Map<String, DataMember> tokill = new LinkedHashMap<>();
-        Map<String, DataMember> playerByIpData = pls.stream().collect(Collectors.toMap(DataMember::getIpData, player -> player));
-        deviceIds.forEach(deviceId -> {
-            DataMember player = playerByIpData.get(deviceId);
-            if (player != null) {
-                Random random = new Random();
-                int number = random.nextInt(howToDie.size());
+        dayKillProcessed = true;
+        Map<String, DataMember> playersByDevice = playersByDevice();
+        Map<String, DataMember> eliminatedPlayers = new LinkedHashMap<>();
+        StringBuilder story = new StringBuilder();
 
-                player.setDead(true);
-                deadPls.add(player);
-                detailDay.append(player.getNameMember()).append(": ").append(player.getRole()).append(howToDie.get(number)).append("<br>");
-                tokill.put(deviceId, player);
-                if (player.getLifeLink() > 0) {
-                    for (Integer linkedId : player.getLifeLinkIds()) {
-                        DataMember target = pls.stream().filter(playerLink -> playerLink.getId() == linkedId).findFirst().orElse(new DataMember());
-                        if (!ObjectUtils.isEmpty(target)) {
-                            target.setDead(true);
-                            deadPls.add(target);
-                            detailDay.append(target.getNameMember()).append(": ").append(target.getRole()).append("<br>");
-                            tokill.put(target.getIpData(), target);
-                        }
-                    }
-                }
+        for (String deviceId : deviceIds == null ? List.<String>of() : deviceIds) {
+            DataMember player = playersByDevice.get(deviceId);
+            if (player == null) {
+                continue;
             }
-        });
-        tokill.forEach((k, dieMember) -> {
-            kill(k, dieMember, playerByIpData, msg -> detailDay.append(msg).append("<br>"));
-//            if (linkRole.containsKey(k)) {
-//                List<String> linkedDevices = linkRole.get(k);
-//                for (String linkedDevice : linkedDevices) {
-//                    DataMember linkedPlayer = pls.stream().filter(player -> Objects.equals(player.getIpData(), linkedDevice)).findFirst().orElse(null);
-//                    if (!ObjectUtils.isEmpty(linkedPlayer)) {
-//                        linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
-//                        linkedPlayer.setId(dieMember.getId());
-//                        linkedPlayer.setKillSkill(dieMember.getKillSkill());
-//                        linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
-//                        linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
-//                        linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
-//                        linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
-//                        detailDay.append("Nhân bản đã trở thành ").append(dieMember.getDetailShow()).append("<br>");
-//
-//                    }
-//                }
-//            }
-//
-//            if (dieMember.getId() == 32) {
-//                // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
-//                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
-//                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
-//                    detailDay.append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
-//                });
-//            }
-        });
-        if (!detailDay.isEmpty()) {
-            detailGameDay = detailDay.toString();
-            try {
-                detailOneGameHistory.put("Ngày " + countNight, detailDay.toString());
-            } catch (Exception ignored){}
+            eliminateDuringDay(player, eliminatedPlayers, story, true);
+            eliminateCupidPartner(player, eliminatedPlayers, story);
         }
-        return "Detail: " + detailDay;
+        eliminatedPlayers.forEach((deviceId, player) -> applyDeathConsequences(deviceId, player, playersByDevice,
+                message -> story.append(message).append("<br>")));
+        if (!story.isEmpty()) {
+            dayDetails = story.toString();
+            currentGameHistory.put("Ngày " + nightNumber, dayDetails);
+        }
+        return "Detail: " + story;
     }
 
-    /**
-     * Lấy ra sói đầu đàn hoặc là con sói duy nhất
-     * @return id sói
-     */
-    private String checkAlphaWolf() {
-        String alphaWolfId = pls.stream()
+    private void eliminateDuringDay(DataMember player, Map<String, DataMember> eliminatedPlayers,
+                                    StringBuilder story, boolean includeReason) {
+        eliminatePlayer(player);
+        eliminatedPlayers.put(player.getIpData(), player);
+        story.append(player.getNameMember()).append(": ").append(player.getRole());
+        if (includeReason) {
+            story.append(DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size())));
+        }
+        story.append("<br>");
+    }
+
+    private void eliminateCupidPartner(DataMember player, Map<String, DataMember> eliminatedPlayers, StringBuilder story) {
+        if (player.getLifeLink() > 0) {
+            findCupidPartner(player).ifPresent(partner -> eliminateDuringDay(partner, eliminatedPlayers, story, false));
+        }
+    }
+
+    private void eliminatePlayer(DataMember player) {
+        player.setDead(true);
+        deadPlayers.add(player);
+    }
+
+    private void applyDeathConsequences(String deviceId, DataMember deceased, Map<String, DataMember> playersByDevice,
+                                        Consumer<String> log) {
+        copyLinks.getOrDefault(deviceId, List.of()).forEach(copycatDevice -> {
+            DataMember copycat = playersByDevice.get(copycatDevice);
+            if (copycat != null) {
+                copyRoleSkills(deceased, copycat);
+                log.accept("Nhân bản đã trở thành " + deceased.getDetailShow());
+            }
+        });
+        if (deceased.getId() == 32) {
+            findPlayerByRole(37).ifPresent(apprentice -> {
+                apprentice.setRole(apprentice.getRole() + " trở thành " + deceased.getDetailShow());
+                log.accept("Tiên Tri Tập Sự trở thành " + deceased.getDetailShow());
+            });
+        }
+    }
+
+    private void copyRoleSkills(DataMember source, DataMember target) {
+        target.setRole(target.getRole() + " trở thành " + source.getDetailShow());
+        target.setId(source.getId());
+        target.setKillSkill(source.getKillSkill());
+        target.setProtectedSkill(source.getProtectedSkill());
+        target.setSuperProtectedSkill(source.isSuperProtectedSkill());
+        target.setConnectSkill(source.getConnectSkill());
+        target.setDisabledSkill(source.isDisabledSkill());
+    }
+
+    public Map<String, Object> getGameManagementData() {
+        LinkedHashMap<String, Map<String, Object>> actionColumns = new LinkedHashMap<>();
+        List<String> superProtectedDevices = new ArrayList<>();
+
+        for (DataMember player : players) {
+            if (player.isDead()) {
+                continue;
+            }
+            if (player.isSuperProtectedSkill()) {
+                superProtectedDevices.add(player.getIpData());
+            }
+            if (isWolfAction(player)) {
+                actionColumns.putIfAbsent("soi", wolfColumn(player));
+            } else if (hasAction(player)) {
+                actionColumns.putIfAbsent(String.valueOf(player.getId()), roleColumn(player));
+            }
+        }
+        List<Map<String, Object>> columns = actionColumns.values().stream()
+                .sorted(Comparator.comparing(column -> (Integer) column.get("roleId")))
+                .toList();
+        Map<String, Object> data = new HashMap<>();
+        data.put("players", managementPlayers());
+        data.put("columns", columns);
+        data.put("hasSuperProtectedPlayers", !superProtectedDevices.isEmpty());
+        data.put("superProtectedDevices", superProtectedDevices);
+        return data;
+    }
+
+    private Map<String, Object> wolfColumn(DataMember player) {
+        return actionColumn(1, "🐺 Sói", true, false, false, false, 0, player);
+    }
+
+    private Map<String, Object> roleColumn(DataMember player) {
+        boolean hasKill = player.getKillSkill() > 0;
+        boolean hasProtect = player.getProtectedSkill() > 0;
+        boolean hasConnect = player.getConnectSkill() > 0 && !List.of(4, 5, 6).contains(player.getConnectSkill());
+        return actionColumn(player.getId(), removeHtml(player.getRole()), false, hasKill, hasProtect, hasConnect,
+                player.getConnectSkill(), player);
+    }
+
+    private Map<String, Object> actionColumn(int roleId, String label, boolean wolf, boolean hasKill, boolean hasProtect,
+                                             boolean hasConnect, int connectValue, DataMember player) {
+        Map<String, Object> column = new HashMap<>();
+        column.put("roleId", roleId);
+        column.put("label", label);
+        column.put("isSoi", wolf);
+        column.put("hasKill", hasKill);
+        column.put("hasProt", hasProtect);
+        column.put("hasConn", hasConnect);
+        column.put("connValue", connectValue);
+        column.put("disabled", player.isDisabledSkill());
+        column.put("subCols", wolf ? 1 : (hasKill ? 1 : 0) + (hasProtect ? 1 : 0) + (hasConnect ? 1 : 0));
+        column.put("deviceId", player.getIpData());
+        return column;
+    }
+
+    private List<Map<String, Object>> managementPlayers() {
+        return players.stream()
+                .filter(player -> !player.isDead() && !ObjectUtils.isEmpty(player.getIpData()))
+                .sorted(Comparator.comparing(DataMember::getId))
+                .map(player -> Map.<String, Object>of(
+                        "deviceId", player.getIpData(),
+                        "idPlayGame", player.getIdPlayGame(),
+                        "name", player.getNameMember() != null ? player.getNameMember() : "Ẩn danh",
+                        "roleName", removeHtml(player.getRole()),
+                        "id", player.getId(),
+                        "hasSuperProtected", player.isSuperProtectedSkill()
+                ))
+                .toList();
+    }
+
+    private Map<String, DataMember> playersByDevice() {
+        return players.stream()
+                .filter(player -> !ObjectUtils.isEmpty(player.getIpData()))
+                .collect(Collectors.toMap(DataMember::getIpData, player -> player, (first, ignored) -> first, LinkedHashMap::new));
+    }
+
+    private List<DataMember> livingWolves() {
+        return players.stream().filter(player -> isWolf(player) && player.getId() != 15 && !player.isDead()).toList();
+    }
+
+    private String alphaWolfDevice() {
+        List<DataMember> wolves = livingWolves();
+        if (wolves.size() == 1) {
+            return wolves.get(0).getIpData();
+        }
+        return wolves.stream()
                 .filter(player -> player.getId() == 2 || player.getId() == 4)
                 .map(DataMember::getIpData)
                 .findFirst()
                 .orElse(null);
-        if (alphaWolfId != null) {
-            // Lấy danh sách sói còn sống
-            List<DataMember> livingWolves = pls.stream()
-                    .filter(player -> ID_SOI.contains(player.getId()) && player.getId() != 15)
-                    .toList();
-            if (livingWolves.size() == 1) {
-                // Nếu chỉ còn một sói, đánh dấu là sói đầu đàn
-                alphaWolfId = livingWolves.get(0).getIpData();
-            }
-        }
-        return alphaWolfId;
     }
 
-    public String kill(Map<String, String> toKill, Map<String, DataMember> playerByIpData, Map<String, String> toSave,
-                       Map<String, String> disabledRole, Map<String, String> disabledRoleNextDay, List<String> addHistory) {
-        nightStory = new StringBuilder();
-
-        addHistory.forEach(s -> nightStory.append(" - ").append(s).append("<br>"));
-        disabledRole.forEach((k, v) -> {
-            nightStory.append(" - ").append(v).append("<br>");
-        });
-        toSave.forEach((k, v) -> {
-            DataMember targetMember = playerByIpData.get(k);
-            nightStory.append(" - ").append(targetMember.getNameMember()).append(": ").append(targetMember.getRole()).append(" ").append(v).append(" <br>");
-        });
-        toKill.forEach((k, v) -> {
-            DataMember targetMember = playerByIpData.get(k);
-            nightStory.append(" - ").append(targetMember.getNameMember()).append(": ").append(targetMember.getRole()).append(" ").append(v).append(" <br>");
-//            pls.remove(playerByIpData.get(k));
-            targetMember.setDead(true);
-            deadPls.add(playerByIpData.get(k));
-            historyAdmin.add(playerByIpData.get(k).getNameMember() + " bị loại");
-            DataMember dieMember = playerByIpData.get(k);
-            kill(k, dieMember, playerByIpData, msg -> {
-                addHistory.add(msg);
-                historyAdmin.add(msg);
-                nightStory.append(" - ").append(msg).append("<br>");
-            });
-//            if (linkRole.containsKey(k)) {
-//                List<String> linkedDevices = linkRole.get(k);
-//                for (String linkedDevice : linkedDevices) {
-//                    DataMember linkedPlayer = playerByIpData.get(linkedDevice);
-//                    if (!ObjectUtils.isEmpty(linkedPlayer) && !ObjectUtils.isEmpty(dieMember)) {
-//                        linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
-//                        linkedPlayer.setId(dieMember.getId());
-//                        linkedPlayer.setKillSkill(dieMember.getKillSkill());
-//                        linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
-//                        linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
-//                        linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
-//                        linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
-//                        addHistory.add("Nhân bản đã trở thành " + dieMember.getDetailShow());
-//                        historyAdmin.add("Nhân bản đã trở thành " + dieMember.getDetailShow());
-//                    }
-//                }
-//            }
-//
-//            if (dieMember.getId() == 32) {
-//                // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
-//                pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
-//                    tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
-//                    historyAdmin.add("Tiên Tri Tập Sư trở thành " + dieMember.getDetailShow());
-//                    nightStory.append(" - ").append("Tiên Tri Tập Sư trở thành ").append(dieMember.getDetailShow()).append("<br>");
-//                });
-//            }
-        });
-        disabledRoleNextDay.forEach((k, v) -> {
-            nightStory.append(" - ").append(v).append("<br>");
-        });
-        detailOneGameHistory.put("Đêm " + countNight++, nightStory.toString());
-        if (toKill.isEmpty()) historyAdmin.add("Không có ai bị giết đêm nay");
-        return "Detail: " + historyAdmin.stream().map(s -> System.lineSeparator() + s).collect(Collectors.joining());
+    private Optional<DataMember> findPlayerByRole(int roleId) {
+        return players.stream().filter(player -> player.getId() == roleId).findFirst();
     }
 
-    public void kill(String k, DataMember dieMember, Map<String, DataMember> playerByIpData, Consumer<String> log) {
-        if (linkRole.containsKey(k)) {
-            List<String> linkedDevices = linkRole.get(k);
-            for (String linkedDevice : linkedDevices) {
-                DataMember linkedPlayer = playerByIpData.get(linkedDevice);
-                if (!ObjectUtils.isEmpty(linkedPlayer) && !ObjectUtils.isEmpty(dieMember)) {
-                    linkedPlayer.setRole(linkedPlayer.getRole() + " trở thành " + dieMember.getDetailShow());// chức năng nhân bản
-                    linkedPlayer.setId(dieMember.getId());
-                    linkedPlayer.setKillSkill(dieMember.getKillSkill());
-                    linkedPlayer.setProtectedSkill(dieMember.getProtectedSkill());
-                    linkedPlayer.setSuperProtectedSkill(dieMember.isSuperProtectedSkill());
-                    linkedPlayer.setConnectSkill(dieMember.getConnectSkill());
-                    linkedPlayer.setDisabledSkill(dieMember.isDisabledSkill());
-                    log.accept("Nhân bản đã trở thành " + dieMember.getDetailShow());
-                }
-            }
+    private Optional<DataMember> findCupidPartner(DataMember player) {
+        if (player.getLifeLinkIds() == null) {
+            return Optional.empty();
         }
+        return players.stream().filter(candidate -> player.getLifeLinkIds().contains(candidate.getId())).findFirst();
+    }
 
-        if (dieMember.getId() == 32) {
-            // nếu là tiên tri thì check xem có tiên tri tập sự hay ko
-            pls.stream().filter(player -> player.getId() == 37).findFirst().ifPresent(tienTriTapSu -> {
-                tienTriTapSu.setRole(tienTriTapSu.getRole() + " trở thành " + dieMember.getDetailShow());
-                log.accept("Tiên Tri Tập Sư trở thành " + dieMember.getDetailShow());
-            });
+    private boolean isWolf(DataMember player) {
+        return WOLF_ROLE_IDS.contains(player.getId());
+    }
+
+    private boolean isWolfAction(DataMember player) {
+        return isWolf(player) && player.getId() != 15;
+    }
+
+    private boolean hasAction(DataMember player) {
+        return player.getKillSkill() > 0 || player.getProtectedSkill() > 0
+                || (player.getConnectSkill() > 0 && !List.of(4, 5, 6).contains(player.getConnectSkill()));
+    }
+
+    private void resetNightSkillBlocks() {
+        players.stream().filter(player -> player.getId() != 41 && player.getId() != 5)
+                .forEach(player -> player.setDisabledSkill(false));
+    }
+
+    private void addReason(Map<String, String> reasons, String deviceId, String reason) {
+        reasons.merge(deviceId, reason, (current, next) -> current.contains(next) ? current : current + " và " + next);
+    }
+
+    private void appendStory(StringBuilder story, String message) {
+        story.append(" - ").append(message).append("<br>");
+    }
+
+    private DataMember roleSummary(DataMember role, int count) {
+        return DataMember.builder()
+                .id(role.getId())
+                .role(role.getRole())
+                .description(role.getDescription())
+                .total(String.valueOf(count))
+                .build();
+    }
+
+    private String removeHtml(String value) {
+        return value.replaceAll("<[^>]*>", "");
+    }
+
+    public void createTest(int total) {
+        String[] firstNames = {"An", "Bình", "Chi", "Dũng", "Hà", "Hải", "Hùng", "Lan", "Linh", "Mai",
+                "Minh", "Nam", "Ngọc", "Phong", "Quân", "Sơn", "Thảo", "Trang", "Tuấn", "Việt"};
+        for (int index = 0; index < Math.min(total, players.size()); index++) {
+            DataMember player = players.get(index);
+            player.setIpData(UUID.randomUUID().toString());
+            player.setNameMember(firstNames[index % firstNames.length] + " " + (index + 1));
         }
     }
 
-    public Map<String, Object> getGameManagementData() {
-        Map<String, Object> data = new HashMap<>();
-
-        // Sói: 1 cột duy nhất (key="soi") nếu còn bất kỳ role nào trong ID_SOI (trừ 15) sống
-        // Các role khác: mỗi roleId duy nhất có skill → 1 cột riêng
-        LinkedHashMap<String, Map<String, Object>> colMap = new LinkedHashMap<>();
-        boolean hasSuperProtectedPlayers = false;
-        List<String> superProtectedDevices = new ArrayList<>();
-
-        for (DataMember player : pls) {
-            if (player.isDead()) continue;
-            int roleId = player.getId();
-            if (player.isSuperProtectedSkill()) {
-                hasSuperProtectedPlayers = true;
-                superProtectedDevices.add(player.getIpData());
-            }
-            boolean isSoi   = ID_SOI.contains(roleId) && roleId != 15;
-            boolean hasKill = player.getKillSkill() > 0;
-            boolean hasProt = player.getProtectedSkill() > 0;
-            boolean hasConn = player.getConnectSkill() > 0 && !List.of(6,5,4).contains( player.getConnectSkill());
-
-            // Cột Sói: 1 cột chung cho tất cả sói
-            if (isSoi && !colMap.containsKey("soi")) {
-                Map<String, Object> col = new HashMap<>();
-                col.put("roleId",   1);
-                col.put("label",    "🐺 Sói");
-                col.put("isSoi",    true);
-                col.put("hasKill",  false);
-                col.put("hasProt",  false);
-                col.put("hasConn",  false);
-                col.put("connValue",0);
-                col.put("disabled", player.isDisabledSkill());
-                col.put("subCols",  1);
-                col.put("deviceId", player.getIpData());
-                colMap.put("soi", col);
-            }
-            // Các role khác: mỗi roleId 1 cột nếu có skill
-            if (!isSoi && (hasKill || hasProt || hasConn) && !colMap.containsKey(String.valueOf(roleId))) {
-                Map<String, Object> col = new HashMap<>();
-                col.put("roleId",    roleId);
-                col.put("label",     player.getRole().replaceAll("<[^>]*>", ""));
-                col.put("isSoi",     false);
-                col.put("hasKill",   hasKill);
-                col.put("hasProt",   hasProt);
-                col.put("hasConn",   hasConn);
-                col.put("connValue", player.getConnectSkill());
-                col.put("disabled",  player.isDisabledSkill());
-                int sub = (hasKill?1:0) + (hasProt?1:0) + (hasConn?1:0);
-                col.put("subCols",   sub);
-                col.put("deviceId", player.getIpData());
-                colMap.put(String.valueOf(roleId), col);
-            }
-        }
-        var sorted = colMap.values().stream().sorted(Comparator.comparing(m -> (Integer) m.get("roleId"))).toList();
-
-        // Build player rows — each player carries their current ON/OFF state per skill
-        List<Map<String, Object>> players = new ArrayList<>();
-        for (DataMember player : pls) {
-            if(player.isDead() || ObjectUtils.isEmpty(player.getIpData())) continue;
-            Map<String, Object> p = new HashMap<>();
-            int id   = player.getId();
-            String name = player.getNameMember() != null ? player.getNameMember() : "Ẩn danh";
-            p.put("deviceId",          player.getIpData());
-            p.put("idPlayGame",        player.getIdPlayGame());
-            p.put("name",              name);
-            p.put("roleName",          player.getRole().replaceAll("<[^>]*>", ""));
-            p.put("id",                id);
-            p.put("hasSuperProtected", player.isSuperProtectedSkill());
-            players.add(p);
-        }
-        players.sort(Comparator.comparing(m -> (Integer) m.get("id")));
-        data.put("players",                  players);
-        data.put("columns",                  new ArrayList<>(sorted));
-        data.put("hasSuperProtectedPlayers", hasSuperProtectedPlayers);
-        data.put("superProtectedDevices",    superProtectedDevices);
-
-        return data;
-    }
-
-    private DataMember createDM(DataMember d, Integer total) {
-        return DataMember.builder().id(d.getId()).role(d.getRole()).description(d.getDescription()).total(String.valueOf(total)).build();
-    }
-
-    public void createTest(int totalTest) {
-        String[] FIRST_NAMES = {
-                "An", "Bình", "Chi", "Dũng", "Hà",
-                "Hải", "Hùng", "Lan", "Linh", "Mai",
-                "Minh", "Nam", "Ngọc", "Phong", "Quân",
-                "Sơn", "Thảo", "Trang", "Tuấn", "Việt",
-                "Sơn", "Thảo", "Trang", "Tuấn", "Việt"
-        };
-        try {
-            for (int i = 0; i < totalTest; i++) {
-                DataMember data = pls.get(i);
-                data.setIpData(UUID.randomUUID().toString());
-                data.setNameMember(FIRST_NAMES[i] + " " + (i +1) );
-            }
-        } catch (Exception ignored) {
-            System.out.println(ignored.getMessage());
-        }
-
+    private static final class NightResolution {
+        private final Map<String, String> disabledRoles = new LinkedHashMap<>();
+        private final Map<String, String> nextDayBlocks = new LinkedHashMap<>();
+        private final Map<String, String> deaths = new LinkedHashMap<>();
+        private final Map<String, String> unpreventableDeaths = new LinkedHashMap<>();
+        private final Map<String, String> savedPlayers = new LinkedHashMap<>();
+        private final Map<String, String> hunterLinks = new LinkedHashMap<>();
+        private final List<String> events = new ArrayList<>();
+        private boolean superProtectionActive;
+        private boolean sickWolfWasTargeted;
     }
 }
-

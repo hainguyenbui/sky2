@@ -17,4 +17,8 @@ public class NightActionDto {
     private String deviceId;
     private String colType;    // soi | kill | prot | conn
     private String connValue;  // chỉ có khi colType=conn
+
+    public NightActionType actionType() {
+        return NightActionType.fromCode(colType);
+    }
 }

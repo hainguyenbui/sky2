@@ -340,38 +340,6 @@
                 .catch(error => console.error('Error:', error));
         }
         
-        function executeKill() {
-            const checkboxes = document.querySelectorAll('.kill-checkbox:checked');
-            const deviceIds = Array.from(checkboxes).map(cb => cb.value);
-            
-            if (deviceIds.length === 0) {
-                alert('Vui lòng chọn ít nhất một người chơi để giết!');
-                return;
-            }
-            
-            const reason = document.getElementById('killReason').value || '';
-            const playerNames = Array.from(checkboxes).map(cb => cb.getAttribute('data-name')).join(', ');
-            
-            if (!confirm(`Bạn có chắc chắn muốn giết ${playerNames}? ${reason ? `Lý do: ${reason}` : ''}`)) {
-                return;
-            }
-            
-            fetch('/ms/kill', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ deviceIds: deviceIds, reason: reason })
-            })
-            .then(response => response.text())
-            .then(responseData => {
-                alert('Response: ' + responseData);
-                window.location.reload();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Lỗi khi xử lý giết!');
-            });
-        }
-
         document.getElementById('endGame').addEventListener('click', function() {
             const userConfirmed = confirm("Bạn có chắc chắn muốn KẾT THÚC GAME?");
             if (userConfirmed) {
@@ -387,8 +355,6 @@
     </script>
     <script th:inline="javascript">
         const spDevices = /*[[${superProtectedDevices}]]*/ [];
-        const idSoi = /*[[${idSoi}]]*/ [];
-        const idOutsider = /*[[${idOutsider}]]*/ [];
         const detailDay = /*[[${detailDay}]]*/ '';
         const detailNight = /*[[${detailNight}]]*/ [];
         const gameDetail = /*[[${gameDetailNight}]]*/ '';
@@ -427,7 +393,7 @@
 
         function updateLock() {
             const locked = isSuperLocked();
-    <!--        document.querySelectorAll('#roleTable .tog:not(.col-disabled)').forEach(b => b.classList.toggle('locked', locked));-->
+//            document.querySelectorAll('#roleTable .tog:not(.col-disabled)').forEach(b => b.classList.toggle('locked', locked));
         }
 
         function toggleCol(el) {
@@ -533,12 +499,6 @@
 
         updateLock();
 
-        document.querySelectorAll('#roleTable tbody td[data-id]').forEach(td => {
-            const id = td.dataset.id;
-            if (idSoi.includes(id)) td.querySelector('span').style.color = '#f87171';
-            else if (idOutsider.includes(id)) td.querySelector('span').style.color = '#fbbf24';
-        });
-
         document.getElementById('recruitMode')?.addEventListener('change', function() {
             document.querySelectorAll('#roleTable .tog.on[data-col^="soi_"]').forEach(el => {
                 el.classList.toggle('recruit', this.checked);
@@ -573,4 +533,3 @@
 </div>
 </body>
 </html>
-
