@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+<!--
+  Fragment head dùng chung cho mọi trang.
+  Cách dùng:  <th:block th:replace="~{fragments/layout :: pageHead('Tên trang')}"></th:block>
+  Trang cần CSS riêng thì thêm thẻ <link> của mình ngay sau dòng trên.
+-->
+<th:block th:fragment="pageHead(title)">
+    <meta charset="UTF-8">
+    <!-- Cho phép zoom: chặn zoom là lỗi tiếp cận trên điện thoại -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#101014">
+    <title th:text="${title}">Party Games Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/ui.js}" defer></script>
+</th:block>
+</head>
+<body></body>
+</html>

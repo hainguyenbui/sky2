@@ -1,0 +1,86 @@
+/* Ma Sói - lịch sử ván đấu (nạp trong hộp thoại ở /ms/play) */
+
+.game-card {
+    padding: var(--s4);
+    margin-bottom: var(--s3);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+
+.game-card:last-child {
+    margin-bottom: 0;
+}
+
+.game-number {
+    margin-bottom: var(--s3);
+    font-size: var(--t-base);
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.game-round {
+    margin-bottom: var(--s3);
+    font-size: var(--t-sm);
+}
+
+.game-round strong {
+    display: block;
+    margin-bottom: var(--s1);
+}
+
+.game-round div {
+    color: var(--ink-muted);
+    line-height: 1.5;
+}
+
+/* Một người chơi: chấm phe + tên + vai trò */
+.player-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s2) var(--s3);
+    margin-bottom: var(--s1);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+}
+
+.player-row:last-child {
+    margin-bottom: 0;
+}
+
+.player-name {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    flex: 1;
+    min-width: 0;
+    font-size: var(--t-sm);
+    font-weight: 600;
+}
+
+.player-role {
+    flex-shrink: 0;
+    padding: 3px var(--s2);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    white-space: nowrap;
+    border-radius: var(--r-full);
+}
+
+.role-soi {
+    color: var(--wolf-ink);
+    background: var(--wolf-soft);
+}
+
+.role-outsider {
+    color: var(--neutral-ink);
+    background: var(--neutral-soft);
+}
+
+.role-dan {
+    color: var(--village-ink);
+    background: var(--village-soft);
+}

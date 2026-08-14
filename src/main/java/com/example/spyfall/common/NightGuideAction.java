@@ -11,5 +11,7 @@ public record NightGuideAction(
         String connectionValue,
         boolean disabled,
         String targetPolicy,
-        boolean toggleOnly) {
+        boolean toggleOnly,
+        /** Động từ dùng ở bước tổng kết: "Sói <b>cắn</b> Hà 5" thay vì "Sói → Hà 5". */
+        String verb) {
 }

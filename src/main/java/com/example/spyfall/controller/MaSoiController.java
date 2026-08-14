@@ -78,6 +78,7 @@ public class MaSoiController {
 
                 boolean isDead = maSoiService.getDeadPls().contains(member);
                 model.addAttribute("sessionPageMode", "assigned");
+                model.addAttribute("playerNames", maSoiService.getAllPlayerNames());
                 model.addAttribute("role", member.getRole());
                 model.addAttribute("desc", member.getDescription());
                 model.addAttribute("dataMore", member.getDetailShow());
@@ -115,17 +116,10 @@ public class MaSoiController {
             model.addAttribute("showAliveDead", maSoiService.isAllowShowAliveDead());
             model.addAllAttributes(maSoiService.getGameManagementData());
             model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
+            model.addAttribute("playerNames", maSoiService.getAllPlayerNames());
         }
         return "masoi/admin";
     }
-//
-//    @GetMapping("/admin2")
-//    String admin2(Model model) throws Exception {
-//        model.addAttribute("datas", maSoiService.getDatas());
-//        model.addAttribute("idSoi", maSoiService.ID_SOI);
-//        model.addAttribute("idOutsider", maSoiService.ID_OUTSIDER);
-//        return "masoi/admin2";
-//    }
 
     @PostMapping("/showHistory")
     String showHistory(Model model) {
@@ -182,21 +176,6 @@ public class MaSoiController {
         }
         return "OK";
     }
-//
-//    @PostMapping("/assignPower")
-//    @ResponseBody
-//    String assignPower(@RequestBody PowerAssignDto dto) {
-//        return maSoiService.assignPower(dto.getDeviceId(), dto.getRoleId(), dto.getRoleName(), dto.getSkillType(), dto.isEnabled());
-//    }
-
-    @GetMapping("/gameManagement")
-    String gameManagement(Model model) {
-        model.addAllAttributes(maSoiService.getGameManagementData());
-        model.addAttribute("image", maSoiService.getImage());
-        model.addAttribute("dayKill", maSoiService.dayIsReadyKill);
-        return "masoi/gameManagement";
-    }
-
     @GetMapping("/test")
     @ResponseBody
     String forTest(@RequestParam int total) {

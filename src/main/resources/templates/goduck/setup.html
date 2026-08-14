@@ -1,62 +1,99 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GoDuck Setup</title>
-    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <th:block th:replace="~{fragments/layout :: pageHead('GoDuck - Thiết lập')}"></th:block>
 </head>
 <body>
 <div class="container">
     <div class="header-section">
-        <h1>GoDuck Setup</h1>
-        <th:block th:if="${setup != null and setup > 0}">
-            <p class="desc" style="color: var(--success); font-weight: 500;" th:text="'Khởi tạo ván chơi ' + ${setup} + ' thành công!'"></p>
-        </th:block>
+        <h1>Thiết lập GoDuck</h1>
+        <p class="desc" th:if="${setup != null and setup > 0}" th:text="'Đã khởi tạo ván chơi ' + ${setup}"></p>
+        <p class="desc" th:unless="${setup != null and setup > 0}">Chọn số người rồi khởi tạo ván mới</p>
     </div>
 
-    <div class="card" style="text-align: center;">
-        <div class="qr-container">
-            <img th:src="${image}" alt="QR Code" class="qr-image">
-        </div>
-        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+    <div class="card">
+        <p class="card-label">Cấu hình ván đấu</p>
+        <div class="item-list">
             <div class="item-row">
-                <span>Tổng người chơi:</span>
-                <input type="number" min="0" th:value="${totalPlayers != null ? totalPlayers : 4}" th:id="total" th:name="total"
-                       class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" />
+                <label class="text-sm" for="total">Tổng người chơi</label>
+                <input type="number" min="0" id="total" name="total" class="input-text input-num"
+                       th:value="${totalPlayers != null ? totalPlayers : 4}">
             </div>
-            <div class="item-row"><span>Số lượng Spy:</span>
-                <input type="number" min="0" th:value="${numSpies != null ? numSpies : 1}" th:id="spy" th:name="spy"
-                       class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" />
+            <div class="item-row">
+                <label class="text-sm" for="spy">Số lượng Spy</label>
+                <input type="number" min="0" id="spy" name="spy" class="input-text input-num"
+                       th:value="${numSpies != null ? numSpies : 1}">
             </div>
-            <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Tạo Game</button>
-            <button type="button" id="clearData" class="btn btn-primary" style="margin-top: 10px;">Xóa Dữ Liệu</button>
         </div>
-        <a href="/gd/play" target="_blank" class="btn btn-primary" style="margin-top: 20px;">Vào Phòng Chơi</a>
+        <div class="card-actions">
+            <button type="button" id="sendButton" class="btn btn-primary">Khởi tạo ván mới</button>
+            <a href="/gd/play" target="_blank" class="btn btn-secondary">Mở phòng chơi</a>
+            <button type="button" id="clearData" class="btn btn-danger">Xoá toàn bộ dữ liệu</button>
+        </div>
+    </div>
+
+    <div class="card qr-sm">
+        <p class="card-label">Mã QR để người chơi tham gia</p>
+        <div class="qr-container">
+            <img th:src="${image}" alt="Mã QR để tham gia phòng GoDuck" class="qr-image">
+        </div>
     </div>
 </div>
+
 <script>
-    document.getElementById('sendButton').onclick = function() {
-        var total = document.getElementById('total').value;
-        var spy = document.getElementById('spy').value;
-        fetch('/gd/setup/' + total + '/' + spy)
-            .then(response => response.text())
-            .then(html => {
-                document.open();
-                document.write(html);
-                document.close();
+    const CONFIG_KEY = 'goduck.setup.v1';
+    const FIELDS = ['total', 'spy'];
+
+    function saveConfig() {
+        const state = {};
+        FIELDS.forEach(id => state[id] = document.getElementById(id).value);
+        sessionStorage.setItem(CONFIG_KEY, JSON.stringify(state));
+    }
+
+    function restoreConfig() {
+        const raw = sessionStorage.getItem(CONFIG_KEY);
+        if (!raw) return;
+        try {
+            const state = JSON.parse(raw);
+            FIELDS.forEach(id => {
+                if (state[id] !== undefined) document.getElementById(id).value = state[id];
             });
-    };
-    document.getElementById('clearData').onclick = function() {
-        if (confirm('Bạn có chắc chắn muốn xóa dữ liệu không?')) {
-            fetch('/gd/clear')
-                .then(response => response.text())
-                .then(data => {
-                    alert(data);
-                });
+        } catch (error) {
+            console.error('Không khôi phục được cấu hình:', error);
         }
+    }
+
+    FIELDS.forEach(id => document.getElementById(id).addEventListener('change', saveConfig));
+    restoreConfig();
+
+    document.getElementById('sendButton').onclick = function () {
+        saveConfig();
+        const path = ['/gd/setup', ...FIELDS.map(id => document.getElementById(id).value)].join('/');
+        fetch(path)
+            .then(() => {
+                UI.flash({message: 'Đã khởi tạo ván mới.', tone: 'success'});
+                UI.go('/gd/setup');
+            })
+            .catch(() => UI.toast('Không khởi tạo được ván. Vui lòng thử lại.', 'danger'));
+    };
+
+    document.getElementById('clearData').onclick = async function () {
+        const confirmed = await UI.confirm({
+            title: 'Xoá toàn bộ dữ liệu GoDuck?',
+            message: 'Danh sách người chơi và vai trò của ván hiện tại sẽ mất hết.',
+            confirmLabel: 'Xoá hết',
+            tone: 'danger'
+        });
+        if (!confirmed) return;
+
+        fetch('/gd/clear')
+            .then(response => response.text())
+            .then(message => {
+                UI.flash({message: message, tone: 'success'});
+                UI.reload();
+            })
+            .catch(() => UI.toast('Không xoá được dữ liệu. Vui lòng thử lại.', 'danger'));
     };
 </script>
 </body>
 </html>
-

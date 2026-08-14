@@ -1,271 +1,249 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ma Sói Play</title>
-    <th:block th:replace="~{fragments/styles :: css}"></th:block>
-    <style>
-        #cupid { color: #f59e0b; font-style: normal; font-weight: 500; font-size: 0.8rem; display: block; margin-top: 4px; }
-        .history-timeline { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-        .history-game-card { border-left: 3px solid #8b5cf6; border-radius: 0 12px 12px 0; padding: 12px 14px; background: rgba(30,41,59,0.4); }
-        .history-game-card strong { color: #c4b5fd; display: block; margin-bottom: 5px; }
-        .history-event { color: var(--text-primary); font-size: 0.88rem; line-height: 1.5; }
-        .role-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; }
-        .role-card-soi { border-left: 4px solid var(--danger); }
-        .role-card-dan { border-left: 4px solid var(--success); }
-        .role-card-other { border-left: 4px solid var(--warning); }
-        .role-title { font-weight: 700; font-size: 0.9rem; }
-
-        /* Alive/Dead Lists */
-        .lists-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-        .list-section { background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; }
-        .list-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; padding: 8px; border-radius: 8px; }
-        .list-title.alive { background: rgba(16,185,129,0.2); color: #34d399; }
-        .list-title.dead { background: rgba(239,68,68,0.2); color: #f87171; }
-        .list-item { padding: 8px; background: rgba(30,41,59,0.5); border-radius: 8px; margin-bottom: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
-        .list-item-name { font-weight: 500; }
-        .list-item-role { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.2); color: #60a5fa; }
-        .waiting-card { text-align:center; padding-top:26px; padding-bottom:26px; }
-        .waiting-icon { width:58px; height:58px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; border-radius:18px; background:rgba(59,130,246,0.14); border:1px solid rgba(96,165,250,0.28); font-size:1.65rem; }
-        .waiting-card h2 { font-size:1.25rem; margin-bottom:9px; color:#bfdbfe; }
-        .waiting-card .desc { max-width:330px; margin:0 auto; line-height:1.55; }
-        .waiting-pulse { display:inline-flex; align-items:center; gap:7px; margin-top:16px; color:#93c5fd; font-size:0.78rem; font-weight:600; }
-        .waiting-pulse::before { content:''; width:8px; height:8px; border-radius:50%; background:#60a5fa; box-shadow:0 0 0 0 rgba(96,165,250,0.55); animation:waiting-pulse 1.8s infinite; }
-        @keyframes waiting-pulse { 70% { box-shadow:0 0 0 8px rgba(96,165,250,0); } 100% { box-shadow:0 0 0 0 rgba(96,165,250,0); } }
-
-        .session-overlay[hidden] { display:none; }
-        .session-overlay { position:fixed; inset:0; z-index:2200; display:flex; align-items:center; justify-content:center; min-height:100dvh; padding:20px; overflow-y:auto; background:#080f1d; }
-        .session-state-card { width:min(100%,420px); text-align:center; padding:28px 22px; border-radius:20px; border:1px solid rgba(148,163,184,0.2); background:linear-gradient(160deg,#172238,#101827); box-shadow:0 24px 70px rgba(0,0,0,0.48); }
-        .session-state-visual { width:64px; height:64px; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; border-radius:20px; color:#fde68a; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.28); font-size:1.75rem; }
-        .session-spinner { width:28px; height:28px; border:3px solid rgba(251,191,36,0.22); border-top-color:#fbbf24; border-radius:50%; animation:session-spin 0.8s linear infinite; }
-        @keyframes session-spin { to { transform:rotate(360deg); } }
-        .session-state-title { font-size:1.3rem; margin-bottom:9px; }
-        .session-state-message { color:var(--text-muted); font-size:0.9rem; line-height:1.6; }
-        .session-state-card.finished .session-state-visual { color:#bfdbfe; background:rgba(59,130,246,0.13); border-color:rgba(96,165,250,0.28); }
-        .session-lobby-link { margin-top:20px; }
-        .session-spinner[hidden], #sessionStateIcon[hidden], .session-lobby-link[hidden] { display:none; }
-    </style>
+    <th:block th:replace="~{fragments/layout :: pageHead('Ma Sói')}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/masoi-play.css}">
+    <link rel="stylesheet" th:href="@{/css/masoi-history.css}">
 </head>
 <body>
 <div class="container">
-    <!-- Not setup -->
+    <!-- Chưa có ván nào được thiết lập -->
     <div th:if="${notSetup}" class="card waiting-card">
         <div class="waiting-icon">⏳</div>
-        <h2>Admin đang chuẩn bị ván mới</h2>
-        <p class="desc">Bạn cứ giữ nguyên trang này. Role sẽ tự xuất hiện khi ván đấu sẵn sàng.</p>
+        <h2>Quản trò đang chuẩn bị ván mới</h2>
+        <p class="desc">Bạn cứ giữ nguyên trang này. Vai trò sẽ tự xuất hiện khi ván đấu sẵn sàng.</p>
         <div class="waiting-pulse">Đang chờ thiết lập</div>
     </div>
+
+    <!-- Ván đã đủ người -->
     <div th:if="${fullSlot}" class="card waiting-card">
         <div class="waiting-icon">👥</div>
         <h2>Ván hiện tại đã đủ người</h2>
-        <p class="desc">Nếu admin thiết lập lại ván, trang này sẽ tự thử nhận role mới cho bạn.</p>
+        <p class="desc">Nếu quản trò thiết lập lại ván, trang này sẽ tự nhận vai trò mới cho bạn.</p>
         <div class="waiting-pulse">Đang theo dõi ván mới</div>
     </div>
+
     <th:block th:if="${notSetup != true and fullSlot != true}">
         <div class="header-section">
             <h1>Ma Sói</h1>
             <p class="desc" th:text="'Ván đấu ' + ${gameNumber}"></p>
         </div>
 
-        <div class="card" style="text-align: center;">
-            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">CHỨC NĂNG CỦA BẠN:</h3>
-            <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
-                <div class="reveal-placeholder">Nhấp để ẩn/hiện chức năng</div>
+        <!-- Vai trò: thông tin quan trọng nhất của màn hình này -->
+        <div class="card role-reveal">
+            <p class="reveal-label">CHỨC NĂNG CỦA BẠN</p>
+            <div class="reveal-box blurred" data-reveal>
+                <span class="reveal-hide-hint">Chạm để ẩn</span>
+                <div class="reveal-placeholder">👁️ Chạm để xem</div>
                 <div class="reveal-content">
-                    <h2 id="location" th:style="'font-size: 2rem; color: #f87171; ' + (${isDead} ? 'text-decoration: line-through;' : '')" th:utext="${role}"></h2>
-                    <p class="desc" style="margin-top: 10px; font-size: 0.9rem;" th:text="${desc}"></p>
-                    <p class="desc" style="margin-top: 10px; font-size: 1.3rem; color:red;" th:text="${dataMore}"></p>
+                    <div class="role-name" th:classappend="${isDead} ? 'is-dead' : ''" th:utext="${role}"></div>
+                    <p class="role-desc" th:text="${desc}"></p>
+                    <p class="role-extra" th:text="${dataMore}"></p>
                 </div>
             </div>
         </div>
+
+        <!-- Chỉ hiện với người đã chết, khi quản trò cho phép -->
+        <div th:if="${historyGame}" class="card">
+            <p class="card-label">Diễn biến ván đấu</p>
+            <div class="history-timeline">
+                <div th:each="round : ${historyGame}" class="history-round">
+                    <div class="history-round-label" th:text="${round.label}"></div>
+                    <div th:each="event : ${round.events}" class="history-event" th:text="${event}"></div>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${alivePlayer}" class="lists-container">
+            <div class="list-section">
+                <div class="list-title alive"><span class="dot dot-village"></span>Còn sống</div>
+                <th:block th:each="item : ${alivePlayer}">
+                    <div class="list-item" th:if="${!item.dead}"
+                         th:text="${(item.nameMember != null ? item.nameMember : 'Ẩn danh') + ' - ' + item.role}"></div>
+                </th:block>
+            </div>
+            <div class="list-section">
+                <div class="list-title dead"><span class="dot dot-wolf"></span>Đã ra đi</div>
+                <div th:each="item : ${deadPlayer}" class="list-item"
+                     th:text="${(item.nameMember != null ? item.nameMember : 'Ẩn danh') + ' - ' + item.role}"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <p class="card-label">Các chức năng có trong ván</p>
+            <div class="item-list">
+                <div th:each="item : ${showRoles}" class="role-card"
+                     th:classappend="${#lists.contains(idSoi, item.id)} ? 'role-card-wolf'
+                        : (${#lists.contains(idOutsider, item.id)} ? 'role-card-neutral' : 'role-card-village')">
+                    <span class="role-card-title">
+                        <span class="dot"
+                              th:classappend="${#lists.contains(idSoi, item.id)} ? 'dot-wolf'
+                                 : (${#lists.contains(idOutsider, item.id)} ? 'dot-neutral' : 'dot-village')"></span>
+                        <span th:text="${item.role + (item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
+                    </span>
+                    <span class="role-card-desc" th:text="${item.description}"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card qr-sm">
+            <p class="card-label">Mời thêm bạn bè bằng mã QR</p>
+            <div class="qr-container">
+                <img th:src="${image}" alt="Mã QR để tham gia phòng Ma Sói" class="qr-image">
+            </div>
+        </div>
+
+        <button type="button" id="showHistory" class="btn btn-secondary">Xem lịch sử các ván trước</button>
     </th:block>
+</div>
 
-
-    <div style="display: flex; gap: 10px;">
-        <button type="button" id="showHistory" class="btn btn-primary" style="flex: 1;">Xem Lịch Sử</button>
-    </div>
-
-    <!-- Alive/Dead Lists -->
-    <div th:if="${historyGame}" class="history-timeline">
-        <div th:each="round : ${historyGame}" class="history-game-card">
-            <strong th:text="${round.label}"></strong>
-            <div th:each="event : ${round.events}" class="history-event" th:text="${'- ' + event}"></div>
+<!-- Hộp thoại lịch sử -->
+<div id="popupModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <h2 id="popupTitle">Lịch sử ván đấu</h2>
+            <button type="button" id="closePopup" class="modal-close" aria-label="Đóng">&times;</button>
         </div>
-    </div>
-    <div th:if="${alivePlayer}" class="lists-container">
-        <div class="list-section">
-            <div class="list-title alive">Danh Sách Sống Sót</div>
-            <th:block th:each="item : ${alivePlayer}">
-                <div class="list-item" th:if="${!item.dead}">
-                    <span class="list-item-name" th:text="${(item.nameMember != null ? item.nameMember : 'Ẩn danh') + ' - ' + item.role}"></span>
-                </div>
-            </th:block>
-        </div>
-        <div class="list-section">
-            <div class="list-title dead">Danh Sách NA</div>
-            <th:block th:each="item : ${deadPlayer}">
-                <div class="list-item">
-                    <span class="list-item-name" th:text="${(item.nameMember != null ? item.nameMember : 'Ẩn danh') + ' - ' + item.role}"></span>
-                </div>
-            </th:block>
-        </div>
-    </div>
-
-    <div class="card" th:if="${notSetup != true and fullSlot != true}">
-        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
-        <div class="item-list">
-            <th:block th:each="item : ${showRoles}">
-                <div th:classappend="${#lists.contains(idSoi, item.id)} ? 'role-card role-card-soi' : (${#lists.contains(idOutsider, item.id)} ? 'role-card role-card-other' : 'role-card role-card-dan')">
-                    <span class="role-title"
-                          th:classappend="${#lists.contains(idSoi, item.id)} ? '' : (${#lists.contains(idOutsider, item.id)} ? 'style=color:#fbbf24' : '')"
-                          th:text="${item.role + (item.id == '1' or item.id == '30' or item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
-                </div>
-            </th:block>
-        </div>
-    </div>
-
-    <div class="card" style="text-align: center;" th:if="${notSetup != true and fullSlot != true}">
-        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
-        <div class="qr-container">
-            <img th:src="${image}" alt="QR Code" class="qr-image">
-        </div>
-    </div>
-
-    <!-- History Modal -->
-    <div id="popupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background: rgba(9,13,22,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 20px;">
-        <div class="card" style="width: 100%; max-width: 450px; max-height: 85%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #131b2e;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
-                <h2 style="font-size: 1.3rem;">Lịch Sử Ván Đấu</h2>
-                <button id="closePopup" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
-            </div>
-            <div id="popupContent" style="overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 16px;"></div>
-        </div>
+        <div id="popupContent" class="modal-body"></div>
     </div>
 </div>
 
+<!-- Lớp phủ khi quản trò thiết lập lại hoặc kết thúc ván -->
 <div id="gameSessionOverlay" class="session-overlay" role="status" aria-live="assertive" hidden>
     <div id="gameSessionCard" class="session-state-card">
         <div class="session-state-visual">
             <div id="sessionSpinner" class="session-spinner"></div>
             <span id="sessionStateIcon" hidden>✓</span>
         </div>
-        <h2 id="sessionStateTitle" class="session-state-title">Admin đang thiết lập lại ván</h2>
-        <p id="sessionStateMessage" class="session-state-message">Role cũ đã được thu hồi. Bạn cứ giữ nguyên trang này để tự nhận role trong ván mới.</p>
+        <h2 id="sessionStateTitle" class="session-state-title">Quản trò đang thiết lập lại ván</h2>
+        <p id="sessionStateMessage" class="session-state-message">Vai trò cũ đã được thu hồi. Bạn cứ giữ nguyên trang này để tự nhận vai trò trong ván mới.</p>
         <a id="sessionLobbyLink" href="/ms/play" class="btn btn-primary session-lobby-link" hidden>Về sảnh Ma Sói</a>
     </div>
 </div>
 
-<script>
-        document.getElementById('showHistory').onclick = function() {
-            const popupModal = document.getElementById('popupModal');
-            const popupContent = document.getElementById('popupContent');
+<script th:inline="javascript">
+    const PLAYER_NAMES = /*[[${playerNames != null ? playerNames : {}}]]*/ [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        UI.highlightNames(document.querySelector('.history-timeline'), PLAYER_NAMES);
+    });
+
+    const historyButton = document.getElementById('showHistory');
+    const popupModal = document.getElementById('popupModal');
+
+    if (historyButton) {
+        historyButton.onclick = function () {
             fetch('/ms/showHistory', { method: 'POST' })
                 .then(response => response.text())
-                .then(responseData => {
-                    popupContent.innerHTML = responseData;
-                    popupModal.style.display = 'flex';
+                .then(html => {
+                    const content = document.getElementById('popupContent');
+                    content.innerHTML = html;
+                    UI.highlightNames(content, PLAYER_NAMES);
+                    popupModal.classList.add('is-open');
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(() => UI.toast('Không tải được lịch sử. Vui lòng thử lại.', 'danger'));
         };
-        document.getElementById('closePopup').onclick = function() {
-            document.getElementById('popupModal').style.display = 'none';
-        };
-        window.onclick = function(event) {
-            const modal = document.getElementById('popupModal');
-            if (event.target == modal) { modal.style.display = 'none'; }
-        };
-    </script>
+    }
+
+    function closeHistory() {
+        popupModal.classList.remove('is-open');
+    }
+
+    document.getElementById('closePopup').onclick = closeHistory;
+    popupModal.addEventListener('click', event => {
+        if (event.target === popupModal) closeHistory();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeHistory();
+    });
+</script>
+
 <script th:inline="javascript">
-        const renderedGameSessionId = /*[[${gameSessionId != null ? gameSessionId : 0}]]*/ 0;
-        const sessionPageMode = /*[[${sessionPageMode != null ? sessionPageMode : 'notSetup'}]]*/ 'notSetup';
-        const sessionOverlay = document.getElementById('gameSessionOverlay');
-        const sessionCard = document.getElementById('gameSessionCard');
-        const sessionSpinner = document.getElementById('sessionSpinner');
-        const sessionStateIcon = document.getElementById('sessionStateIcon');
-        const sessionStateTitle = document.getElementById('sessionStateTitle');
-        const sessionStateMessage = document.getElementById('sessionStateMessage');
-        const sessionLobbyLink = document.getElementById('sessionLobbyLink');
-        const playerPageContent = document.querySelector('.container');
-        let sessionCheckInFlight = false;
-        let sessionReloading = false;
-        let sessionPollingTimer;
+    const renderedGameSessionId = /*[[${gameSessionId != null ? gameSessionId : 0}]]*/ 0;
+    const sessionPageMode = /*[[${sessionPageMode != null ? sessionPageMode : 'notSetup'}]]*/ 'notSetup';
+    const sessionOverlay = document.getElementById('gameSessionOverlay');
+    const sessionSpinner = document.getElementById('sessionSpinner');
+    const sessionStateIcon = document.getElementById('sessionStateIcon');
+    const sessionStateTitle = document.getElementById('sessionStateTitle');
+    const sessionStateMessage = document.getElementById('sessionStateMessage');
+    const sessionLobbyLink = document.getElementById('sessionLobbyLink');
+    const playerPageContent = document.querySelector('.container');
+    let sessionCheckInFlight = false;
+    let sessionReloading = false;
+    let sessionPollingTimer;
 
-        function reloadPlayerPage() {
-            if (sessionReloading) return;
-            sessionReloading = true;
-            window.location.replace(window.location.pathname + window.location.search);
-        }
+    function reloadPlayerPage() {
+        if (sessionReloading) return;
+        sessionReloading = true;
+        window.location.replace(window.location.pathname + window.location.search);
+    }
 
-        function lockPlayerPageContent() {
-            playerPageContent.setAttribute('inert', '');
-            playerPageContent.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = 'hidden';
-        }
+    function lockPlayerPageContent() {
+        playerPageContent.setAttribute('inert', '');
+        playerPageContent.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = 'hidden';
+    }
 
-        function showResettingState(replacementReady) {
-            sessionOverlay.hidden = false;
-            lockPlayerPageContent();
-            sessionCard.classList.remove('finished');
-            sessionSpinner.hidden = false;
-            sessionStateIcon.hidden = true;
-            sessionLobbyLink.hidden = true;
-            sessionStateTitle.textContent = replacementReady
-                ? 'Ván mới đã sẵn sàng'
-                : 'Admin đang thiết lập lại ván';
-            sessionStateMessage.textContent = replacementReady
-                ? 'Đang nhận role mới cho bạn...'
-                : 'Role cũ đã được thu hồi. Bạn cứ giữ nguyên trang này để tự nhận role trong ván mới.';
-        }
+    function showResettingState(replacementReady) {
+        sessionOverlay.hidden = false;
+        lockPlayerPageContent();
+        sessionSpinner.hidden = false;
+        sessionStateIcon.hidden = true;
+        sessionLobbyLink.hidden = true;
+        sessionStateTitle.textContent = replacementReady
+            ? 'Ván mới đã sẵn sàng'
+            : 'Quản trò đang thiết lập lại ván';
+        sessionStateMessage.textContent = replacementReady
+            ? 'Đang nhận vai trò mới cho bạn...'
+            : 'Vai trò cũ đã được thu hồi. Bạn cứ giữ nguyên trang này để tự nhận vai trò trong ván mới.';
+    }
 
-        function showFinishedState() {
-            sessionOverlay.hidden = false;
-            lockPlayerPageContent();
-            sessionCard.classList.add('finished');
-            sessionSpinner.hidden = true;
-            sessionStateIcon.hidden = false;
-            sessionStateIcon.textContent = '✓';
-            sessionLobbyLink.hidden = false;
-            sessionStateTitle.textContent = 'Ván đấu đã kết thúc';
-            sessionStateMessage.textContent = 'Cảm ơn bạn đã tham gia. Role của ván này không còn hiệu lực.';
-            if (sessionPollingTimer) window.clearInterval(sessionPollingTimer);
-        }
+    function showFinishedState() {
+        sessionOverlay.hidden = false;
+        lockPlayerPageContent();
+        sessionSpinner.hidden = true;
+        sessionStateIcon.hidden = false;
+        sessionStateIcon.textContent = '✓';
+        sessionLobbyLink.hidden = false;
+        sessionStateTitle.textContent = 'Ván đấu đã kết thúc';
+        sessionStateMessage.textContent = 'Cảm ơn bạn đã tham gia. Vai trò của ván này không còn hiệu lực.';
+        if (sessionPollingTimer) window.clearInterval(sessionPollingTimer);
+    }
 
-        function handleSessionState(state) {
-            if (sessionPageMode === 'assigned') {
-                if (state.requestedSessionDiscarded) {
-                    showResettingState(state.replacementReady);
-                    if (state.replacementReady) window.setTimeout(reloadPlayerPage, 450);
-                    return;
-                }
-                if (state.requestedSessionFinished) showFinishedState();
+    function handleSessionState(state) {
+        if (sessionPageMode === 'assigned') {
+            if (state.requestedSessionDiscarded) {
+                showResettingState(state.replacementReady);
+                if (state.replacementReady) window.setTimeout(reloadPlayerPage, 450);
                 return;
             }
-
-            if (state.active && state.currentSessionId !== renderedGameSessionId) {
-                reloadPlayerPage();
-            }
+            if (state.requestedSessionFinished) showFinishedState();
+            return;
         }
 
-        async function checkGameSession() {
-            if (sessionCheckInFlight || sessionReloading) return;
-            sessionCheckInFlight = true;
-            try {
-                const response = await fetch('/ms/session-state?sessionId=' + encodeURIComponent(renderedGameSessionId), {
-                    cache: 'no-store'
-                });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                handleSessionState(await response.json());
-            } catch (error) {
-                console.debug('Chưa thể đồng bộ trạng thái ván:', error);
-            } finally {
-                sessionCheckInFlight = false;
-            }
+        if (state.active && state.currentSessionId !== renderedGameSessionId) {
+            reloadPlayerPage();
         }
+    }
 
-        checkGameSession();
-        sessionPollingTimer = window.setInterval(checkGameSession, 1500);
+    async function checkGameSession() {
+        if (sessionCheckInFlight || sessionReloading) return;
+        sessionCheckInFlight = true;
+        try {
+            const response = await fetch('/ms/session-state?sessionId=' + encodeURIComponent(renderedGameSessionId), {
+                cache: 'no-store'
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            handleSessionState(await response.json());
+        } catch (error) {
+            console.debug('Chưa thể đồng bộ trạng thái ván:', error);
+        } finally {
+            sessionCheckInFlight = false;
+        }
+    }
+
+    checkGameSession();
+    sessionPollingTimer = window.setInterval(checkGameSession, 1500);
 </script>
 </body>
 </html>

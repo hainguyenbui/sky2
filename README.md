@@ -2,7 +2,7 @@
 
 Welcome to **Party Games Hub** - a web-based platform hosting popular group party board games such as Werewolf, Spyfall, Undercover, and GoDuck. 
 
-Built with **Spring Boot 3** and optimized with a modern mobile-first, dark-mode glassmorphism interface, this application allows players to instantly join games directly from their smartphones via QR code without installing any apps.
+Built with **Spring Boot 3** and a mobile-first, dark interface, this application allows players to instantly join games directly from their smartphones via QR code without installing any apps.
 
 ---
 
@@ -34,8 +34,50 @@ Built with **Spring Boot 3** and optimized with a modern mobile-first, dark-mode
 
 ## 🛠️ Tech Stack
 - **Backend**: Java 17, Spring Boot 3.3.1, Spring MVC, Lombok.
-- **Frontend**: HTML5, CSS3 (Custom Variables, Glassmorphism, Responsive Grid), Vanilla JavaScript.
+- **Frontend**: Thymeleaf server-side rendering, CSS3 design tokens, Vanilla JavaScript. No build step.
 - **QR Generation**: Google ZXing Library.
+
+### Design system
+All styling lives in `src/main/resources/static/css/` — no inline `<style>` blocks and no `style=""`
+attributes in templates. Every page pulls in `app.css`; Werewolf pages add their own page-scoped file.
+
+* **Tokens** — `app.css` defines the whole palette, spacing, radius, type scale, z-index layers and
+  motion curves as CSS custom properties. Change a token, and every screen follows.
+* **Colour rules** — amber (`--accent`) is the *only* colour used for interactive elements. Faction
+  colours (wolf / village / neutral) are reserved for encoding information via dots and badges, and
+  are never used as button backgrounds. This keeps "what can I tap" separate from "which side is this".
+* **Shared head** — `templates/fragments/layout.html` exposes the `pageHead(title)` fragment carrying
+  the meta tags, font and stylesheet links. Note the name: a fragment called `head` would collide with
+  the `<head>` element in Thymeleaf's fragment selector.
+* **Accessibility floor** — 44px minimum tap targets, ≥4.5:1 text contrast, pinch-zoom left enabled,
+  and a `prefers-reduced-motion` fallback for every animation.
+
+### Interaction layer (`static/js/ui.js`)
+
+There are no `alert()` or `confirm()` calls anywhere in the app. Everything goes through one small
+global:
+
+| Call | Use it for |
+|---|---|
+| `UI.toast(message, tone)` | Transient feedback that nobody has to act on |
+| `UI.notify({title, message})` | A result the user **must** read (night outcome, revealed role) — returns a Promise, dismissed by hand |
+| `UI.confirm({title, message, confirmLabel, tone})` | Asking before a destructive action — returns `Promise<boolean>` |
+| `UI.flash({...})` + `UI.reload()` / `UI.go(url)` | A message that has to survive the page reload it triggers |
+
+`tone` is `'info'`, `'success'` or `'danger'`.
+
+Two things worth knowing before you touch this file:
+
+* **Dialogs resolve from the button handler, not the `<dialog>` `close` event.** That event was
+  observed not firing on some pages even though `close()` had run and `returnValue` was set, which
+  left the promise pending forever. The button already knows the answer — don't reintroduce the
+  dependency.
+* **`.dialog` needs an explicit `margin: auto`.** The global `* { margin: 0 }` reset wipes out the
+  browser's own centering for `<dialog>`, and without it the modal sticks to the top of the screen.
+
+Reveal cards are declarative: put `data-reveal` on the box and `ui.js` wires up the click, keyboard
+support and ARIA state. They re-hide themselves when the page is backgrounded, so locking your phone
+mid-game doesn't leave your role on screen for the person next to you.
 
 ---
 
@@ -53,6 +95,8 @@ Ensure you have **Java 17** and **Maven** installed on your system.
    ```bash
    mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8083
    ```
+   `application.properties` defaults to port **`80`**, which needs elevated privileges on macOS and
+   Linux — hence the `--server.port` override above.
 4. The application starts on port **`8083`**. Access the game hub via your browser at:
    * **Game Hub**: [http://localhost:8083](http://localhost:8083)
    * **Werewolf Setup**: [http://localhost:8083/ms/run](http://localhost:8083/ms/run)
@@ -88,13 +132,20 @@ sky2-v2/
 │   ├── main/
 │   │   ├── java/com/example/spyfall/
 │   │   │   ├── common/             # DTOs & Domain Models
-│   │   │   ├── controller/         # Spring Boot Controllers (APIs & raw HTML rendering)
+│   │   │   ├── controller/         # Spring Boot Controllers (page routes & JSON APIs)
 │   │   │   ├── service/            # Business Logic & static game data (word lists)
-│   │   │   ├── util/               # Helper utilities (HtmlTemplate wrapper for responsive layout)
+│   │   │   ├── util/               # Helper utilities (device-id cookie)
 │   │   │   └── SpyfallApplication  # Main Spring Boot Application starter
 │   │   └── resources/
+│   │       ├── static/css/         # Design system: app.css + per-page Werewolf styles
+│   │       ├── templates/
+│   │       │   ├── fragments/      # layout.html - shared pageHead(title) fragment
+│   │       │   ├── masoi/          # Werewolf: run, admin, lobby, play, history
+│   │       │   ├── spy/ spy2/      # Spyfall & Undercover: setup, lobby, play, list
+│   │       │   ├── goduck/         # GoDuck: setup, lobby, play
+│   │       │   └── index.html      # Game hub
 │   │       ├── picture/            # Image asset directory
-│   │       ├── application.properties # Server port configuration (8083)
+│   │       ├── application.properties # Server port configuration
 │   │       └── messages.properties
 ├── pom.xml                         # Maven dependencies config
 └── README.md

@@ -429,7 +429,7 @@ public class MaSoiService {
                 case "prot" -> {
                     if (actor == null || target == null || disabledRole.containsKey(actor.getIpData())) break;
                     actor.decreaseProtectedSkill();
-                    toSave.merge(target.getIpData(), "được " + actor.getRole() + " bảo vệ", this::joinReasons);
+                    toSave.merge(target.getIpData(), protectionReason(actor, target), this::joinReasons);
                 }
                 case "conn" -> {
                     if (actor == null || target == null || disabledRole.containsKey(actor.getIpData())) break;
@@ -654,6 +654,8 @@ public class MaSoiService {
             p.put("roleName",          player.getRole().replaceAll("<[^>]*>", ""));
             p.put("id",                id);
             p.put("wolfFaction",       ID_SOI.contains(id));
+            // Sói thật, không tính Kẻ phản bội: đây là những người phe Sói không được cắn.
+            p.put("realWolf",          isLivingWolf(player));
             p.put("hasSuperProtected", player.isSuperProtectedSkill());
             p.put("inspectResult",      inspectResultText(player));
             p.put("contactWarning",     id == 5 ? "Chạm Sói si đa sẽ khiến role này chết" : "");
@@ -726,7 +728,8 @@ public class MaSoiService {
                     "ON",
                     false,
                     "toggle",
-                    true));
+                    true,
+                    "bật bảo vệ toàn đêm"));
         }
 
         for (Map<String, Object> column : columns) {
@@ -776,12 +779,33 @@ public class MaSoiService {
             };
         }
 
+        // Động từ ở bước tổng kết. Bám theo đúng cách phân nhánh của nhãn phía trên
+        // để quản trò đọc thành câu: "Phù thủy dùng bình Cứu cho Hà 5".
+        String verb;
+        if (roleId == ROLE_WITCH && Objects.equals(type, "kill")) verb = "dùng bình Độc lên";
+        else if (roleId == ROLE_WITCH && Objects.equals(type, "prot")) verb = "dùng bình Cứu cho";
+        else if (roleId == ROLE_SILENCER && Objects.equals(type, "conn")) verb = "làm câm";
+        else if (roleId == ROLE_CLONE && Objects.equals(type, "conn")) verb = "sao chép";
+        else if (roleId == ROLE_HUNTER && Objects.equals(type, "conn")) verb = "ghim";
+        else {
+            verb = switch (type) {
+                case "soi" -> "cắn";
+                case "recruit" -> "nguyền";
+                // "che chở" chứ không phải "bảo vệ", nếu không sẽ đọc thành "Bảo vệ bảo vệ An 1"
+                case "prot" -> "che chở";
+                case "inspect" -> "soi";
+                case "kill" -> "giết";
+                default -> "chọn";
+            };
+        }
+
         String targetPolicy;
         if (roleId == ROLE_WITCH && Objects.equals(type, "prot")) targetPolicy = "witchSave";
         else if (roleId == ROLE_SILENCER && Objects.equals(type, "conn")) targetPolicy = "silence";
         else if (roleId == ROLE_CLONE && Objects.equals(type, "conn")) targetPolicy = "noSelf";
         else if (Objects.equals(type, "recruit")) targetPolicy = "recruit";
         else if (Objects.equals(type, "inspect")) targetPolicy = "noSelf";
+        else if (Objects.equals(type, "soi")) targetPolicy = "wolfBite";
         else targetPolicy = "any";
 
         actions.add(new NightGuideAction(
@@ -795,7 +819,8 @@ public class MaSoiService {
                 String.valueOf(column.getOrDefault("connValue", "")),
                 Boolean.TRUE.equals(column.get("disabled")),
                 targetPolicy,
-                false));
+                false,
+                verb));
     }
 
     private String guideStepKey(NightGuideAction action) {
@@ -911,6 +936,8 @@ public class MaSoiService {
                 case "soi" -> {
                     if (!isLivingWolf(actor)) return "Chỉ Sói còn sống mới được cắn";
                     if (actor.isDisabledSkill()) return "Phe Sói đang mất lượt cắn";
+                    // Kẻ phản bội không bị chặn: sói không biết họ là ai nên vẫn có thể cắn nhầm.
+                    if (isLivingWolf(target)) return "Phe Sói không thể cắn đồng đội Sói";
                     if (hasWolfBite) return "Phe Sói chỉ được cắn một mục tiêu";
                     hasWolfBite = true;
                 }
@@ -1073,8 +1100,38 @@ public class MaSoiService {
         return ObjectUtils.isEmpty(player.getNameMember()) ? "Ẩn danh" : player.getNameMember();
     }
 
+    /**
+     * Tên người chơi từng xuất hiện trong lịch sử: ván hiện tại (còn sống lẫn đã chết)
+     * và mọi ván đã lưu. Giao diện dùng danh sách này để tô đậm tên trong dòng sự kiện.
+     * Người chưa đặt tên bị bỏ qua để chữ "Ẩn danh" không bị tô nhầm.
+     */
+    public synchronized List<String> getAllPlayerNames() {
+        Set<String> names = new LinkedHashSet<>();
+        collectNames(names, pls);
+        collectNames(names, deadPls);
+        detailEachGame.values().forEach(players -> collectNames(names, players));
+        return new ArrayList<>(names);
+    }
+
+    private void collectNames(Set<String> names, List<DataMember> players) {
+        players.stream()
+                .map(DataMember::getNameMember)
+                .filter(name -> !ObjectUtils.isEmpty(name))
+                .forEach(names::add);
+    }
+
     private String roleNameForCopy(DataMember player) {
         return ObjectUtils.isEmpty(player.getDetailShow()) ? player.getRole() : player.getDetailShow();
+    }
+
+    /**
+     * Câu mô tả một lượt bảo vệ, ghép sau "Tên: Vai trò ".
+     * Tránh lối nói lặp "Bảo vệ được Bảo vệ bảo vệ", và nói rõ khi tự cứu mình.
+     */
+    private String protectionReason(DataMember actor, DataMember target) {
+        boolean witch = actor.getId() == ROLE_WITCH;
+        if (actor == target) return witch ? "tự cứu chính mình" : "tự bảo vệ chính mình";
+        return witch ? "được Phù thủy cứu" : "được " + actor.getRole() + " che chở";
     }
 
     private String joinReasons(String first, String second) {

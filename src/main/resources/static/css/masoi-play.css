@@ -1,0 +1,349 @@
+/* Ma Sói - màn người chơi (/ms/play) */
+
+/* Vai trò là thông tin quan trọng nhất trên màn hình này */
+.role-reveal .role-name {
+    font-size: var(--t-2xl);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--ink);
+}
+
+.role-reveal .role-name.is-dead {
+    text-decoration: line-through;
+    color: var(--ink-muted);
+}
+
+.role-reveal .role-desc {
+    margin-top: var(--s3);
+    font-size: var(--t-sm);
+    color: var(--ink-muted);
+}
+
+/* Thông tin riêng (người yêu Cupid, đồng đội Sói...) */
+.role-reveal .role-extra {
+    margin-top: var(--s3);
+    font-size: var(--t-base);
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.role-reveal .role-extra:empty {
+    display: none;
+}
+
+/* Danh sách role có trong ván */
+.role-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+    padding: var(--s3);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+}
+
+.role-card-title {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font-size: var(--t-sm);
+    font-weight: 700;
+}
+
+.role-card-desc {
+    font-size: var(--t-xs);
+    color: var(--ink-muted);
+    line-height: 1.45;
+}
+
+.role-card-wolf .role-card-title {
+    color: var(--wolf-ink);
+}
+
+.role-card-village .role-card-title {
+    color: var(--village-ink);
+}
+
+.role-card-neutral .role-card-title {
+    color: var(--neutral-ink);
+}
+
+/* Dòng thời gian lịch sử */
+.history-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+}
+
+.history-round {
+    padding: var(--s3);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+}
+
+.history-round-label {
+    font-size: var(--t-sm);
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: var(--s2);
+}
+
+.history-event {
+    font-size: var(--t-sm);
+    line-height: 1.5;
+    padding-left: var(--s3);
+    position: relative;
+    color: var(--ink-muted);
+}
+
+.history-event::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.6em;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+}
+
+/* Danh sách sống / chết */
+.lists-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s3);
+}
+
+.list-section {
+    padding: var(--s3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+}
+
+.list-title {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    margin-bottom: var(--s2);
+}
+
+.list-title.alive {
+    color: var(--village-ink);
+}
+
+.list-title.dead {
+    color: var(--danger-ink);
+}
+
+.list-item {
+    padding: var(--s2);
+    margin-bottom: var(--s1);
+    font-size: var(--t-xs);
+    background: var(--surface-raised);
+    border-radius: var(--r-sm);
+    word-break: break-word;
+}
+
+.list-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Trạng thái chờ */
+.waiting-card {
+    text-align: center;
+    padding: var(--s6) var(--s4);
+}
+
+.waiting-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--s4);
+    font-size: 1.6rem;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--r-lg);
+}
+
+.waiting-card h2 {
+    font-size: var(--t-lg);
+    margin-bottom: var(--s2);
+}
+
+.waiting-card .desc {
+    max-width: 32ch;
+    margin: 0 auto;
+}
+
+.waiting-pulse {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s2);
+    margin-top: var(--s4);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.waiting-pulse::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: waiting-pulse 1.8s var(--ease-out) infinite;
+}
+
+@keyframes waiting-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.25; }
+    100% { opacity: 1; }
+}
+
+/* Lớp phủ khi admin thiết lập lại hoặc kết thúc ván */
+.session-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--s5);
+    overflow-y: auto;
+    background: var(--bg);
+}
+
+.session-overlay[hidden] {
+    display: none;
+}
+
+.session-state-card {
+    width: min(100%, 400px);
+    text-align: center;
+    padding: var(--s6) var(--s5);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+
+.session-state-visual {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--s4);
+    font-size: 1.6rem;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--r-lg);
+}
+
+.session-spinner {
+    width: 26px;
+    height: 26px;
+    border: 3px solid var(--accent-soft);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: session-spin 0.8s linear infinite;
+}
+
+.session-spinner[hidden],
+#sessionStateIcon[hidden],
+.session-lobby-link[hidden] {
+    display: none;
+}
+
+@keyframes session-spin {
+    to { transform: rotate(360deg); }
+}
+
+.session-state-title {
+    font-size: var(--t-lg);
+    margin-bottom: var(--s2);
+}
+
+.session-state-message {
+    font-size: var(--t-sm);
+    color: var(--ink-muted);
+}
+
+.session-lobby-link {
+    margin-top: var(--s5);
+}
+
+/* Hộp thoại lịch sử */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--s4);
+    background: rgba(16, 16, 20, 0.9);
+}
+
+.modal-backdrop.is-open {
+    display: flex;
+}
+
+.modal-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 440px;
+    max-height: 85dvh;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s4);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    font-size: var(--t-lg);
+}
+
+.modal-close {
+    width: var(--tap);
+    height: var(--tap);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--t-xl);
+    line-height: 1;
+    color: var(--ink-muted);
+    background: transparent;
+    border: 0;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: var(--ink);
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--s4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+}

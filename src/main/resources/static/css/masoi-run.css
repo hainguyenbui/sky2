@@ -1,0 +1,93 @@
+/* Ma Sói - màn thiết lập ván (/ms/run) */
+
+/* Tóm tắt số lượng luôn dính trên đầu để quản trò thấy khi cuộn danh sách role */
+.setup-summary {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--s4);
+}
+
+.setup-summary .divider {
+    margin: var(--s3) 0;
+}
+
+.setup-count {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s1);
+}
+
+/* Đối chiếu số vai trò đã chọn với tổng người chơi */
+.setup-hint {
+    margin-top: var(--s2);
+    font-size: var(--t-xs);
+}
+
+.setup-count-value {
+    font-size: var(--t-xl);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+}
+
+.setup-count-value.is-over {
+    color: var(--danger-ink);
+}
+
+/* Một dòng role: tên + mô tả bên trái, điều khiển bên phải */
+.role-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s3);
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+}
+
+.role-row-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.role-row-name {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font-size: var(--t-sm);
+    font-weight: 700;
+}
+
+.role-row-desc {
+    font-size: var(--t-xs);
+    color: var(--ink-muted);
+    line-height: 1.45;
+}
+
+/* Màu phe nằm ở chấm, không phải ở viền dày một bên */
+.role-row-wolf .role-row-name {
+    color: var(--wolf-ink);
+}
+
+.role-row-village .role-row-name {
+    color: var(--village-ink);
+}
+
+.role-row-neutral .role-row-name {
+    color: var(--neutral-ink);
+}
+
+/* Thanh hành động dính đáy màn hình */
+.setup-actions {
+    position: sticky;
+    bottom: 0;
+    padding: var(--s3) 0 var(--s2);
+    background: linear-gradient(to top, var(--bg) 62%, transparent);
+}

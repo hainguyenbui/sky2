@@ -1,216 +1,209 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ma Sói Setup</title>
-    <th:block th:replace="~{fragments/styles :: css}"></th:block>
-    <style>
-        .role-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; transition: all 0.2s; }
-        .role-title { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em; }
-        .role-card-soi { border-left: 4px solid var(--danger); }
-        .role-card-dan { border-left: 4px solid var(--success); }
-        .role-card-other { border-left: 4px solid var(--warning); }
-        .switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(15,23,42,0.6); transition: .25s; border-radius: 24px; border: 1px solid var(--card-border); }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: #94a3b8; transition: .25s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:checked + .slider:before { transform: translateX(22px); background-color: #ffffff; }
-    </style>
+    <th:block th:replace="~{fragments/layout :: pageHead('Ma Sói - Thiết lập ván')}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/masoi-run.css}">
 </head>
 <body>
 <div class="container">
     <div class="header-section">
-        <h1>Ma Sói Setup</h1>
-        <p class="desc">Thiết lập vai trò cho ván đấu mới</p>
+        <h1>Thiết lập ván</h1>
+        <p class="desc">Chọn tổng số người chơi và các vai trò có trong ván</p>
     </div>
 
-    <form id="dataForm">
-        <div class="card" style="margin-bottom: 16px;">
-            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Thông tin phòng chơi</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 500;">Tổng người chơi:</span>
-                    <input type="number" min="0" value="0" id="total" name="total" class="input-text" style="width: 80px; padding: 8px; text-align: center;">
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 12px;">
-                    <span style="font-weight: 500;">Đã chọn:</span>
-                    <div style="display: flex; align-items: baseline; gap: 4px;">
-                        <input type="text" id="sum" readonly value="0" style="width: 40px; background: transparent; border: none; color: #60a5fa; font-weight: 800; font-size: 1.5rem; text-align: right; outline: none;">
-                        <span style="color: var(--text-muted); font-size: 0.9rem;">vai trò</span>
-                    </div>
+    <form id="dataForm" class="stack">
+        <div class="setup-summary">
+            <div class="row-between">
+                <label class="field-label" for="total">Tổng người chơi</label>
+                <input type="number" min="0" id="total" name="total" value="0" class="input-text input-num">
+            </div>
+            <hr class="divider">
+            <div class="row-between">
+                <span class="field-label">Vai trò đã chọn</span>
+                <div class="setup-count">
+                    <span id="sum" class="setup-count-value">0</span>
                 </div>
             </div>
+            <p id="sumHint" class="desc setup-hint"></p>
         </div>
 
-        <div class="card" style="margin-bottom: 16px;">
-            <h3 style="margin-bottom: 14px; font-size: 1.1rem;">Danh sách vai trò</h3>
+        <div class="card">
+            <p class="card-label">Phe Sói</p>
             <div class="item-list">
                 <th:block th:each="item : ${datas}">
-                    <!-- Soi roles -->
-                    <div th:if="${#lists.contains(idSoi, item.id)}"
-                         th:classappend="'role-card role-card-soi'">
-                        <div style="padding-right: 10px; text-align: left;">
-                            <span class="role-title" style="color: #f87171;" th:text="${#strings.toUpperCase(item.role)}"></span>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
+                    <div th:if="${#lists.contains(idSoi, item.id)}" class="role-row role-row-wolf">
+                        <div class="role-row-info">
+                            <span class="role-row-name">
+                                <span class="dot dot-wolf"></span>
+                                <span th:text="${#strings.toUpperCase(item.role)}"></span>
+                            </span>
+                            <span class="role-row-desc" th:text="${item.description}"></span>
                         </div>
-                        <div th:if="${item.id == 1 or item.id == 30}">
-                            <input type="number" min="0" value="0" th:id="${item.id}" th:name="${item.id}"
-                                   class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" oninput="updateSum()">
-                        </div>
-                        <div th:unless="${item.id == 1 or item.id == 30}">
-                            <label class="switch">
-                                <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <!-- Outsider roles -->
-                    <div th:if="${#lists.contains(idOutsider, item.id)}"
-                         th:classappend="'role-card role-card-other'">
-                        <div style="padding-right: 10px; text-align: left;">
-                            <span class="role-title" style="color: #fbbf24;" th:text="${#strings.toUpperCase(item.role)}"></span>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
+                        <input th:if="${item.id == 1 or item.id == 30}" type="number" min="0" value="0"
+                               th:id="${item.id}" th:name="${item.id}" class="input-text input-num"
+                               oninput="updateSum()">
+                        <label th:unless="${item.id == 1 or item.id == 30}" class="switch">
+                            <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1"
+                                   onclick="updateSum()">
                             <span class="slider"></span>
                         </label>
-                    </div>
-                    <!-- Villager roles -->
-                    <div th:if="${not #lists.contains(idSoi, item.id) and not #lists.contains(idOutsider, item.id)}"
-                         th:classappend="'role-card role-card-dan'">
-                        <div style="padding-right: 10px; text-align: left;">
-                            <span class="role-title" style="color: #34d399;" th:text="${#strings.toUpperCase(item.role)}"></span>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
-                        </div>
-                        <div th:if="${item.id == 1 or item.id == 30}">
-                            <input type="number" min="0" value="0" th:id="${item.id}" th:name="${item.id}"
-                                   class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" oninput="updateSum()">
-                        </div>
-                        <div th:unless="${item.id == 1 or item.id == 30}">
-                            <label class="switch">
-                                <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
                     </div>
                 </th:block>
             </div>
         </div>
 
-        <div class="card" style="margin-bottom: 20px;">
-            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Cấu hình nâng cao</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <div class="role-card" style="border-left: 4px solid var(--warning);">
-                    <div>
-                        <span class="role-title">CUPID (TÌNH YÊU)</span>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">Ghép đôi ngẫu nhiên 2 người chơi</p>
+        <div class="card">
+            <p class="card-label">Phe khác</p>
+            <div class="item-list">
+                <th:block th:each="item : ${datas}">
+                    <div th:if="${#lists.contains(idOutsider, item.id)}" class="role-row role-row-neutral">
+                        <div class="role-row-info">
+                            <span class="role-row-name">
+                                <span class="dot dot-neutral"></span>
+                                <span th:text="${#strings.toUpperCase(item.role)}"></span>
+                            </span>
+                            <span class="role-row-desc" th:text="${item.description}"></span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1"
+                                   onclick="updateSum()">
+                            <span class="slider"></span>
+                        </label>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" id="checkCupid" name="checkCupid" value="1">
-                        <span class="slider"></span>
-                    </label>
-                </div>
+                </th:block>
             </div>
         </div>
 
-        <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Chạy Game</button>
+        <div class="card">
+            <p class="card-label">Phe Dân</p>
+            <div class="item-list">
+                <th:block th:each="item : ${datas}">
+                    <div th:if="${not #lists.contains(idSoi, item.id) and not #lists.contains(idOutsider, item.id)}"
+                         class="role-row role-row-village">
+                        <div class="role-row-info">
+                            <span class="role-row-name">
+                                <span class="dot dot-village"></span>
+                                <span th:text="${#strings.toUpperCase(item.role)}"></span>
+                            </span>
+                            <span class="role-row-desc" th:text="${item.description}"></span>
+                        </div>
+                        <input th:if="${item.id == 1 or item.id == 30}" type="number" min="0" value="0"
+                               th:id="${item.id}" th:name="${item.id}" class="input-text input-num"
+                               oninput="updateSum()">
+                        <label th:unless="${item.id == 1 or item.id == 30}" class="switch">
+                            <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1"
+                                   onclick="updateSum()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </th:block>
+            </div>
+        </div>
+
+        <div class="card">
+            <p class="card-label">Cấu hình nâng cao</p>
+            <div class="role-row">
+                <div class="role-row-info">
+                    <span class="role-row-name">CUPID (TÌNH YÊU)</span>
+                    <span class="role-row-desc">Ghép đôi ngẫu nhiên 2 người chơi</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="checkCupid" name="checkCupid" value="1">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="setup-actions">
+            <button type="button" id="sendButton" class="btn btn-primary">Khởi chạy ván đấu</button>
+        </div>
     </form>
-
-    <script>
-        var setupStorageKey = 'masoi.setup.v1';
-
-        function saveSetupState() {
-            var state = {};
-            var fields = document.querySelectorAll('#dataForm input[name]');
-            fields.forEach(function(field) {
-                if (field.type === 'checkbox') {
-                    state[field.name] = field.checked;
-                } else {
-                    state[field.name] = field.value;
-                }
-            });
-            sessionStorage.setItem(setupStorageKey, JSON.stringify(state));
-        }
-
-        function restoreSetupState() {
-            var rawState = sessionStorage.getItem(setupStorageKey);
-            if (!rawState) {
-                updateSum();
-                return;
-            }
-
-            try {
-                var state = JSON.parse(rawState);
-                Object.keys(state).forEach(function(name) {
-                    var field = document.querySelector('#dataForm input[name="' + name + '"]');
-                    if (!field) {
-                        return;
-                    }
-                    if (field.type === 'checkbox') {
-                        field.checked = state[name] === true;
-                    } else {
-                        field.value = state[name];
-                    }
-                });
-            } catch (error) {
-                console.error('Cannot restore setup state:', error);
-            }
-
-            updateSum();
-        }
-
-        function updateSum() {
-            var sumTotal = 0;
-            var inputs = document.querySelectorAll('input[type="number"]:not(#total)');
-            inputs.forEach(function(input) { sumTotal += parseFloat(input.value) || 0; });
-            var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkCupid):checked');
-            checkboxes.forEach(function(checkbox) { sumTotal += parseInt(checkbox.value) || 0; });
-            document.getElementById('sum').value = sumTotal;
-            saveSetupState();
-        }
-
-        function bindSetupStateListeners() {
-            var fields = document.querySelectorAll('#dataForm input[name]');
-            fields.forEach(function(field) {
-                field.addEventListener('change', saveSetupState);
-                field.addEventListener('input', saveSetupState);
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            bindSetupStateListeners();
-            restoreSetupState();
-        });
-
-        document.getElementById('sendButton').onclick = function() {
-            saveSetupState();
-
-            var formData = new URLSearchParams();
-            var inputs = document.querySelectorAll('input[type="number"]');
-            inputs.forEach(function(input) { formData.append(input.name, input.value); });
-            var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
-            checkboxes.forEach(function(checkbox) {
-                if (checkbox.id !== 'checkCupid') {
-                    formData.append(checkbox.name, 1);
-                }
-            });
-            formData.append('checkCupid', document.getElementById('checkCupid').checked ? 'true' : 'false');
-            fetch('/ms/create?' + formData.toString(), { method: 'GET' })
-                .then(response => response.text())
-                .then(data => {
-                    if (data.includes('ERROR')) { alert(data); }
-                    else if (data.includes('ALERT')) {
-                        alert(data);
-                        window.location.href = '/ms/admin';
-                    }
-                    else { window.location.href = '/ms/admin'; }
-                })
-                .catch(error => console.error('Error:', error));
-        };
-    </script>
 </div>
+
+<script>
+    const SETUP_KEY = 'masoi.setup.v1';
+
+    function setupFields() {
+        return document.querySelectorAll('#dataForm input[name]');
+    }
+
+    function saveSetupState() {
+        const state = {};
+        setupFields().forEach(field => {
+            state[field.name] = field.type === 'checkbox' ? field.checked : field.value;
+        });
+        sessionStorage.setItem(SETUP_KEY, JSON.stringify(state));
+    }
+
+    function restoreSetupState() {
+        const raw = sessionStorage.getItem(SETUP_KEY);
+        if (!raw) return;
+        try {
+            const state = JSON.parse(raw);
+            Object.keys(state).forEach(name => {
+                const field = document.querySelector('#dataForm input[name="' + name + '"]');
+                if (!field) return;
+                if (field.type === 'checkbox') field.checked = state[name] === true;
+                else field.value = state[name];
+            });
+        } catch (error) {
+            console.error('Không khôi phục được thiết lập:', error);
+        }
+    }
+
+    function updateSum() {
+        let sum = 0;
+        document.querySelectorAll('#dataForm input[type="number"]:not(#total)')
+            .forEach(input => sum += parseInt(input.value, 10) || 0);
+        document.querySelectorAll('#dataForm input[type="checkbox"]:not(#checkCupid):checked')
+            .forEach(box => sum += parseInt(box.value, 10) || 0);
+
+        const total = parseInt(document.getElementById('total').value, 10) || 0;
+        const sumEl = document.getElementById('sum');
+        const hintEl = document.getElementById('sumHint');
+
+        sumEl.textContent = sum;
+        sumEl.classList.toggle('is-over', total > 0 && sum > total);
+
+        if (total === 0) hintEl.textContent = 'Nhập tổng số người chơi để đối chiếu.';
+        else if (sum === total) hintEl.textContent = 'Khớp với tổng số người chơi.';
+        else if (sum < total) hintEl.textContent = 'Còn thiếu ' + (total - sum) + ' vai trò.';
+        else hintEl.textContent = 'Thừa ' + (sum - total) + ' vai trò so với tổng người chơi.';
+
+        saveSetupState();
+    }
+
+    setupFields().forEach(field => {
+        field.addEventListener('change', updateSum);
+        field.addEventListener('input', updateSum);
+    });
+    restoreSetupState();
+    updateSum();
+
+    document.getElementById('sendButton').onclick = function () {
+        saveSetupState();
+        const params = new URLSearchParams();
+        document.querySelectorAll('#dataForm input[type="number"]')
+            .forEach(input => params.append(input.name, input.value));
+        document.querySelectorAll('#dataForm input[type="checkbox"]:checked')
+            .forEach(box => { if (box.id !== 'checkCupid') params.append(box.name, 1); });
+        params.append('checkCupid', document.getElementById('checkCupid').checked ? 'true' : 'false');
+
+        fetch('/ms/create?' + params.toString())
+            .then(response => response.text())
+            .then(async data => {
+                if (data.includes('ERROR')) {
+                    await UI.notify({title: 'Chưa khởi chạy được ván', message: data, tone: 'danger'});
+                    return;
+                }
+                if (data.includes('ALERT')) {
+                    await UI.notify({title: 'Lưu ý', message: data});
+                }
+                UI.flash({message: 'Đã chia vai trò. Người chơi có thể vào phòng.', tone: 'success'});
+                UI.go('/ms/admin');
+            })
+            .catch(() => UI.toast('Không khởi chạy được ván. Vui lòng thử lại.', 'danger'));
+    };
+</script>
 </body>
 </html>
