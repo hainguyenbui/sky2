@@ -69,6 +69,8 @@ public class MaSoiService {
     @Getter
     private String dayDetails = "";
     private boolean sickWolfWasTargeted = false;
+    @Getter
+    Map<String, Integer> deviceIdOrder = new HashMap<>();
 
     public MaSoiService(DataInputService dataInputService) {
         this.dataInputService = dataInputService;
@@ -101,7 +103,7 @@ public class MaSoiService {
 
     public int getGameNumber() {
         return completedGames.size() + 1;
-    } //TODO ko nen add o day
+    }
 
     public boolean isShowSoiNguyen() {
         return curseAvailable;
@@ -186,7 +188,7 @@ public class MaSoiService {
     private void applyOptionalSetupRules(GameSetupRequest setup) {
         curseAvailable = players.stream().anyMatch(player -> player.getId() == 3);
         if (setup.isSoiNguyenEnabled() || wolfWasRemovedDuringSetup) {
-            players.stream().filter(this::isWolf).forEach(this::addWolfCurse);
+            players.stream().filter(this::isWolfAction).forEach(this::addWolfCurse);
         }
         if (setup.isCupidEnabled() && players.size() >= 2) {
             linkCupidPair();
@@ -235,6 +237,7 @@ public class MaSoiService {
         }
         availablePlayer.setIpData(deviceId);
         availablePlayer.setNameMember(playerName);
+        deviceIdOrder.put(deviceId, deviceIdOrder.size() + 1);
         return availablePlayer;
     }
 
@@ -244,7 +247,7 @@ public class MaSoiService {
                     .filter(candidate -> candidate.getId() < 15)
                     .map(DataMember::getNameMember)
                     .collect(Collectors.joining(", "));
-            player.setRoleShow("Sói là: " + wolves); // TODO neu cupo thi hien thi co la ko
+            player.setDescription("Sói là: " + wolves);
         }
     }
 
@@ -277,13 +280,15 @@ public class MaSoiService {
     }
 
     public String endGame() {
-        int gameNumber = completedGames.size() + 1;
-        completedGames.put(gameNumber, new ArrayList<>(players));
-        completedGameDetails.put(gameNumber, new LinkedHashMap<>(currentGameHistory));
+        if (nightNumber > 1) {
+            int gameNumber = completedGames.size() + 1;
+            completedGames.put(gameNumber, new ArrayList<>(players));
+            completedGameDetails.put(gameNumber, new LinkedHashMap<>(currentGameHistory));
+        }
         gameEnded = true;
         players.clear();
         visibleRoles.clear();
-        copyLinks.clear(); //TODO sao ko dung resetGane
+        copyLinks.clear();
         dayKillProcessed = false;
         nightNumber = 1;
         currentGameHistory.clear();
@@ -352,7 +357,7 @@ public class MaSoiService {
             }
         }
         if (resolution.sickWolfWasTargeted) {
-            sickWolfWasTargeted = resolution.sickWolfWasTargeted; // Nếu sói si đa đã xử lý trong vòng thì lưu lại
+            sickWolfWasTargeted = true; // Nếu sói si đa đã xử lý trong vòng thì lưu lại
         }
     }
 
@@ -452,7 +457,7 @@ public class MaSoiService {
                 addReason(resolution.deaths, action.getDeviceId(), " loại bỏ nhầm dân nên đi theo");
             }
             addReason(resolution.deaths, action.getTargetDeviceId(), " bị " + action.getRoleName() + " tác động vật lý");
-        } else if (action.getRoleId() == 46 ) { // TODO xu ly cho bom
+        } else if (action.getRoleId() == 46 ) {
             if (Objects.equals(attacker.getOldTargetId(), action.getTargetDeviceId())) {
                 addReason(resolution.deaths, action.getTargetDeviceId(), " bị " + action.getRoleName() + " tác động vật lý");
                 if (action.getTargetRoleId() < 30) {
@@ -674,6 +679,7 @@ public class MaSoiService {
 
     private void eliminatePlayer(DataMember player) {
         player.setDead(true);
+        player.setId(player.getIdDefault());
         deadPlayers.add(player);
     }
 
@@ -691,6 +697,7 @@ public class MaSoiService {
                 apprentice.setRole(apprentice.getRole() + " trở thành " + deceased.getRoleDefault());
                 apprentice.setDisabledSkill(false);
                 apprentice.setId(32);
+                apprentice.setOrderCall(deceased.getOrderCall());
                 log.accept("Tiên Tri Tập Sự trở thành " + deceased.getRoleDefault());
             });
         }
@@ -704,26 +711,43 @@ public class MaSoiService {
         target.setSuperProtectedSkill(source.isSuperProtectedSkill());
         target.setConnectSkill(source.getConnectSkill());
         target.setDisabledSkill(source.isDisabledSkill());
+        target.setOrderCall(source.getOrderCall());
     }
 
     public Map<String, Object> getGameManagementData() {
         LinkedHashMap<String, Map<String, Object>> actionColumns = new LinkedHashMap<>();
         List<String> superProtectedDevices = new ArrayList<>();
-
+        DataMember wolf = new DataMember();
         for (DataMember player : players) {
-//            if (player.isDead()) {
-//                continue; //TODO chet van hien thi coi xem r hay colomn coi chung nham
-//            }
             if (player.isSuperProtectedSkill()) {
                 superProtectedDevices.add(player.getIpData());
             }
             if (isWolfAction(player)) {
                 if (player.isDead()) {
+                    wolf = player;
                     continue;
                 }
                 actionColumns.putIfAbsent("soi", wolfColumn(player));
             } else if (hasAction(player)) {
                 actionColumns.putIfAbsent(player.getId() + "_" + player.getIpData(), roleColumn(player));
+            }
+        }
+        actionColumns.putIfAbsent("soi", wolfColumn(wolf));// Nếu toàn bộ sói chết, add đại 1 con sói
+        // Post-process: for same roleId group, keep alive ones; if all dead keep only one representative
+        Map<Integer, List<String>> keysByRoleId = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<String, Object>> entry : actionColumns.entrySet()) {
+            if (!"soi".equals(entry.getKey())) {
+                int roleId = (Integer) entry.getValue().get("roleId");
+                keysByRoleId.computeIfAbsent(roleId, k -> new ArrayList<>()).add(entry.getKey());
+            }
+        }
+        for (List<String> keys : keysByRoleId.values()) {
+            if (keys.size() <= 1) continue;
+            boolean anyAlive = keys.stream().anyMatch(k -> !(Boolean) actionColumns.get(k).get("isDead"));
+            if (anyAlive) {
+                keys.stream().filter(k -> (Boolean) actionColumns.get(k).get("isDead")).forEach(actionColumns::remove);
+            } else {
+                keys.stream().skip(1).forEach(actionColumns::remove);
             }
         }
         List<Map<String, Object>> columns = actionColumns.values().stream()
@@ -765,12 +789,14 @@ public class MaSoiService {
         column.put("orderCall", player.getOrderCall());
         column.put("oldTarget", player.getOldTargetId());
         column.put("isDead" , player.isDead());
+        column.put("idDefault", player.getIdDefault());
+        column.put("roleDefault", player.getRoleDefault());
         return column;
     }
 
     private List<Map<String, Object>> managementPlayers() {
         return players.stream()
-                .filter(player -> !player.isDead() && !ObjectUtils.isEmpty(player.getIpData())) // TODO check chet van hien thi
+                .filter(player -> !player.isDead() && !ObjectUtils.isEmpty(player.getIpData()))
                 .sorted(Comparator.comparing(DataMember::getId))
                 .map(player -> Map.<String, Object>of(
                         "deviceId", player.getIpData(),
@@ -831,7 +857,7 @@ public class MaSoiService {
 
     private void resetNightSkillBlocks() {
         players.stream()
-                .filter(player -> player.getId() != 41) // TODO chi bat soi va sat thu bi disable thoi
+                .filter(player -> player.getId() != 37) // TODO chi bat soi va sat thu bi disable thoi
                 .forEach(player -> player.setDisabledSkill(false));
     }
 

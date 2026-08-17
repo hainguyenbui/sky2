@@ -236,6 +236,12 @@
                                    showProt=${col['hasProt'] or col['roleId'] == 31 or col['roleId'] == 33},
                                    showConn=${col['hasConn']},
                                    visualSubCols=${col['isSoi'] ? 1 : ((showKill ? 1 : 0) + (showProt ? 1 : 0) + (showConn ? 1 : 0))}">
+                    <!-- Ghost column for original role (when player has changed role, not wolf, not dead) -->
+                    <th th:if="${col['idDefault'] != null and col['roleId'] != col['idDefault'] and !col['isSoi'] and !col['isDead']}"
+                        rowspan="2"
+                        class="role-title-wrap col-disabled"
+                        th:text="${col['roleDefault']}">
+                    </th>
                     <th th:if="${visualSubCols == 1}" rowspan="2"
                         th:class="${'role-title-wrap ' + (col['disabled'] ? 'col-disabled ' : '') + (col['isDead'] ? 'col-dead' : '')}"
                         th:text="${col['label']}"></th>
@@ -279,6 +285,10 @@
                                        protUnavailable=${showProt and !col['hasProt']},
                                        visualSubCols=${col['isSoi'] ? 1 : ((showKill ? 1 : 0) + (showProt ? 1 : 0) + (showConn ? 1 : 0))}">
                         <th:block th:if="${visualSubCols == 1}">
+                            <!-- Ghost cell for original role when player has changed role (not wolf, not dead) -->
+                            <td th:if="${col['idDefault'] != null and col['roleId'] != col['idDefault'] and !col['isSoi'] and !col['isDead']}">
+                                <div class="tog col-disabled locked" title="Nhân bản — đã đổi vai">🔒</div>
+                            </td>
                             <td th:if="${col['isSoi']}" th:class="${col['isDead']} ? 'col-dead' : ''">
                                 <div th:class="${'tog' + ((col['disabled'] or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
                                      th:data-col="${'soi_' + col['roleId'] + '_' + col['deviceId']}"
@@ -335,6 +345,10 @@
                             </td>
                         </th:block>
                         <th:block th:if="${visualSubCols > 1}">
+                            <!-- Ghost cell for original role when player has changed role (multi-subcol, not wolf, not dead) -->
+                            <td th:if="${col['idDefault'] != null and col['roleId'] != col['idDefault'] and !col['isSoi'] and !col['isDead']}">
+                                <div class="tog col-disabled locked" title="Nhân bản — đã đổi vai">🔒</div>
+                            </td>
                             <td th:if="${col['isSoi']}" th:class="${col['isDead']} ? 'col-dead' : ''">
                                 <div th:class="${'tog' + ((col['disabled'] or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
                                      th:data-col="${'soi_' + col['roleId'] + '_' + col['deviceId']}"
