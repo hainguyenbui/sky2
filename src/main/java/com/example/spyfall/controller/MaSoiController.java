@@ -73,7 +73,7 @@ public class MaSoiController {
             }
             model.addAttribute("role", member.getRole());
             model.addAttribute("desc", member.getDescription());
-            model.addAttribute("dataMore", member.getDetailShow());
+            model.addAttribute("dataMore", member.getRoleShow());
             model.addAttribute("showRoles", maSoiService.getListShowForMember());
             addCommonAttributes(model);
             model.addAttribute("gameNumber", maSoiService.getGameNumber());
@@ -98,6 +98,9 @@ public class MaSoiController {
 
     @GetMapping("/admin")
     String admin(Model model) {
+        if (maSoiService.isGameEnded()) {
+            return "redirect:/ms/run";
+        }
         List<DataMember> players = maSoiService.getPls();
         players.sort(Comparator.comparing(DataMember::getId));
         model.addAttribute("playersData", players);
@@ -107,12 +110,13 @@ public class MaSoiController {
         addRoleGroupAttributes(model);
         model.addAttribute("deadViewHistory", maSoiService.isAllowDeadViewGameHistory());
         model.addAttribute("showAliveDead", maSoiService.isAllowShowAliveDead());
+        model.addAttribute("invertedSeer", maSoiService.isInvertedSeer());
 
         model.addAllAttributes(maSoiService.getGameManagementData());
         model.addAttribute("dayKill", maSoiService.isDayKillProcessed());
         model.addAttribute("detailNight", maSoiService.getHistoryAdmin());
         model.addAttribute("detailDay", maSoiService.getDayDetails());
-        model.addAttribute("gameDetailNight", maSoiService.getNightDetails());
+        model.addAttribute("gameDetailNight", maSoiService.getCurrentGameHistory());
         return "masoi/admin";
     }
 //
@@ -149,6 +153,9 @@ public class MaSoiController {
                 break;
             case "showAliveDead":
                 maSoiService.setAllowShowAliveDead(value);
+                break;
+            case "invertedSeer":
+                maSoiService.setInvertedSeer(value);
                 break;
         }
         return "OK";

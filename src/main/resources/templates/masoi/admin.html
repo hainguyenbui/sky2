@@ -32,11 +32,14 @@
         .gtbl th { padding:9px 10px; text-align:center; font-weight:600; font-size:0.8rem; color:#60a5fa; border-right:1px solid rgba(99,102,241,0.2); border-bottom:2px solid rgba(99,102,241,0.3); white-space:nowrap; position:sticky; top:0; z-index:2; background:rgba(20,30,50,0.97); }
         .gtbl thead tr:nth-child(2) th { top:38px; }
         .gtbl th.col-disabled { background:rgba(245,158,11,0.2) !important; color:#fbbf24 !important; }
+        .gtbl th.col-dead { background:rgba(153,27,27,0.55) !important; color:#fecaca !important; }
+        .gtbl th.role-title-wrap { white-space:normal !important; word-break:break-word; line-height:1.2; width:84px; min-width:84px; }
         .gtbl th:last-child { border-right:none; }
         .gtbl th.th-player { text-align:left; min-width:120px; position:sticky; left:0; top:0; z-index:4; background:rgba(20,30,50,0.97); }
         .gtbl tbody tr { border-bottom:1px solid rgba(99,102,241,0.1); }
         .gtbl tbody tr:hover { background:rgba(59,130,246,0.05); }
         .gtbl td { padding:7px 8px; text-align:center; border-right:1px solid rgba(99,102,241,0.1); }
+        .gtbl td.col-dead { background:rgba(127,29,29,0.25); }
         .gtbl td:first-child { text-align:left; position:sticky; left:0; z-index:2; background:rgba(30,41,59,0.95); padding:8px 10px; }
         .gtbl td:last-child { border-right:none; }
         .pname { display:flex; flex-direction:column; gap:2px; }
@@ -47,6 +50,41 @@
         .tog.on.recruit { background:linear-gradient(135deg,var(--warning),var(--warning-hover)); border-color:var(--warning); box-shadow:0 0 10px rgba(245,158,11,0.35); }
         .tog.on.prot { background:linear-gradient(135deg,var(--success),var(--success-hover)); border-color:var(--success); box-shadow:0 0 10px rgba(16,185,129,0.35); }
         .tog.on.conn { background:linear-gradient(135deg,#8b5cf6,#7c3aed); border-color:#8b5cf6; box-shadow:0 0 10px rgba(139,92,246,0.35); }
+        .tog.seer-orb {
+            position: relative;
+            border-radius: 50%;
+            border-color: rgba(125,211,252,0.75);
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.30), rgba(125,211,252,0.12) 45%, rgba(30,41,59,0.42) 100%);
+            color: transparent;
+        }
+        .tog.seer-orb::before {
+            content: "◌";
+            color: #bae6fd;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .tog.on.seer-orb {
+            border-color: #38bdf8;
+            background: radial-gradient(circle at 28% 28%, rgba(255,255,255,0.85), rgba(56,189,248,0.40) 42%, rgba(30,41,59,0.55) 100%);
+            box-shadow: 0 0 14px rgba(56,189,248,0.55);
+        }
+        .tog.on.seer-orb::before {
+            content: "◉";
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(56,189,248,0.8);
+        }
+        .tog.old-target {
+            background: linear-gradient(135deg, rgba(250,204,21,0.32), rgba(234,179,8,0.24));
+            border-color: rgba(250,204,21,0.7);
+            box-shadow: inset 0 0 0 1px rgba(254,240,138,0.2);
+        }
+        .tog.old-target.seer-orb {
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.45), rgba(250,204,21,0.22) 45%, rgba(30,41,59,0.42) 100%);
+            border-color: rgba(250,204,21,0.75);
+        }
+        .tog.col-dead { border-color:rgba(248,113,113,0.65); background:rgba(127,29,29,0.35); }
+        .tog.on.boom-warning { background:linear-gradient(135deg,#fef08a,#fde68a); border-color:#facc15; color:#111827; box-shadow:0 0 10px rgba(250,204,21,0.35); }
+        .tog.on.boom-final { background:linear-gradient(135deg,var(--danger),var(--danger-hover)); border-color:var(--danger); color:white; box-shadow:0 0 10px rgba(239,68,68,0.4); }
         .tog.locked { opacity:0.4; cursor:not-allowed; }
         .tog.col-disabled { opacity:0.35; cursor:not-allowed; border-color:rgba(245,158,11,0.3); }
         .process-btn { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; padding:12px 26px; border-radius:10px; font-weight:600; cursor:pointer; margin-top:14px; margin-bottom:15px; width:100%; font-size:1rem; }
@@ -62,6 +100,33 @@
         .kill-btn { background:linear-gradient(135deg,var(--danger),var(--danger-hover)); color:white; border:none; padding:11px 20px; border-radius:10px; font-weight:600; cursor:pointer; margin-top:10px; width:100%; }
         .kill-btn:active { transform:scale(0.98); }
         .help { font-size:0.78rem; color:var(--text-muted); padding:8px 10px; background:rgba(30,41,59,0.3); border-radius:8px; margin-bottom:12px; }
+
+        /* Tiên Tri Soi Popup */
+        @keyframes soiFadeOut {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            75%  { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-12px) scale(0.95); }
+        }
+        #soiPopup {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            pointer-events: none;
+            color: white;
+            padding: 16px 26px;
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-align: center;
+            box-shadow: 0 6px 32px rgba(0,0,0,0.5);
+            max-width: 320px;
+            line-height: 1.5;
+            animation: soiFadeOut 4s forwards;
+        }
+        #soiPopup.soi-danger  { background: linear-gradient(135deg, rgba(220,38,38,0.95), rgba(185,28,28,0.95)); border: 2px solid rgba(248,113,113,0.6); }
+        #soiPopup.soi-safe    { background: linear-gradient(135deg, rgba(5,150,105,0.95), rgba(4,120,87,0.95));  border: 2px solid rgba(52,211,153,0.6); }
     </style>
 </head>
 <body>
@@ -86,6 +151,13 @@
                 <span class="toggle-label">Hiển thị danh sách sống/chết</span>
                 <label class="toggle-switch">
                     <input type="checkbox" id="showAliveDead" th:checked="${showAliveDead}" onchange="toggleAdminOption('showAliveDead', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-item">
+                <span class="toggle-label">Tiên tri soi ngược khi bị silent</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="invertedSeer" th:checked="${invertedSeer}" onchange="toggleAdminOption('invertedSeer', this.checked)">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -125,9 +197,9 @@
         <p class="desc" style="font-size: 0.8rem; margin-top: 5px;">Quét mã QR để người chơi tham gia</p>
     </div>
 
-    <div th:if="${hasSuperProtectedPlayers}" class="super-section">
-        <div class="super-title">🛡️ Bảo Vệ Tối Cao — Khi BẬT: khóa toàn bộ toggle trong bảng</div>
+    <div class="super-section">
         <th:block th:each="p : ${players}" th:if="${p['hasSuperProtected']}">
+            <div class="super-title">🛡️ Bảo Vệ Tối Cao — Khi BẬT: khóa toàn bộ toggle trong bảng</div>
             <div class="super-item">
                 <div class="super-info">
                     <span class="super-name" th:text="${p['name']}"></span>
@@ -159,22 +231,33 @@
             <thead>
             <tr>
                 <th class="th-player" rowspan="2">Người Chơi</th>
-                <th:block th:each="col : ${columns}">
-                    <th th:if="${col['subCols'] == 1}" rowspan="2"
-                        th:class="${col['disabled']} ? 'col-disabled' : ''"
+                <th:block th:each="col : ${columns}"
+                          th:with="showKill=${!col['isSoi'] and (col['hasKill'] or col['roleId'] == 20 or col['roleId'] == 31 or col['roleId'] == 43 or col['roleId'] == 46)},
+                                   showProt=${col['hasProt'] or col['roleId'] == 31 or col['roleId'] == 33},
+                                   showConn=${col['hasConn']},
+                                   visualSubCols=${col['isSoi'] ? 1 : ((showKill ? 1 : 0) + (showProt ? 1 : 0) + (showConn ? 1 : 0))}">
+                    <th th:if="${visualSubCols == 1}" rowspan="2"
+                        th:class="${'role-title-wrap ' + (col['disabled'] ? 'col-disabled ' : '') + (col['isDead'] ? 'col-dead' : '')}"
                         th:text="${col['label']}"></th>
-                    <th th:if="${col['subCols'] > 1}"
-                        th:colspan="${col['subCols']}"
-                        th:class="${col['disabled']} ? 'col-disabled' : ''"
+                    <th th:if="${visualSubCols > 1}"
+                        th:colspan="${visualSubCols}"
+                        th:class="${'role-title-wrap ' + (col['disabled'] ? 'col-disabled ' : '') + (col['isDead'] ? 'col-dead' : '')}"
                         th:text="${col['label']}"></th>
                 </th:block>
             </tr>
             <tr>
-                <th:block th:each="col : ${columns}" th:if="${col['subCols'] > 1}">
-                    <th th:if="${col['isSoi']}"  th:class="${col['disabled']} ? 'col-disabled' : ''">🐺 Cắn</th>
-                    <th th:if="${col['hasKill']}" th:class="${col['disabled']} ? 'col-disabled' : ''">⚔️ Giết</th>
-                    <th th:if="${col['hasProt']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🛡️ Cứu</th>
-                    <th th:if="${col['hasConn']}" th:class="${col['disabled']} ? 'col-disabled' : ''">🔗 Chọn</th>
+                <th:block th:each="col : ${columns}"
+                          th:with="showKill=${!col['isSoi'] and (col['hasKill'] or col['roleId'] == 20 or col['roleId'] == 31 or col['roleId'] == 43 or col['roleId'] == 46)},
+                                   showProt=${col['hasProt'] or col['roleId'] == 31 or col['roleId'] == 33},
+                                   showConn=${col['hasConn']},
+                                   killUnavailable=${showKill and !col['hasKill']},
+                                   protUnavailable=${showProt and !col['hasProt']},
+                                   visualSubCols=${col['isSoi'] ? 1 : ((showKill ? 1 : 0) + (showProt ? 1 : 0) + (showConn ? 1 : 0))}"
+                          th:if="${visualSubCols > 1}">
+                    <th th:if="${col['isSoi']}"  th:class="${(col['disabled'] ? 'col-disabled ' : '') + (col['isDead'] ? 'col-dead' : '')}">🐺 Cắn</th>
+                    <th th:if="${showKill}" th:class="${((col['disabled'] or killUnavailable) ? 'col-disabled ' : '') + (col['isDead'] ? 'col-dead' : '')}">⚔️ Giết</th>
+                    <th th:if="${showProt}" th:class="${((col['disabled'] or protUnavailable) ? 'col-disabled ' : '') + (col['isDead'] ? 'col-dead' : '')}">🛡️ Cứu</th>
+                    <th th:if="${showConn}" th:class="${(col['disabled'] ? 'col-disabled ' : '') + (col['isDead'] ? 'col-dead' : '')}">🔗 Chọn</th>
                 </th:block>
             </tr>
             </thead>
@@ -188,107 +271,123 @@
                             <span class="pid" th:text="${'#' + p['idPlayGame'] + ' · ' + p['roleName']}"></span>
                         </div>
                     </td>
-                    <th:block th:each="col : ${columns}">
-                        <th:block th:if="${col['subCols'] == 1}">
-                            <td th:if="${col['isSoi']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'soi_' + col['roleId']}"
+                    <th:block th:each="col : ${columns}"
+                              th:with="showKill=${!col['isSoi'] and (col['hasKill'] or col['roleId'] == 20 or col['roleId'] == 31 or col['roleId'] == 43 or col['roleId'] == 46)},
+                                       showProt=${col['hasProt'] or col['roleId'] == 31 or col['roleId'] == 33},
+                                       showConn=${col['hasConn']},
+                                       killUnavailable=${showKill and !col['hasKill']},
+                                       protUnavailable=${showProt and !col['hasProt']},
+                                       visualSubCols=${col['isSoi'] ? 1 : ((showKill ? 1 : 0) + (showProt ? 1 : 0) + (showConn ? 1 : 0))}">
+                        <th:block th:if="${visualSubCols == 1}">
+                            <td th:if="${col['isSoi']}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + ((col['disabled'] or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
+                                     th:data-col="${'soi_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🐺</div>
+                                     th:onclick="${col['disabled'] or col['isDead']} ? '' : 'toggleCol(this)'">🐺</div>
                             </td>
-                            <td th:if="${col['hasKill'] and !col['isSoi'] and !col['hasProt'] and !col['hasConn']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'kill_' + col['roleId']}"
+                            <td th:if="${showKill and !showProt and !showConn}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + (((col['disabled'] or killUnavailable) or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
+                                     th:data-col="${'kill_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">⚔️</div>
+                                     th:onclick="${col['disabled'] or killUnavailable or col['isDead']} ? '' : 'toggleCol(this)'">⚔️</div>
                             </td>
-                            <td th:if="${col['hasProt'] and !col['isSoi'] and !col['hasKill'] and !col['hasConn']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'prot_' + col['roleId']}"
+                            <td th:if="${showProt and !showKill and !showConn}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + (((col['disabled'] or protUnavailable) or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
+                                     th:data-col="${'prot_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🛡️</div>
+                                     th:onclick="${col['disabled'] or protUnavailable or col['isDead']} ? '' : 'toggleCol(this)'">🛡️</div>
                             </td>
-                            <td th:if="${col['hasConn'] and !col['isSoi'] and !col['hasKill'] and !col['hasProt']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'conn_' + col['roleId']}"
+                            <td th:if="${showConn and !showKill and !showProt}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + ((col['disabled'] or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '') + (col['roleId'] == 32 ? ' seer-orb' : '')}"
+                                     th:data-col="${'conn_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
                                      th:data-connvalue="${col['connValue']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🔗</div>
+                                     th:onclick="${col['disabled'] or col['isDead']} ? '' : 'toggleCol(this)'"
+                                     th:text="${col['roleId'] == 32 ? '' : '🔗'}"></div>
                             </td>
                         </th:block>
-                        <th:block th:if="${col['subCols'] > 1}">
-                            <td th:if="${col['isSoi']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'soi_' + col['roleId']}"
+                        <th:block th:if="${visualSubCols > 1}">
+                            <td th:if="${col['isSoi']}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + ((col['disabled'] or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
+                                     th:data-col="${'soi_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🐺</div>
+                                     th:onclick="${col['disabled'] or col['isDead']} ? '' : 'toggleCol(this)'">🐺</div>
                             </td>
-                            <td th:if="${col['hasKill']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'kill_' + col['roleId']}"
+                            <td th:if="${showKill}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + (((col['disabled'] or killUnavailable) or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
+                                     th:data-col="${'kill_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">⚔️</div>
+                                     th:onclick="${col['disabled'] or killUnavailable or col['isDead']} ? '' : 'toggleCol(this)'">⚔️</div>
                             </td>
-                            <td th:if="${col['hasProt']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'prot_' + col['roleId']}"
+                            <td th:if="${showProt}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + (((col['disabled'] or protUnavailable) or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '')}"
+                                     th:data-col="${'prot_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🛡️</div>
+                                     th:onclick="${col['disabled'] or protUnavailable or col['isDead']} ? '' : 'toggleCol(this)'">🛡️</div>
                             </td>
-                            <td th:if="${col['hasConn']}">
-                                <div th:class="'tog' + (${col['disabled']} ? ' col-disabled' : '')"
-                                     th:data-col="${'conn_' + col['roleId']}"
+                            <td th:if="${showConn}" th:class="${col['isDead']} ? 'col-dead' : ''">
+                                <div th:class="${'tog' + ((col['disabled'] or col['isDead']) ? ' col-disabled' : '') + (col['isDead'] ? ' col-dead' : '') + (col['roleId'] == 32 ? ' seer-orb' : '')}"
+                                     th:data-col="${'conn_' + col['roleId'] + '_' + col['deviceId']}"
                                      th:data-roleid="${col['roleId']}"
                                      th:data-rolename="${col['label']}"
                                      th:data-connvalue="${col['connValue']}"
+                                     th:data-oldtarget="${col['oldTarget']}"
                                      th:data-deviceTarget="${p['deviceId']}"
                                      th:data-device="${col['deviceId']}"
                                      th:data-name="${p['name']}"
                                      th:data-targetRoleId="${p['id']}"
                                      th:data-targetRole="${p['roleName']}"
-                                     th:onclick="${col['disabled']} ? '' : 'toggleCol(this)'">🔗</div>
+                                     th:onclick="${col['disabled'] or col['isDead']} ? '' : 'toggleCol(this)'"
+                                     th:text="${col['roleId'] == 32 ? '' : '🔗'}"></div>
                             </td>
                         </th:block>
                     </th:block>
@@ -336,7 +435,7 @@
      <script>
         function toggleAdminOption(option, value) {
             fetch(`/ms/toggleAdminOptions?option=${option}&value=${value}`, { method: 'POST' })
-                .then(response => response.text())
+                .then(response => window.location.href = '/ms/admin')
                 .catch(error => console.error('Error:', error));
         }
         
@@ -374,7 +473,15 @@
                     : empty;
             } else {
                 title.textContent = '📋 Game Detail';
-                content.innerHTML = gameDetail || empty;
+                content.innerHTML = gameDetail
+                    ? Object.entries(gameDetail).map(([key, value]) => `
+                        <div>
+                            <span>${key}</span>
+                            :<br>
+                            <span>${value}</span>
+                        </div>
+                    `).join('')
+                : empty;
             }
             modal.style.display = 'block';
         }
@@ -400,18 +507,105 @@
             if (el.classList.contains('locked') || el.classList.contains('col-disabled')) return;
             const colKey = el.dataset.col;
             const colType = colKey.split('_')[0];
+            const roleId = parseInt(el.dataset.roleid);
             const isOn = el.classList.contains('on');
+            const hadOldTarget = el.classList.contains('old-target');
+            const hadBoomWarning = el.classList.contains('boom-warning');
+            const hadBoomFinal = el.classList.contains('boom-final');
+
+            if (roleId === 33 && colType === 'prot' && hadOldTarget) {
+                alert('không thể bảo vệ 1 người 2 đêm liên tiếp');
+                return;
+            }
+
+            if (roleId === 32 && isOn) {
+                showTienTriResult(el);
+                return;
+            }
+
             document.querySelectorAll(`#roleTable .tog[data-col="${colKey}"]`).forEach(b => {
-                b.classList.remove('on', 'recruit', 'prot', 'conn');
+                b.classList.remove('on', 'recruit', 'prot', 'conn', 'boom-warning', 'boom-final');
             });
-            if (!isOn) {
+
+            if (roleId === 46) {
+                if (hadOldTarget || hadBoomWarning) {
+                    el.classList.add('on', 'boom-final');
+                } else if (!isOn) {
+                    el.classList.add('on', 'boom-warning');
+                } else if (hadBoomFinal) {
+                    el.classList.add('on', 'boom-final');
+                }
+            } else if (!isOn) {
                 const isRecruit = document.getElementById('recruitMode')?.checked;
+                el.classList.remove('old-target');
                 el.classList.add('on');
                 if (colType === 'soi' && isRecruit) el.classList.add('recruit');
                 else if (colType === 'prot') el.classList.add('prot');
                 else if (colType === 'conn') el.classList.add('conn');
             }
-            if (parseInt(el.dataset.roleid) === 38) updateSilenced();
+
+            if (roleId === 32 && el.classList.contains('on')) {
+                showTienTriResult(el);
+            }
+            if (roleId === 38) updateSilenced();
+        }
+
+        const WOLF_IDS = new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
+        const SAT_THU_ID = 20;
+
+        function showTienTriResult(el) {
+            const tienTriDevice = el.dataset.device;
+            const targetRoleId  = parseInt(el.dataset.targetroleid);
+            const targetName    = el.dataset.name;
+
+            const isSilenced = Array.from(document.querySelectorAll('#roleTable .tog.on[data-roleid="38"]'))
+                .some(s => s.dataset.devicetarget === tienTriDevice);
+
+            let msg, cssClass;
+            const isEvil = WOLF_IDS.has(targetRoleId) || targetRoleId === SAT_THU_ID;
+            if (isSilenced) {
+                const invertedSeer = /*[[${invertedSeer}]]*/ false;
+                if (invertedSeer) {
+                    if (isEvil) {
+                        msg = `🔮 Tiên tri soi <strong>${targetName}</strong><br>→ Không phải Sói / Sát thủ ✅`;
+                        cssClass = 'soi-safe';
+                    } else {
+                        msg = `🔮 Tiên tri soi <strong>${targetName}</strong><br>→ Là Sói 🐺 hoặc Sát thủ ⚔️`;
+                        cssClass = 'soi-danger';
+                    }
+                } else {
+                        msg = `🔮 Tiên tri soi <strong>${targetName}</strong><br>→ Không phải Sói / Sát thủ ✅`;
+                        cssClass = 'soi-safe';
+                }
+            } else {
+                if (isEvil) {
+                    msg = `🔮 Tiên tri soi <strong>${targetName}</strong><br>→ Là Sói 🐺 hoặc Sát thủ ⚔️`;
+                    cssClass = 'soi-danger';
+                } else {
+                    msg = `🔮 Tiên tri soi <strong>${targetName}</strong><br>→ Không phải Sói / Sát thủ ✅`;
+                    cssClass = 'soi-safe';
+                }
+            }
+            showSoiPopup(msg, cssClass);
+        }
+
+        function showSoiPopup(msg, cssClass) {
+            const old = document.getElementById('soiPopup');
+            if (old) old.remove();
+            const popup = document.createElement('div');
+            popup.id = 'soiPopup';
+            popup.className = cssClass;
+            popup.innerHTML = msg;
+            document.body.appendChild(popup);
+            setTimeout(() => { if (popup.parentNode) popup.remove(); }, 4000);
+        }
+
+        function restoreOldTargets() {
+            document.querySelectorAll('#roleTable .tog').forEach(el => {
+                const oldTarget = el.dataset.oldtarget;
+                if (!oldTarget || oldTarget !== el.dataset.devicetarget) return;
+                el.classList.add('old-target');
+            });
         }
 
         function updateSilenced() {
@@ -498,6 +692,8 @@
         }
 
         updateLock();
+        restoreOldTargets();
+        updateSilenced();
 
         document.getElementById('recruitMode')?.addEventListener('change', function() {
             document.querySelectorAll('#roleTable .tog.on[data-col^="soi_"]').forEach(el => {

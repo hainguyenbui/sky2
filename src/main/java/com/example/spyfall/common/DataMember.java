@@ -39,13 +39,22 @@ public class DataMember {
 
     boolean isDead = false;
 
-    String detailShow;
+    String roleShow;
+
+    String roleDefault;
+
+    Integer idDefault;
+
+    // đây là thứ tự gọi dậy trong đêm
+    Integer orderCall;
 
     /**
      * 1 cupid
      */
     int lifeLink = 0;
     List<Integer> lifeLinkIds;
+
+    String oldTargetId;
 
     /**
      * 1 thợ săn
@@ -55,6 +64,7 @@ public class DataMember {
      * 5 người bệnh
      * 6 bị nguyền
      * 7 silent
+     * 8 tien tri
      */
     int connectSkill = 0;
 
