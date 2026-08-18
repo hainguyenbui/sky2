@@ -34,6 +34,8 @@ public class MaSoiService {
     private static final String IMAGE_PATH = "/qrcode.png";
     private static final List<String> DAY_DEATH_REASONS = List.of(
             " bị thủ tiêu vì biết quá nhiều", " không muốn chơi nữa", " bị thù ghét", " nói quá nhiều");
+    private static final List<String> LOVE_DEATH_REASONS = List.of(
+            " dã đi là đi chung", " một bước cũng không lệch", " kè kè bên cạnh", " đi cùng cho vui", " khóc hết nước mắt", " ăn chơi xa đọa");
 
     private final DataInputService dataInputService;
     private final List<DataMember> roleCatalog = new ArrayList<>();
@@ -71,6 +73,7 @@ public class MaSoiService {
     private boolean sickWolfWasTargeted = false;
     @Getter
     Map<String, Integer> deviceIdOrder = new HashMap<>();
+    private final List<String> loveLinks = new ArrayList<>();
 
     public MaSoiService(DataInputService dataInputService) {
         this.dataInputService = dataInputService;
@@ -570,6 +573,10 @@ public class MaSoiService {
         Map<String, String> deathReasons = new LinkedHashMap<>(resolution.deaths);
         resolution.savedPlayers.keySet().forEach(resolution.deaths::remove);
         resolution.unpreventableDeaths.forEach((deviceId, reason) -> addReason(resolution.deaths, deviceId, reason));
+        // thêm vào cái cho cặp đôi khi ra đi buổi sáng
+        loveLinks.forEach(partnerId -> addReason(resolution.deaths, partnerId, LOVE_DEATH_REASONS.get(new Random().nextInt(LOVE_DEATH_REASONS.size()))));
+        loveLinks.clear();
+
         expandLinkedDeaths(playersByDevice, resolution);
         deathReasons.putAll(resolution.deaths);
         // Lưu toàn bộ lịch su
@@ -596,7 +603,7 @@ public class MaSoiService {
             });
             for (String deviceId : new ArrayList<>(resolution.deaths.keySet())) {
                 DataMember player = playersByDevice.get(deviceId);
-                if (player != null && player.getLifeLink() > 0) {
+                if (player.getLifeLink() > 0) {
                     findCupidPartner(player).ifPresent(partner -> addReason(resolution.deaths, partner.getIpData(), "liên kết sinh mệnh với " + player.getNameMember()));
                 }
             }
@@ -638,7 +645,7 @@ public class MaSoiService {
     }
 
     public String processDay(List<String> deviceIds) {
-        dayKillProcessed = true;
+//        dayKillProcessed = true;
         Map<String, DataMember> playersByDevice = playersByDevice();
         Map<String, DataMember> eliminatedPlayers = new LinkedHashMap<>();
         StringBuilder story = new StringBuilder();
@@ -655,7 +662,12 @@ public class MaSoiService {
                 message -> story.append(message).append("<br>")));
         if (!story.isEmpty()) {
             dayDetails = story.toString();
-            currentGameHistory.put("Ngày " + nightNumber, dayDetails);
+            String keyDay = "Ngày " + nightNumber;
+            if (currentGameHistory.containsKey(keyDay)) {
+                String value = currentGameHistory.get(keyDay);
+                dayDetails += value;
+            }
+            currentGameHistory.put(keyDay, dayDetails);
         }
         return "Detail: " + story;
     }
@@ -673,7 +685,10 @@ public class MaSoiService {
 
     private void eliminateCupidPartner(DataMember player, Map<String, DataMember> eliminatedPlayers, StringBuilder story) {
         if (player.getLifeLink() > 0) {
-            findCupidPartner(player).ifPresent(partner -> eliminateDuringDay(partner, eliminatedPlayers, story, false));
+            findCupidPartner(player).ifPresent(partner -> {
+                loveLinks.add(partner.getIpData());
+//                eliminateDuringDay(partner, eliminatedPlayers, story, false);
+            });
         }
     }
 
@@ -795,9 +810,12 @@ public class MaSoiService {
     }
 
     private List<Map<String, Object>> managementPlayers() {
+        Comparator<DataMember> order = Comparator
+                .comparingInt((DataMember p) -> deviceIdOrder.getOrDefault(p.getIpData(), Integer.MAX_VALUE))
+                .thenComparingInt(DataMember::getId);
         return players.stream()
                 .filter(player -> !player.isDead() && !ObjectUtils.isEmpty(player.getIpData()))
-                .sorted(Comparator.comparing(DataMember::getId))
+                .sorted(order)
                 .map(player -> Map.<String, Object>of(
                         "deviceId", player.getIpData(),
                         "idPlayGame", player.getIdPlayGame(),
@@ -807,6 +825,13 @@ public class MaSoiService {
                         "hasSuperProtected", player.isSuperProtectedSkill()
                 ))
                 .toList();
+    }
+
+    public void updateDeviceOrder(List<String> orderedDeviceIds) {
+        deviceIdOrder.clear();
+        for (int i = 0; i < orderedDeviceIds.size(); i++) {
+            deviceIdOrder.put(orderedDeviceIds.get(i), i);
+        }
     }
 
     private Map<String, DataMember> playersByDevice() {
@@ -839,7 +864,7 @@ public class MaSoiService {
         if (player.getLifeLinkIds() == null) {
             return Optional.empty();
         }
-        return players.stream().filter(candidate -> player.getLifeLinkIds().contains(candidate.getId())).findFirst();
+        return players.stream().filter(candidate -> player.getLifeLinkIds().contains(candidate.getId()) && !candidate.isDead()).findFirst();
     }
 
     private boolean isWolf(DataMember player) {
@@ -857,7 +882,7 @@ public class MaSoiService {
 
     private void resetNightSkillBlocks() {
         players.stream()
-                .filter(player -> player.getId() != 37) // TODO chi bat soi va sat thu bi disable thoi
+                .filter(player -> player.getId() != 37) // TODO chi bat soi va sat thu bi disable đêm trước
                 .forEach(player -> player.setDisabledSkill(false));
     }
 

@@ -144,6 +144,13 @@ public class MaSoiController {
         return maSoiService.processDay(killDto.getDeviceIds());
     }
 
+    @PostMapping("/reorderPlayers")
+    @ResponseBody
+    String reorderPlayers(@RequestBody List<String> orderedDeviceIds) {
+        maSoiService.updateDeviceOrder(orderedDeviceIds);
+        return "OK";
+    }
+
     @PostMapping("/toggleAdminOptions")
     @ResponseBody
     String toggleAdminOptions(@RequestParam String option, @RequestParam boolean value) {

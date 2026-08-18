@@ -87,6 +87,7 @@
         .tog.on.boom-final { background:linear-gradient(135deg,var(--danger),var(--danger-hover)); border-color:var(--danger); color:white; box-shadow:0 0 10px rgba(239,68,68,0.4); }
         .tog.locked { opacity:0.4; cursor:not-allowed; }
         .tog.col-disabled { opacity:0.35; cursor:not-allowed; border-color:rgba(245,158,11,0.3); }
+        .gtbl tbody tr.drag-over > td { background:rgba(99,102,241,0.18) !important; outline:2px dashed rgba(99,102,241,0.6); }
         .process-btn { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; padding:12px 26px; border-radius:10px; font-weight:600; cursor:pointer; margin-top:14px; margin-bottom:15px; width:100%; font-size:1rem; }
         .process-btn:active { transform:scale(0.98); }
         .kill-section { background:rgba(239,68,68,0.08); border:2px solid rgba(239,68,68,0.3); border-radius:14px; padding:14px; margin-top:16px; }
@@ -267,14 +268,17 @@
                 </th:block>
             </tr>
             </thead>
-            <tbody>
+            <tbody id="playerTbody">
             <th:block th:each="p : ${players}">
-                <tr>
+                <tr draggable="true" th:data-deviceid="${p['deviceId']}">
                     <td>
-                        <div class="pname">
-                            <span th:text="${p['name']}"
-                                  th:style="${#lists.contains(idSoi, p['id'])} ? 'color:#f87171' : (${#lists.contains(idOutsider, p['id'])} ? 'color:#fbbf24' : '')"></span>
-                            <span class="pid" th:text="${'#' + p['idPlayGame'] + ' · ' + p['roleName']}"></span>
+                        <div class="pname" style="display:flex;align-items:center;gap:6px;">
+<!--                            <span class="drag-handle" title="Kéo để sắp xếp" style="cursor:grab;font-size:1rem;color:var(&#45;&#45;text-muted);user-select:none;">⠿</span>-->
+                            <div>
+                                <span th:text="${p['name']}"
+                                      th:style="${#lists.contains(idSoi, p['id'])} ? 'color:#f87171' : (${#lists.contains(idOutsider, p['id'])} ? 'color:#fbbf24' : '')"></span>
+                                <span class="pid" th:text="${'#' + p['idPlayGame'] + ' · ' + p['roleName']}"></span>
+                            </div>
                         </div>
                     </td>
                     <th:block th:each="col : ${columns}"
@@ -511,6 +515,56 @@
             el.classList.toggle('on');
             updateLock();
         }
+
+        // ── Drag-and-drop row reorder ──────────────────────────────────────
+        (function initDragSort() {
+            const tbody = document.getElementById('playerTbody');
+            if (!tbody) return;
+            let dragSrc = null;
+
+            tbody.addEventListener('dragstart', e => {
+                const row = e.target.closest('tr');
+                if (!row) return;
+                dragSrc = row;
+                row.style.opacity = '0.5';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            tbody.addEventListener('dragend', e => {
+                const row = e.target.closest('tr');
+                if (row) row.style.opacity = '';
+                tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+            });
+
+            tbody.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const row = e.target.closest('tr');
+                if (!row || row === dragSrc) return;
+                tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+                row.classList.add('drag-over');
+            });
+
+            tbody.addEventListener('drop', e => {
+                e.preventDefault();
+                const target = e.target.closest('tr');
+                if (!target || target === dragSrc) return;
+                const rows = [...tbody.querySelectorAll('tr')];
+                const srcIdx = rows.indexOf(dragSrc);
+                const tgtIdx = rows.indexOf(target);
+                if (srcIdx < tgtIdx) target.after(dragSrc);
+                else target.before(dragSrc);
+                tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+                // Save new order
+                const orderedIds = [...tbody.querySelectorAll('tr[data-deviceid]')].map(r => r.dataset.deviceid);
+                fetch('/ms/reorderPlayers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderedIds)
+                });
+            });
+        })();
+        // ────────────────────────────────────────────────────────────────────
 
         function updateLock() {
             const locked = isSuperLocked();
