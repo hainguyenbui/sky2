@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ma Sói Auto V1</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <style>
+        .grid-2 { display: flex; flex-direction: column; gap: 12px; }
+        .grid-2.tight { gap: 10px; }
+        .panel-grid { display: flex; flex-direction: column; gap: 12px; }
+        .board-card { border-left-width: 4px; }
+        .board-card.day-board { border-left-color: rgba(59,130,246,0.85); background: linear-gradient(180deg, rgba(59,130,246,0.10), rgba(30,41,59,0.35)); }
+        .board-card.night-board { border-left-color: rgba(168,85,247,0.85); background: linear-gradient(180deg, rgba(168,85,247,0.10), rgba(30,41,59,0.35)); }
+        .reveal-box {
+            background: rgba(30,41,59,0.40);
+            border: 2px dashed rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 22px 18px;
+            text-align: center;
+            cursor: pointer;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.25s ease;
+        }
+        .reveal-box.blurred .reveal-content { filter: blur(20px); opacity: 0.08; pointer-events: none; user-select: none; }
+        .reveal-box.blurred .reveal-placeholder { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-muted); font-weight: 700; }
+        .reveal-box.blurred .reveal-placeholder::before { content: '👁️'; }
+        .reveal-box:not(.blurred) { border-style: solid; border-color: rgba(59,130,246,0.35); background: rgba(59,130,246,0.08); }
+        .reveal-box:not(.blurred) .reveal-placeholder { display: none; }
+        .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .meta-box { padding: 12px; background: rgba(30,41,59,0.35); border: 1px solid var(--card-border); border-radius: 12px; }
+        .meta-label { display:block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+        .meta-value { font-weight: 700; font-size: 1rem; }
+        .timer-card { text-align: center; }
+        .timer-value { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.04em; margin-top: 6px; }
+        .timer-value.warn { color: #fbbf24; }
+        .timer-value.danger { color: #f87171; }
+        .timer-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+        .config-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+        .config-group label { display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; }
+        .status-line { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .status-pill { padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; border: 1px solid transparent; }
+        .status-pill.ok { background: rgba(16,185,129,0.14); color: #34d399; border-color: rgba(16,185,129,0.25); }
+        .status-pill.warn { background: rgba(245,158,11,0.14); color: #fbbf24; border-color: rgba(245,158,11,0.25); }
+        .status-pill.bad { background: rgba(239,68,68,0.14); color: #f87171; border-color: rgba(239,68,68,0.25); }
+        .section-title { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+        .section-title small { color: var(--text-muted); font-weight: 500; }
+        .board-table { width:100%; border-collapse: collapse; overflow:hidden; }
+        .board-table th, .board-table td { padding: 10px 8px; border-bottom: 1px solid rgba(148,163,184,0.12); vertical-align: top; }
+        .board-table th { text-align:left; font-size:0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+        .board-table tr:hover td { background: rgba(59,130,246,0.05); }
+        .board-table tr.select-row { cursor: pointer; }
+        .board-table tr.select-row.active td { background: rgba(59,130,246,0.18); }
+        .board-table tr.select-row.dead td { opacity: 0.42; }
+        .board-table td:first-child, .board-table th:first-child { padding-left: 0; }
+        .board-table td:last-child, .board-table th:last-child { padding-right: 0; }
+        .player-name { font-weight: 700; }
+        .player-role { display:block; font-size:0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .player-role.dead-role { color: #fca5a5; }
+        .player-role.live-role { color: #93c5fd; }
+        .player-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .player-tile {
+            padding: 10px 12px;
+            background: rgba(30,41,59,0.45);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+        .player-tile:hover { border-color: rgba(96,165,250,0.6); transform: translateY(-1px); }
+        .player-tile.active { background: rgba(59,130,246,0.18); border-color: rgba(96,165,250,0.75); }
+        .player-tile.dead { opacity: 0.42; cursor: not-allowed; }
+        .player-tile .player-note { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+        .day-board .player-tile.active {
+            background: linear-gradient(180deg, rgba(250, 204, 21, 0.32), rgba(250, 204, 21, 0.16));
+            border-color: rgba(250, 204, 21, 0.92);
+            box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.45), 0 0 18px rgba(250, 204, 21, 0.18);
+        }
+        .day-board .player-tile.active .player-name { color: #fde68a; }
+        .day-board .player-tile.active .player-note { color: #fef3c7; }
+        /* Tile bỏ qua chiếm toàn bộ chiều ngang */
+        .player-tile.skip-tile {
+            grid-column: 1 / -1;
+            text-align: center;
+            border-style: dashed;
+            border-color: rgba(148,163,184,0.40);
+            color: var(--text-muted);
+        }
+        .player-tile.skip-tile:hover { border-color: rgba(148,163,184,0.80); color: var(--text-primary); }
+        .day-board .player-tile.skip-tile.active {
+            background: rgba(148,163,184,0.18);
+            border-color: rgba(148,163,184,0.80);
+            border-style: solid;
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+        .target-btn, .action-btn {
+            display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            padding: 10px 12px; border-radius: 10px; border: 1px solid var(--card-border);
+            background: rgba(30,41,59,0.45); color: var(--text-primary); cursor:pointer;
+            transition: all 0.2s ease; font-weight:600;
+        }
+        .target-btn:hover, .action-btn:hover { border-color: rgba(96,165,250,0.6); transform: translateY(-1px); }
+        .target-btn.active, .action-btn.active { background: rgba(59,130,246,0.18); border-color: rgba(96,165,250,0.75); }
+        .target-btn:disabled, .action-btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
+        .tag-wrap { display:flex; flex-wrap:wrap; gap:6px; }
+        .tag { display:inline-flex; align-items:center; padding: 4px 8px; border-radius: 9999px; font-size:0.72rem; font-weight:700; }
+        .tag.blue { background: rgba(59,130,246,0.15); color:#93c5fd; }
+        .tag.green { background: rgba(16,185,129,0.15); color:#6ee7b7; }
+        .tag.orange { background: rgba(245,158,11,0.15); color:#fbbf24; }
+        .tag.red { background: rgba(239,68,68,0.15); color:#fca5a5; }
+        .tag.gray { background: rgba(148,163,184,0.15); color:#cbd5e1; }
+        .action-list { display:flex; flex-wrap:wrap; gap:8px; }
+        .panel-card { padding: 14px; background: rgba(30,41,59,0.34); border: 1px solid var(--card-border); border-radius: 14px; }
+        .panel-card.kill { border-color: rgba(239,68,68,0.35); }
+        .panel-card.prot { border-color: rgba(16,185,129,0.35); }
+        .panel-card.conn { border-color: rgba(250,204,21,0.40); }
+        .panel-card.seer { border-color: rgba(56,189,248,0.38); }
+        .panel-head { display:flex; justify-content:space-between; align-items:center; gap: 8px; margin-bottom: 10px; }
+        .panel-title { display:flex; align-items:center; gap:8px; font-weight:800; }
+        .panel-icon { width:30px; height:30px; border-radius: 9999px; display:inline-flex; align-items:center; justify-content:center; background: rgba(59,130,246,0.16); border: 1px solid rgba(96,165,250,0.25); }
+        .panel-icon.kill { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.28); }
+        .panel-icon.prot { background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.28); }
+        .panel-icon.conn { background: rgba(250,204,21,0.14); border-color: rgba(250,204,21,0.28); }
+        .panel-icon.day { background: rgba(59,130,246,0.14); }
+        .panel-icon.seer { background: rgba(56,189,248,0.14); border-color: rgba(56,189,248,0.28); }
+        .signal-pill { padding: 4px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; background: rgba(148,163,184,0.14); color: #cbd5e1; }
+        .signal-pill.ok { background: rgba(245,158,11,0.14); color: #fbbf24; }
+        .signal-pill.none { background: rgba(148,163,184,0.14); color: #94a3b8; }
+        .night-board .player-tile.active.action-kill {
+            background: linear-gradient(180deg, rgba(239,68,68,0.50), rgba(239,68,68,0.22)) !important;
+            border-color: rgba(239,68,68,1) !important;
+            box-shadow: 0 0 0 1px rgba(239,68,68,0.60), 0 0 22px rgba(239,68,68,0.28) !important;
+        }
+        .night-board .player-tile.active.action-prot {
+            background: linear-gradient(180deg, rgba(16,185,129,0.50), rgba(16,185,129,0.22)) !important;
+            border-color: rgba(16,185,129,1) !important;
+            box-shadow: 0 0 0 1px rgba(16,185,129,0.60), 0 0 22px rgba(16,185,129,0.28) !important;
+        }
+        .night-board .player-tile.active.action-conn {
+            background: linear-gradient(180deg, rgba(250,204,21,0.50), rgba(250,204,21,0.22)) !important;
+            border-color: rgba(250,204,21,1) !important;
+            box-shadow: 0 0 0 1px rgba(250,204,21,0.60), 0 0 22px rgba(250,204,21,0.28) !important;
+        }
+        .night-board .player-tile.active.action-seer {
+            background: linear-gradient(180deg, rgba(168,85,247,0.54), rgba(168,85,247,0.24)) !important;
+            border-color: rgba(168,85,247,1) !important;
+            box-shadow: 0 0 0 1px rgba(168,85,247,0.60), 0 0 22px rgba(168,85,247,0.28) !important;
+        }
+        .board-card.vote-board { border-left-color: rgba(52,211,153,0.85); background: linear-gradient(180deg, rgba(52,211,153,0.09), rgba(30,41,59,0.35)); }
+        /* Lưới 2 nút Yes/No chiếm toàn bộ chiều ngang */
+        .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        .vote-tile {
+            padding: 18px 12px;
+            background: rgba(30,41,59,0.45);
+            border: 2px solid var(--card-border);
+            border-radius: 14px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.18s ease;
+            user-select: none;
+        }
+        .vote-tile:hover { transform: translateY(-1px); }
+        /* Yes – màu xanh lục */
+        .vote-tile.vote-yes { border-color: rgba(16,185,129,0.40); }
+        .vote-tile.vote-yes:hover { border-color: rgba(16,185,129,0.75); }
+        .vote-tile.vote-yes.active {
+            background: linear-gradient(180deg, rgba(16,185,129,0.42), rgba(16,185,129,0.18));
+            border-color: rgba(16,185,129,1);
+            box-shadow: 0 0 0 1px rgba(16,185,129,0.55), 0 0 20px rgba(16,185,129,0.24);
+        }
+        .vote-tile.vote-yes.active .vote-label { color: #6ee7b7; }
+        /* No – màu đỏ */
+        .vote-tile.vote-no { border-color: rgba(239,68,68,0.40); }
+        .vote-tile.vote-no:hover { border-color: rgba(239,68,68,0.75); }
+        .vote-tile.vote-no.active {
+            background: linear-gradient(180deg, rgba(239,68,68,0.42), rgba(239,68,68,0.18));
+            border-color: rgba(239,68,68,1);
+            box-shadow: 0 0 0 1px rgba(239,68,68,0.55), 0 0 20px rgba(239,68,68,0.24);
+        }
+        .vote-tile.vote-no.active .vote-label { color: #fca5a5; }
+        .vote-label { font-size: 1.5rem; font-weight: 900; margin-bottom: 6px; }
+        .vote-count { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+        /* Danh sách người đã vote bên dưới 2 nút */
+        .vote-voters-row { display: flex; gap: 10px; margin-top: 4px; }
+        .vote-voters-col { flex: 1; }
+        .vote-voters-title { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .vote-voters-title.yes { color: #34d399; }
+        .vote-voters-title.no { color: #f87171; }
+        .vote-voter-tag { display: inline-block; padding: 3px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; margin: 2px 2px 2px 0; }
+        .vote-voter-tag.yes { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+        .vote-voter-tag.no { background: rgba(239,68,68,0.15); color: #fca5a5; }
+        .vote-timer { font-size: 2rem; font-weight: 800; text-align: center; margin: 8px 0 4px; letter-spacing: -0.03em; }
+        .row-role { display:block; font-size:0.76rem; color: var(--text-muted); }
+        .action-card { padding: 14px; background: rgba(30,41,59,0.35); border: 1px solid var(--card-border); border-radius: 12px; }
+        .action-desc { margin-top: 8px; font-size: 0.82rem; color: var(--text-muted); }
+        .ws-badge { font-size: 0.75rem; }
+        .table-wrap { overflow-x:auto; }
+        .empty-state { padding: 14px; border-radius: 12px; background: rgba(30,41,59,0.3); color: var(--text-muted); text-align:center; }
+        .modal-mask {
+            display:none; position:fixed; inset:0; background:rgba(0,0,0,0.68); z-index:999;
+            align-items:center; justify-content:center; padding:20px;
+        }
+        .modal-card {
+            width:100%; max-width:420px; background:rgba(15,23,42,0.98); border:1px solid var(--card-border);
+            border-radius:16px; padding:18px; box-shadow:0 20px 40px rgba(0,0,0,0.45);
+        }
+        .modal-actions { display:flex; gap:10px; margin-top:16px; }
+        .modal-actions .btn { width:100%; }
+        @media (max-width: 760px) {
+            .grid-2, .meta-grid, .config-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container"
+     th:data-member-device="${member != null ? member.ipData : ''}"
+     th:data-member-id="${member != null ? member.id : 0}"
+     th:data-member-name="${member != null ? member.nameMember : ''}"
+     th:data-member-kill="${member != null ? member.killSkill : 0}"
+     th:data-member-prot="${member != null ? member.protectedSkill : 0}"
+     th:data-member-conn="${member != null ? member.connectSkill : 0}"
+     th:data-member-dead="${member != null ? member.dead : false}">
+    <div class="header-section">
+        <h1>Ma Sói Auto V1</h1>
+        <p class="desc">Bảng ngày / đêm đồng bộ qua WebSocket</p>
+    </div>
+
+    <div th:if="${notSetup}" class="card" style="text-align:center;">
+        <h2 style="color:var(--danger); margin-bottom:10px;">Ván đấu chưa được setup</h2>
+        <p class="desc">Vui lòng liên hệ admin để tạo phòng chơi.</p>
+    </div>
+
+    <div th:if="${fullSlot}" class="card" style="text-align:center;">
+        <h2 style="color:var(--danger); margin-bottom:10px;">Ván đấu đã đầy</h2>
+        <p class="desc">Vui lòng yêu cầu admin setup lại.</p>
+    </div>
+
+    <th:block th:if="${notSetup != true and fullSlot != true and member != null}">
+        <div class="card day-board">
+            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">CHỨC NĂNG CỦA BẠN:</h3>
+            <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
+                <div class="reveal-placeholder">Nhấp để ẩn/hiện chức năng</div>
+                <div class="reveal-content">
+                    <h2 style="font-size: 1.9rem; color: #f87171;" th:utext="${member.role}"></h2>
+                    <p class="desc" style="margin-top: 10px; font-size: 0.9rem;" th:text="${member.description}"></p>
+                </div>
+            </div>
+        </div>
+
+<!--        <div class="grid-2">-->
+<!--            <div class="card timer-card">-->
+<!--                <div class="section-title">-->
+<!--                    <h3>Thời gian ngày</h3>-->
+<!--                    <small>Đồng bộ qua broker /ms</small>-->
+<!--                </div>-->
+<!--                <div id="dayTimer" class="timer-value"></div>-->
+<!--                <div class="timer-sub" id="dayTimerSub"></div>-->
+<!--            </div>-->
+<!--            <div class="card timer-card">-->
+<!--                <div class="section-title">-->
+<!--                    <h3>Thời gian đêm</h3>-->
+<!--                    <small>Đồng bộ qua broker /ms</small>-->
+<!--                </div>-->
+<!--                <div id="nightTimer" class="timer-value"></div>-->
+<!--                <div class="timer-sub" id="nightTimerSub"></div>-->
+<!--            </div>-->
+<!--        </div>-->
+
+        <div class="grid-2"  th:if="${!isDead}">
+            <!-- id dùng để JS ẩn/hiện theo state.showDayBoard từ WebSocket -->
+            <div id="dayBoardCard" class="card day-board" style="display:none;">
+                <div class="card timer-card">
+                    <div class="section-title">
+                        <h3>Thời gian ngày</h3>
+                        <small>Đồng bộ qua broker /ms</small>
+                    </div>
+                    <div id="dayTimer" class="timer-value"></div>
+                    <div class="timer-sub" id="dayTimerSub"></div>
+                </div>
+                <div class="section-title">
+                    <h3>Bảng ngày</h3>
+                    <small>Chỉ hiện tên người chơi</small>
+                </div>
+                <div id="dayBoardBody" class="player-grid"></div>
+                <div id="dayEmpty" class="empty-state" style="display:none;">Không còn người chơi sống để chọn.</div>
+            </div>
+
+            <!-- id dùng để JS ẩn/hiện theo state.showNightBoard từ WebSocket -->
+            <div id="nightBoardCard" class="card night-board" style="display:none;">
+
+                <div class="card timer-card">
+                    <div class="section-title">
+                        <h3>Thời gian đêm</h3>
+                        <small>Đồng bộ qua broker /ms</small>
+                    </div>
+                    <div id="nightTimer" class="timer-value"></div>
+                    <div class="timer-sub" id="nightTimerSub"></div>
+                </div>
+                <div class="section-title">
+                    <h3>Bảng đêm</h3>
+                    <small>Mỗi chức năng tách thành bảng riêng</small>
+                </div>
+                <div id="nightPanels" class="panel-grid"></div>
+                <div id="nightEmpty" class="empty-state" style="display:none;">Không có hành động đêm khả dụng.</div>
+            </div>
+
+            <!-- Bảng vote Yes/No – ẩn/hiện theo state.showVoteBoard từ WebSocket -->
+            <div id="voteBoardCard" class="card board-card vote-board" style="display:none;">
+                <div class="section-title">
+                    <h4>Bạn có muốn: </h4>
+                    <h3 id="votedPlayer"></h3>
+                    <small>Yes / No</small>
+                </div>
+                <div id="voteTimer" class="vote-timer"></div>
+                <div class="vote-grid">
+                    <div class="vote-tile vote-yes" id="voteTileYes" data-vote-phase="vote" data-vote-answer="yes">
+                        <div class="vote-label">✅ YES</div>
+                        <div class="vote-count" id="voteCountYes">0 người</div>
+                    </div>
+                    <div class="vote-tile vote-no" id="voteTileNo" data-vote-phase="vote" data-vote-answer="no">
+                        <div class="vote-label">❌ NO</div>
+                        <div class="vote-count" id="voteCountNo">0 người</div>
+                    </div>
+                </div>
+                <div class="vote-voters-row" id="voteVotersRow">
+                    <div class="vote-voters-col">
+                        <div class="vote-voters-title yes">Đồng ý</div>
+                        <div id="voteVotersYes"></div>
+                    </div>
+                    <div class="vote-voters-col">
+                        <div class="vote-voters-title no">Phản đối</div>
+                        <div id="voteVotersNo"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+
+                <div class="section-title">
+                    <small>Chi tiết ván game</small>
+                </div>
+                <div id="autoHistories" class="lists-container"></div>
+
+            </div>
+            <div class="card">
+                <div class="section-title">
+                    <small>Danh sách hiện tại</small>
+                </div>
+                <div class="tag-wrap">
+                    <div th:each="item : ${alivePlayer}" class="tag green" th:if="${!item.dead}">
+                        <span th:text="${item.nameMember != null ? item.nameMember : 'Ẩn danh'}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</div>
+
+<div id="seerModal" class="modal-mask">
+    <div class="modal-card">
+        <h3 style="margin-bottom:8px;">Xác nhận Tiên tri</h3>
+        <p id="seerModalText" class="desc"></p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-danger" onclick="closeSeerModal()">Hủy</button>
+            <button type="button" class="btn btn-primary" onclick="confirmSeerAction()">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const initialState = /*[[${autoState}]]*/ {};
+    const initialPlayers = /*[[${pls}]]*/ {};
+    const memberBox = document.querySelector('.container');
+    const showGame = /*[[${notSetup != true and fullSlot != true and member != null}]]*/ false;
+    const currentDeviceId = memberBox ? (memberBox.dataset.memberDevice || '') : '';
+    const currentRoleId = memberBox ? parseInt(memberBox.dataset.memberId || '0', 10) : 0;
+    const currentKillSkill = memberBox ? parseInt(memberBox.dataset.memberKill || '0', 10) : 0;
+    const currentProtectedSkill = memberBox ? parseInt(memberBox.dataset.memberProt || '0', 10) : 0;
+    const currentConnectSkill = memberBox ? parseInt(memberBox.dataset.memberConn || '0', 10) : 0;
+    let currentIsDead = /*[[${isDead}]]*/ false;
+    const currentIsWolf = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].indexOf(currentRoleId) >= 0;
+    const canSeeNightSignals = currentIsWolf || currentRoleId === 31;
+
+    let appState = initialState;
+    // currentPlayers là map deviceId->name được cập nhật từ state mỗi khi bảng bật
+    let currentPlayers = Object.assign({}, initialPlayers || {});
+    let selectedNightTargets = {};
+    let pendingNightTarget = null;
+    let pendingNightAction = null;
+    let wsSocket = null;
+    let wsBuffer = '';
+    let wsSubscribed = false;
+    let statePoller = null;
+    let lastStateKey = '';
+
+    function startFallbackPolling() {
+        if (statePoller) {
+            return;
+        }
+        statePoller = setInterval(refreshState, 5000);
+    }
+
+    function stopFallbackPolling() {
+        if (statePoller) {
+            clearInterval(statePoller);
+            statePoller = null;
+        }
+    }
+
+    function normalizeState(state) {
+        const normalized = state || {};
+        normalized.daySelections = normalized.daySelections || [];
+        normalized.voteSelections = normalized.voteSelections || [];
+        return normalized;
+    }
+
+    function fmtSeconds(total) {
+        const value = Math.max(0, parseInt(total, 10) || 0);
+        const mins = String(Math.floor(value / 60)).padStart(2, '0');
+        const secs = String(value % 60).padStart(2, '0');
+        return mins + ':' + secs;
+    }
+
+    function setWsStatus(text, kind) {
+        const el = document.getElementById('wsStatus');
+        el.textContent = text;
+        el.className = 'status-pill ws-badge ' + kind;
+    }
+
+    function renderTimers(state) {
+        const day = parseInt(state.dayRemainingSeconds || 0, 10);
+        const night = parseInt(state.nightRemainingSeconds || 0, 10);
+        const aliveCount = visiblePlayers().filter(function(player) {
+            return !player.isDead;
+        }).length;
+        const actionCount = viewerActionsFromMember().length || 1;
+        const dayCount = (state.daySelections || []).filter(function(item) {
+            return item.actorDeviceId === currentDeviceId;
+        }).length;
+        const nightCount = Object.keys(selectedNightTargets).filter(function(key) {
+            return !!selectedNightTargets[key];
+        }).length;
+        const dayTimer = document.getElementById('dayTimer');
+        const nightTimer = document.getElementById('nightTimer');
+        dayTimer.textContent = fmtSeconds(day);
+        nightTimer.textContent = fmtSeconds(night);
+        const votedPlayer = document.getElementById('votedPlayer');
+        votedPlayer.textContent = state.votedPlayer;
+        dayTimer.className = 'timer-value' + (day <= 5 ? ' danger' : (day <= 15 ? ' warn' : ''));
+        nightTimer.className = 'timer-value' + (night <= 5 ? ' danger' : (night <= 15 ? ' warn' : ''));
+        document.getElementById('dayTimerSub').textContent = 'Đã chọn ' + dayCount + '/' + aliveCount;
+        document.getElementById('nightTimerSub').textContent = 'Đã chọn ' + nightCount + '/' + actionCount;
+        const container = document.getElementById("autoHistories");
+
+        container.innerHTML = "";
+        Object.entries(state.autoHistories || {}).forEach(([key, value]) => {
+            const div = document.createElement("div");
+            div.innerHTML = `
+                <span>${key}</span>
+                :<br>
+                <span>${value}</span>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function visiblePlayers() {
+        // Dùng currentPlayers (được cập nhật từ state mỗi khi bảng bật) thay vì initialPlayers cố định
+        const source = currentPlayers;
+        return Object.keys(source).map(function(deviceId) {
+            return { deviceId: deviceId, name: source[deviceId], isDead: false };
+        });
+    }
+
+    function daySelectionsByTarget(state) {
+        const map = {};
+        (state.daySelections || []).forEach(function(item) {
+            if (!map[item.targetDeviceId]) {
+                map[item.targetDeviceId] = [];
+            }
+            map[item.targetDeviceId].push(item);
+        });
+        return map;
+    }
+
+    function renderVoteBoard(state) {
+        const voteRemaining = parseInt(state.voteRemainingSeconds || 0, 10);
+        // Hiển thị đồng hồ đếm ngược của bảng vote
+        const timerEl = document.getElementById('voteTimer');
+        if (timerEl) {
+            timerEl.textContent = fmtSeconds(voteRemaining);
+            timerEl.className = 'vote-timer' + (voteRemaining <= 5 ? ' danger' : (voteRemaining <= 10 ? ' warn' : ''));
+        }
+
+        const selections = state.voteSelections || [];
+        const yesVoters = selections.filter(function(v) { return v.answer === 'yes'; });
+        const noVoters  = selections.filter(function(v) { return v.answer === 'no'; });
+        const myVote = selections.find(function(v) { return v.deviceId === currentDeviceId; });
+
+        // Cập nhật số lượng và highlight 2 nút
+        const tileYes = document.getElementById('voteTileYes');
+        const tileNo  = document.getElementById('voteTileNo');
+        const countYes = document.getElementById('voteCountYes');
+        const countNo  = document.getElementById('voteCountNo');
+
+        if (tileYes) {
+            tileYes.className = 'vote-tile vote-yes' + (myVote && myVote.answer === 'yes' ? ' active' : '');
+        }
+        if (tileNo) {
+            tileNo.className = 'vote-tile vote-no' + (myVote && myVote.answer === 'no' ? ' active' : '');
+        }
+        if (countYes) { countYes.textContent = yesVoters.length + ' người'; }
+        if (countNo)  { countNo.textContent  = noVoters.length  + ' người'; }
+
+        // Danh sách tên người đã vote
+        const votersYesEl = document.getElementById('voteVotersYes');
+        const votersNoEl  = document.getElementById('voteVotersNo');
+        if (votersYesEl) {
+            votersYesEl.innerHTML = yesVoters.map(function(v) {
+                return '<span class="vote-voter-tag yes">' + escapeHtml(v.name) + '</span>';
+            }).join('');
+        }
+        if (votersNoEl) {
+            votersNoEl.innerHTML = noVoters.map(function(v) {
+                return '<span class="vote-voter-tag no">' + escapeHtml(v.name) + '</span>';
+            }).join('');
+        }
+    }
+
+    function submitVoteAnswer(answer) {
+        if (!currentDeviceId) {
+            return;
+        }
+        fetch('/msAutoV1/vote/select?answer=' + encodeURIComponent(answer), { method: 'POST' })
+            .then(handleJsonResponse)
+            .then(renderState)
+            .catch(function(error) {
+                alert(error.message || 'Không lưu được vote');
+            });
+    }
+
+    function renderDayBoard(state) {
+        const body = document.getElementById('dayBoardBody');
+        const empty = document.getElementById('dayEmpty');
+        const rows = visiblePlayers();
+        const selections = daySelectionsByTarget(state);
+        // Kiểm tra người chơi hiện tại đang bỏ qua không
+        const mySkip = (state.daySelections || []).some(function(item) {
+            return item.actorDeviceId === currentDeviceId && item.isSkip;
+        });
+        if (!rows.length) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+        const playerTiles = rows.map(function(player) {
+            const playerSelections = (selections[player.deviceId] || []).filter(function(item) {
+                return !item.isSkip;
+            });
+            const isActive = playerSelections.some(function(item) {
+                return item.actorDeviceId === currentDeviceId;
+            });
+            const selectorNames = playerSelections.map(function(item) {
+                return '<span class="tag blue">' + escapeHtml(item.actorName) + '</span>';
+            }).join('');
+            return '<div class="player-tile select-row' + (isActive ? ' active' : '') + (player.isDead ? ' dead' : '') + '" data-phase="day" data-target="' + escapeAttr(player.deviceId) + '">' +
+                '<div class="player-name">' + escapeHtml(player.name) + '</div>' +
+                (selectorNames ? '<div class="player-note"><div class="tag-wrap">' + selectorNames + '</div></div>' : '') +
+            '</div>';
+        }).join('');
+        // Tile bỏ qua nằm cuối, chiếm toàn bộ chiều ngang; highlight nếu mình đang bỏ qua
+        const skipSelectors = (selections['__SKIP__'] || []).map(function(item) {
+            return '<span class="tag gray">' + escapeHtml(item.actorName) + '</span>';
+        }).join('');
+        const skipTile = '<div class="player-tile skip-tile select-row' + (mySkip ? ' active' : '') + '" data-phase="day-skip">' +
+            '<div class="player-name">⏭ Bỏ qua</div>' +
+            (skipSelectors ? '<div class="player-note"><div class="tag-wrap">' + skipSelectors + '</div></div>' : '') +
+        '</div>';
+        body.innerHTML = playerTiles + skipTile;
+    }
+
+    function actionMeta(action) {
+        // Mỗi loại hành động có màu và icon riêng để người chơi nhìn nhanh hơn
+        if (action.colType === 'kill') {
+            return { icon: '⚔️', title: 'Tấn công', signal: 'kill', tone: 'kill' };
+        }
+        if (action.colType === 'prot') {
+            return { icon: '🛡️', title: 'Bảo vệ', signal: 'prot', tone: 'prot' };
+        }
+        if (action.colType === 'conn') {
+            if (currentRoleId === 32) {
+                return { icon: '🔮', title: 'Tiên tri', signal: 'seer', tone: 'seer' };
+            }
+            return { icon: '🔗', title: action.label || 'Kết nối', signal: 'conn', tone: 'conn' };
+        }
+        return { icon: '✦', title: action.label || action.colType, signal: action.colType, tone: action.colType };
+    }
+
+    function viewerActionsFromMember() {
+        const actions = [];
+        if (currentKillSkill > 0) {
+            actions.push({ colType: 'kill', label: '⚔️ Giết', connValue: '', needsConfirm: false });
+        }
+        if (currentProtectedSkill > 0) {
+            actions.push({ colType: 'prot', label: '🛡️ Bảo vệ', connValue: '', needsConfirm: false });
+        }
+        if (currentConnectSkill > 0 && [5, 6].indexOf(currentConnectSkill) < 0) {
+            actions.push({
+                colType: 'conn',
+                label: currentConnectSkill === 8 ? '🔮 Tiên tri' : '🔗 Kết nối',
+                connValue: String(currentConnectSkill),
+                needsConfirm: currentRoleId === 32
+            });
+        }
+        return actions;
+    }
+
+    function renderNightPanels(state) {
+        const wrap = document.getElementById('nightPanels');
+        const empty = document.getElementById('nightEmpty');
+        const actions = viewerActionsFromMember();
+        if (!actions.length || currentIsDead) {
+            wrap.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+        wrap.innerHTML = actions.map(function(action) {
+            const meta = actionMeta(action);
+            const players = visiblePlayers();
+            const rows = players.map(function(player) {
+                const selected = selectedNightTargets[action.colType] === player.deviceId;
+                return '<div class="player-tile select-row action-' + escapeAttr(meta.tone) + (selected ? ' active' : '') + (player.isDead ? ' dead' : '') + '" data-phase="night" data-target="' + escapeAttr(player.deviceId) + '" data-action="' + escapeAttr(action.colType) + '" data-confirm="' + (action.needsConfirm ? '1' : '0') + '" data-conn="' + escapeAttr(action.connValue || '') + '">' +
+                    '<div class="player-name">' + escapeHtml(player.name) + '</div>' +
+                '</div>';
+            }).join('');
+            return '<section class="panel-card ' + meta.tone + '">' +
+                '<div class="panel-head">' +
+                    '<div class="panel-title"><span class="panel-icon ' + action.colType + '">' + meta.icon + '</span><span>' + escapeHtml(meta.title) + '</span></div>' +
+                    '<span class="signal-pill">' + (action.colType === 'conn' && currentRoleId === 32 ? 'Tiên tri' : meta.title) + '</span>' +
+                '</div>' +
+                '<div class="player-grid">' + rows + '</div>' +
+            '</section>';
+        }).join('');
+    }
+
+    function renderState(state) {
+        appState = normalizeState(state);
+
+        // Cập nhật danh sách người chơi khi server gửi kèm (xảy ra khi bảng được bật)
+        if (appState.players && typeof appState.players === 'object') {
+            currentPlayers = appState.players;
+        }
+
+        // Cập nhật isDead mid-game từ danh sách deadDeviceIds server gửi về
+        if (Array.isArray(appState.deadDeviceIds) && currentDeviceId) {
+            currentIsDead = appState.deadDeviceIds.indexOf(currentDeviceId) >= 0;
+        }
+
+        const stateKey = JSON.stringify({
+            day: appState.dayRemainingSeconds,
+            night: appState.nightRemainingSeconds,
+            vote: appState.voteRemainingSeconds,
+            daySel: appState.daySelections,
+            voteSel: appState.voteSelections,
+            nightSel: selectedNightTargets,
+            players: currentPlayers,
+            showDay: appState.showDayBoard,
+            showNight: appState.showNightBoard,
+            showVote: appState.showVoteBoard,
+            dead: currentIsDead
+        });
+        if (stateKey === lastStateKey) {
+            return;
+        }
+        lastStateKey = stateKey;
+
+        // Ẩn/hiện bảng ngày/đêm/vote theo cờ admin bật/tắt từ WebSocket
+        var dayCard   = document.getElementById('dayBoardCard');
+        var nightCard = document.getElementById('nightBoardCard');
+        var voteCard  = document.getElementById('voteBoardCard');
+        if (dayCard)   { dayCard.style.display   = (appState.showDayBoard   && !currentIsDead) ? '' : 'none'; }
+        if (nightCard) { nightCard.style.display = (appState.showNightBoard && !currentIsDead) ? '' : 'none'; }
+        if (voteCard)  { voteCard.style.display  = (appState.showVoteBoard  && !currentIsDead) ? '' : 'none'; }
+
+        renderTimers(appState);
+        if (appState.showDayBoard   && !currentIsDead) { renderDayBoard(appState); }
+        if (appState.showNightBoard && !currentIsDead) { renderNightPanels(appState); }
+        if (appState.showVoteBoard  && !currentIsDead) { renderVoteBoard(appState); }
+    }
+
+    function refreshState() {
+        return fetch('/msAutoV1/state')
+            .then(handleJsonResponse)
+            .then(function(state) {
+                renderState(state);
+                return state;
+            })
+            .catch(function(error) {
+                console.error('Cannot refresh AutoV1 state:', error);
+            });
+    }
+
+    function postJson(url, body) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(handleJsonResponse);
+    }
+
+    function handleJsonResponse(response) {
+        if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+        }
+        return response.json();
+    }
+
+    function openSeerModal(target) {
+        pendingNightTarget = target;
+        const modal = document.getElementById('seerModal');
+        document.getElementById('seerModalText').textContent = 'Tiên tri xác nhận chọn ' + target.name + ' (' + target.roleName + ') ?';
+        modal.style.display = 'flex';
+    }
+
+    function closeSeerModal() {
+        pendingNightTarget = null;
+        pendingNightAction = null;
+        document.getElementById('seerModal').style.display = 'none';
+    }
+
+    function confirmSeerAction() {
+        if (!pendingNightTarget || !pendingNightAction) {
+            closeSeerModal();
+            return;
+        }
+        submitNightSelection(pendingNightTarget, pendingNightAction);
+    }
+
+    function submitDaySelection(target) {
+        if (!currentDeviceId) {
+            return;
+        }
+        postJson('/msAutoV1/day/select', {
+            actorDeviceId: currentDeviceId,
+            targetDeviceId: target.deviceId,
+            colType: 'day',
+            connValue: ''
+        }).then(function(state) {
+            renderState(state);
+        }).catch(function(error) {
+            alert(error.message || 'Không lưu được lựa chọn ngày');
+        });
+    }
+
+    function submitNightSelection(target, action) {
+        if (!currentDeviceId || !action) {
+            return;
+        }
+        postJson('/msAutoV1/night/select', {
+            actorDeviceId: currentDeviceId,
+            targetDeviceId: target.deviceId,
+            colType: action.colType,
+            connValue: action.connValue || ''
+        }).then(function() {
+            if (selectedNightTargets[action.colType] === target.deviceId) {
+                selectedNightTargets[action.colType] = '';
+            } else {
+                selectedNightTargets[action.colType] = target.deviceId;
+            }
+            closeSeerModal();
+            renderState(appState);
+        }).catch(function(error) {
+            closeSeerModal();
+            alert(error.message || 'Không lưu được lựa chọn đêm');
+        });
+    }
+
+    function submitDaySkip() {
+        if (!currentDeviceId) {
+            return;
+        }
+        fetch('/msAutoV1/day/skip', { method: 'POST' })
+            .then(handleJsonResponse)
+            .then(renderState)
+            .catch(function(error) {
+                alert(error.message || 'Không lưu được bỏ qua');
+            });
+    }
+
+    function handleBoardClick(event) {
+        // Click trực tiếp vào 1 hàng để chọn/bỏ chọn, không cần nút riêng.
+        const voteTarget = event.target.closest('[data-vote-phase="vote"]');
+        if (voteTarget) {
+            // Click vào nút Yes hoặc No trong bảng vote
+            submitVoteAnswer(voteTarget.dataset.voteAnswer);
+            return;
+        }
+        const row = event.target.closest('.select-row');
+        if (!row) {
+            return;
+        }
+        if (row.classList.contains('dead')) {
+            return;
+        }
+        // Tile bỏ qua ngày
+        if (row.dataset.phase === 'day-skip') {
+            submitDaySkip();
+            return;
+        }
+        const player = visiblePlayers().find(function(item) {
+            return item.deviceId === row.dataset.target;
+        });
+        if (!player) {
+            return;
+        }
+        if (row.dataset.phase === 'day') {
+            submitDaySelection(player);
+            return;
+        }
+        const action = viewerActionsFromMember().find(function(item) {
+            return item.colType === row.dataset.action;
+        });
+        if (!action) {
+            return;
+        }
+        if (row.dataset.confirm === '1') {
+            pendingNightAction = action;
+            openSeerModal(player);
+            return;
+        }
+        submitNightSelection(player, action);
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(value) {
+        return escapeHtml(value).replace(/`/g, '&#96;');
+    }
+
+    function handleStompFrame(frame) {
+        const normalized = frame.replace(/\r/g, '');
+        const splitIndex = normalized.indexOf('\n\n');
+        const headerPart = splitIndex >= 0 ? normalized.substring(0, splitIndex) : normalized;
+        const body = splitIndex >= 0 ? normalized.substring(splitIndex + 2) : '';
+        const lines = headerPart.split('\n');
+        const command = lines[0];
+        if (command === 'CONNECTED') {
+            if (!wsSocket || wsSubscribed) {
+                return;
+            }
+            wsSubscribed = true;
+            sendStomp('SUBSCRIBE\nid:sub-auto-v1\ndestination:/ms/autoV1/state\n\n');
+            setWsStatus('Đã kết nối', 'ok');
+            return;
+        }
+        if (command === 'MESSAGE' && body) {
+            let payload = {};
+            try {
+                payload = JSON.parse(body);
+            } catch (error) {
+                console.error('Cannot parse websocket payload', error, body);
+                return;
+            }
+            if (payload.state) {
+                renderState(payload.state);
+                return;
+            }
+            renderState(payload);
+        }
+    }
+
+    function sendStomp(frame) {
+        if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+            wsSocket.send(frame + '\u0000');
+        }
+    }
+
+    function connectWs() {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        wsSubscribed = false;
+        wsSocket = new WebSocket(protocol + window.location.host + '/ws');
+        wsSocket.onopen = function() {
+            sendStomp('CONNECT\naccept-version:1.2\nheart-beat:0,0\nhost:' + window.location.host + '\n\n');
+            stopFallbackPolling();
+        };
+        wsSocket.onmessage = function(event) {
+            const data = event.data || '';
+            wsBuffer += data;
+            let index = wsBuffer.indexOf('\u0000');
+            while (index >= 0) {
+                const frame = wsBuffer.substring(0, index);
+                wsBuffer = wsBuffer.substring(index + 1);
+                if (frame.trim().length) {
+                    handleStompFrame(frame);
+                }
+                index = wsBuffer.indexOf('\u0000');
+            }
+        };
+        wsSocket.onerror = function() {
+            setWsStatus('Lỗi kết nối', 'bad');
+        };
+        wsSocket.onclose = function() {
+            setWsStatus('Mất kết nối', 'warn');
+            startFallbackPolling();
+            setTimeout(connectWs, 1500);
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!showGame) {
+            return;
+        }
+        renderState(initialState);
+        refreshState();
+        startFallbackPolling();
+        connectWs();
+        document.querySelector('.container').addEventListener('click', handleBoardClick);
+        document.getElementById('seerModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeSeerModal();
+            }
+        });
+        if (currentRoleId) {
+            document.getElementById('wsStatus').textContent = currentIsWolf ? 'Đang theo dõi Sói' : 'Đang kết nối';
+        }
+    });
+</script>
+</body>
+</html>

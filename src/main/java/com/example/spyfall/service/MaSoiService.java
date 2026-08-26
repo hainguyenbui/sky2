@@ -50,6 +50,9 @@ public class MaSoiService {
     private final Map<String, String> currentGameHistory = new LinkedHashMap<>();
 
     @Getter
+    private final Map<String, String> autoHistories = new TreeMap<>(Comparator.reverseOrder());
+
+    @Getter
     @Setter
     private boolean gameEnded = true;
     private boolean wolfWasRemovedDuringSetup;
@@ -612,6 +615,7 @@ public class MaSoiService {
 
     private String publishNightResult(Map<String, DataMember> playersByDevice, NightResolution resolution) {
         StringBuilder story = new StringBuilder();
+        StringBuilder autoHistory = new StringBuilder();
         resolution.events.forEach(message -> appendStory(story, message));
         resolution.disabledRoles.values().forEach(message -> appendStory(story, message));
         resolution.savedPlayers.forEach((deviceId, reason) -> {
@@ -632,9 +636,12 @@ public class MaSoiService {
                 adminHistory.add(message);
                 appendStory(story, message);
             });
+            autoHistory.append(player.getNameMember()).append(" bị loại<br>");
         });
         resolution.nextDayBlocks.values().forEach(message -> appendStory(story, message));
         nightDetails = story.toString();
+
+        autoHistories.put("Đêm " + nightNumber, autoHistory.toString());
         currentGameHistory.put("Đêm " + nightNumber++, nightDetails);
         if (resolution.deaths.isEmpty()) {
             adminHistory.add("Không có ai bị giết đêm nay");
@@ -657,6 +664,7 @@ public class MaSoiService {
             }
             eliminateDuringDay(player, eliminatedPlayers, story, true);
             eliminateCupidPartner(player, eliminatedPlayers, story);
+            autoHistories.put("Ngày " + nightNumber, player.getNameMember() + " bị loại<br>");
         }
         eliminatedPlayers.forEach((deviceId, player) -> applyDeathConsequences(deviceId, player, playersByDevice,
                 message -> story.append(message).append("<br>")));
