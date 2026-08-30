@@ -65,12 +65,12 @@ public class MaSoiAutoV1 {
     @Getter
     private int voteRemainingSeconds = 45;
     @Getter
-    private int selectionCountdownSeconds = 60; // TODO trả về giá trị cu khi qua dem moi // TODO admin can co the edit cai nay
+    private int selectionCountdownSeconds = 60;
     @Getter
     private int selectionSeconds = 40;
     private int selectionCountdownSecondRandom = 1000;
     @Getter
-    private int silentCountdownSeconds = 60; // TODO UPDATE lai sau khi test xong
+    private int silentCountdownSeconds = 60;
     @Getter
     private int silentSeconds = 40;
     private int silentCountdownSecondRandom = 1000;
@@ -150,7 +150,7 @@ public class MaSoiAutoV1 {
             this.selectionSeconds = Math.max(1, selectionSeconds);
             this.silentSeconds = Math.max(1, silentSeconds);
             dayRemainingSeconds = dayDurationSeconds;
-            nightRemainingSeconds = nightDurationSeconds; //TODO o day de hien thi lai thoi gian ve vị tri cu khi bat dau ngay moi nen add thoi gian cho Soi va Sat thu o cho nay
+            nightRemainingSeconds = nightDurationSeconds;
             voteRemainingSeconds = voteDurationSeconds;
             selectionCountdownSeconds = selectionSeconds;
             silentCountdownSeconds = silentSeconds;
@@ -184,8 +184,8 @@ public class MaSoiAutoV1 {
                 // Reset đồng hồ về mặc định khi bật lại để đếm ngược từ đầu
                 randomVictim = null;
                 nightRemainingSeconds = nightDurationSeconds;
-                selectionCountdownSeconds = selectionSeconds; //TODO rết lai ve mac dinh chu ko phai la 40
-                silentCountdownSeconds = silentSeconds;//TODO rết lai ve mac dinh chu ko phai la 40
+                selectionCountdownSeconds = selectionSeconds;
+                silentCountdownSeconds = silentSeconds;
                 silentCountdownSecondRandom = 1000;
                 nightRemainingSecondRandom = 1000;
                 selectionCountdownSecondRandom = 1000;
@@ -378,7 +378,7 @@ public class MaSoiAutoV1 {
             if (showNightBoard && selectionCountdownSeconds > 0) {
                 selectionCountdownSeconds--;
                 changed = true;
-                if (selectionCountdownSeconds > 5 && wolfAssassinSelected()) { //TODO sau khi soi chon xong thi giam xuong
+                if (selectionCountdownSeconds > 5 && wolfAssassinSelected()) {
                     selectionCountdownSeconds = 5;
                 }
             }
@@ -404,7 +404,7 @@ public class MaSoiAutoV1 {
                 dayRemainingSeconds = 5;
                 changed = true;
             }
-            if (showNightBoard && allNightSelected() && nightRemainingSeconds > 5) { //TODO -----
+            if (showNightBoard && allNightSelected() && nightRemainingSeconds > 5) {
                 nightRemainingSeconds = 5;
                 changed = true;
             }
@@ -678,8 +678,8 @@ public class MaSoiAutoV1 {
         return alivePlayersRaw().size() > 0 && voteSelections.size() >= alivePlayersRaw().size();
     }
 
-    private boolean allDaySelected() {// TODO nguoi chet roi vẫn random thòi gian 7 -13s
-        return alivePlayersRaw().size() > 0 && daySelections.size() >= alivePlayersRaw().size(); //TODO neu ma soi hoac sat thu hoac silent da het thoi gian thi ko dem họ trong nua //TODO neu nhan vat mat hanh dong kha dung trong dem thi bo qua tinh ho?? hoac ran dom cho ho may s
+    private boolean allDaySelected() {
+        return alivePlayersRaw().size() > 0 && daySelections.size() >= alivePlayersRaw().size();
     }
 
     private boolean silentSelected() {
