@@ -473,17 +473,17 @@
             </div>
         </div>
 
-        <div class="card" style="text-align: center;">
-            <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
-            <div class="qr-container">
-                <img th:src="${image}" alt="QR Code" class="qr-image">
-            </div>
-        </div>
-
         <!-- Chat: container được render bằng JS sau khi load danh sách chat từ backend -->
         <div id="chatSection" class="chat-section"></div>
 
     </th:block>
+
+    <div class="card" style="text-align: center;">
+        <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
+        <div class="qr-container">
+            <img th:src="${image}" alt="QR Code" class="qr-image">
+        </div>
+    </div>
 </div>
 
 <div id="seerModal" class="modal-mask">

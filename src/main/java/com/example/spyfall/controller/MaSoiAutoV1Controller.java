@@ -206,7 +206,7 @@ public class MaSoiAutoV1Controller {
     }
 
     private void addCommonAttributes(Model model) {
-        model.addAttribute("image", maSoiService.getImage());
+        model.addAttribute("image", maSoiAutoV1.getImage());
     }
 
     private void addRoleGroupAttributes(Model model) {

@@ -51,22 +51,26 @@ public class SpyfallApplication {
 			String content2 = "http://" + ip4 + "/sp";
 			String content3 = "http://" + ip4 + "/gd/play";
 			String content4 = "http://" + ip4 + "/spy2";
+			String content5 = "http://" + ip4 + "/msAutoV1/play";
 			Map<String, String> contents = new HashMap<>();
 			if (systemEnv.contains("Win")) {
 				contents.put(content1, "src/main/resources/picture/qrcode.png");
 				contents.put(content2, "src/main/resources/picture/spy.png");
 				contents.put(content3, "src/main/resources/picture/gDuck.png");
 				contents.put(content4, "src/main/resources/picture/spy2.png");
+				contents.put(content5, "src/main/resources/picture/msAutoV1.png");
 			} else if (systemEnv.contains("Linux")) {
 				contents.put("http://43.208.205.45/ms/play", filepath + "/home/ec2-user/masoi/qrcode.png");
 				contents.put("http://43.208.205.45/sp", filepath + "/home/ec2-user/masoi/spy.png");
 				contents.put("http://43.208.205.45/gd/play", filepath + "/home/ec2-user/masoi/gDuck.png");
 				contents.put("http://43.208.205.45/spy2", filepath + "/home/ec2-user/masoi/spy2.png");
+				contents.put("http://43.208.205.45/msAutoV1/play", filepath + "/home/ec2-user/masoi/msAutoV1.png");
 			} else {
 				contents.put(content1, filepath + "/sdcard/java/qrcode.png");
 				contents.put(content2, filepath + "/sdcard/java/spy.png");
 				contents.put(content3, filepath + "/sdcard/java/gDuck.png");
 				contents.put(content4, filepath + "/sdcard/java/spy2.png");
+				contents.put(content5, filepath + "/sdcard/java/msAutoV1.png");
 			}
 
 			contents.forEach((key, value) -> {

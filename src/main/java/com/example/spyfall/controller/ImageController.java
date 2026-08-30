@@ -33,6 +33,24 @@ public class ImageController {
         return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
     }
 
+    @GetMapping("/msAutoV1.png")
+    public ResponseEntity<Resource> getMSAutoV1() {
+        File file;
+        if (System.getProperty("os.name").contains("Win")) {
+            file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/msAutoV1.png");
+
+        } else if (System.getProperty("os.name").contains("Linux")) {
+            file = new File("/home/ec2-user/masoi/msAutoV1.png");
+        } else {
+            file = new File("/sdcard/java/msAutoV1.png");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_PNG);
+        headers.setContentLength(file.length());
+        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    }
+
     @GetMapping("/spy.png")
     public ResponseEntity<Resource> getQRCode2() throws IOException {
         File file;

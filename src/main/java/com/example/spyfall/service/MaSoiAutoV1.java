@@ -100,6 +100,12 @@ public class MaSoiAutoV1 {
 
     private boolean nextDayBlockHandle = false;
 
+    private static final String IMAGE_PATH = "/msAutoV1.png";
+
+    public String getImage() {
+        return IMAGE_PATH;
+    }
+
     @Autowired
     public MaSoiAutoV1(MaSoiService maSoiService, SimpMessagingTemplate messagingTemplate) {
         this.maSoiService = maSoiService;
