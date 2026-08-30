@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -64,10 +66,16 @@ public class MaSoiAutoV1Controller {
             model.addAttribute("gameNumber", maSoiService.getGameNumber());
             addRoleGroupAttributes(model);
             model.addAttribute("isDead", maSoiService.getDeadPls().contains(member));
+            model.addAttribute("showRoles", maSoiService.getListShowForMember());
             if (maSoiService.getDeadPls().contains(member)) {
                 model.addAttribute("historyGame", maSoiService.getCurrentGameHistory());
                 model.addAttribute("deadPlayer", maSoiService.getDeadPls());
-                model.addAttribute("alivePlayer", maSoiService.getPls());
+            }
+            model.addAttribute("alivePlayer", maSoiService.getPls());
+
+            // voi role 42 thi truyen ten nguoi da chon qua
+            if (member.getId() == 42 && member.getOldTargetId() != null) {
+                maSoiAutoV1.findPlayer(member.getOldTargetId()).ifPresent(target -> model.addAttribute("oldTargetName", target.getNameMember()));
             }
         } catch (Exception e) {
             model.addAttribute("notSetup", true);
@@ -87,10 +95,11 @@ public class MaSoiAutoV1Controller {
     @PostMapping("/timers")
     @ResponseBody
     Map<String, Object> updateTimers(@RequestParam int daySeconds, @RequestParam int nightSeconds,
-                                     @RequestParam(defaultValue = "60") int voteSeconds,
+                                     @RequestParam int voteSeconds, @RequestParam int selectionSeconds,
+                                     @RequestParam int silentSeconds,
                                      HttpServletRequest request, HttpServletResponse response) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
-        return maSoiAutoV1.updateDurations(daySeconds, nightSeconds, voteSeconds, deviceId);
+        return maSoiAutoV1.updateDurations(daySeconds, nightSeconds, voteSeconds, selectionSeconds, silentSeconds, deviceId);
     }
 
     @PostMapping("/day/select")
@@ -167,6 +176,24 @@ public class MaSoiAutoV1Controller {
     @ResponseBody
     String create(@RequestParam Map<String, String> params) throws Exception {
         return maSoiService.loadGame(GameSetupRequest.fromQueryParams(params));
+    }
+
+    @GetMapping("/admin")
+    String admin(Model model) {
+        if (maSoiService.isGameEnded()) {
+            return "redirect:/msAutoV1/run";
+        }
+        model.addAttribute("dayDurationSeconds", maSoiAutoV1.getDayDurationSeconds());
+        model.addAttribute("nightDurationSeconds", maSoiAutoV1.getNightDurationSeconds());
+        model.addAttribute("voteDurationSeconds", maSoiAutoV1.getVoteDurationSeconds());
+        model.addAttribute("showDayBoard", maSoiAutoV1.isShowDayBoard());
+        model.addAttribute("showNightBoard", maSoiAutoV1.isShowNightBoard());
+        model.addAttribute("showVoteBoard", maSoiAutoV1.isShowVoteBoard());
+        model.addAttribute("selectionSeconds", maSoiAutoV1.getSelectionSeconds());
+        model.addAttribute("silentSeconds", maSoiAutoV1.getSilentSeconds());
+        addCommonAttributes(model);
+
+        return "masoiAutoV1/admin";
     }
 
     private void addCommonAttributes(Model model) {

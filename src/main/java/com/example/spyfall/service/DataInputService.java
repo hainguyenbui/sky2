@@ -977,7 +977,7 @@ public class DataInputService {
             datas.add(createDM(42, "Nhân bản", "Chọn 1 người, nếu người đó chết bạn sẽ nhận chức năng người đó", Map.of("connectSkill", 2), 3));
             datas.add(createDM(43, "Độc tài", "Duy nhất: giết 1 người chơi, nếu không phải dân bạn sống, nếu dân bạn cùng chết. Nếu được bảo vệ bạn sẽ sống", Map.of("killSkill", 1), 43));
             datas.add(createDM(44, "Thiên thần", "1 lần duy nhất có thể ngăn chặn toàn bộ cái chết trong đêm, ko thể bị cấm phép", Map.of("superProtectedSkill", true), 1));
-            datas.add(createDM(45, "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng", Map.of("connectSkill", 3), 45));
+            datas.add(createDM(45, "Phù thủy già", "mỗi ngày đuổi 1 người ko phải mình ra khỏi làng, không đuổi 1 người 2 đêm liên tiếp", Map.of("connectSkill", 3), 45));
             datas.add(createDM(46, "Boooooom", "Duy nhất chọn 1 người chơi giao bom, mỗi đêm bạn có quyền kích nổ hoặc ko", Map.of("killSkill", 1), 46));
         }
     }
@@ -988,6 +988,7 @@ public class DataInputService {
                 .role(location)
                 .description(description)
                 .disabledSkill(false)
+                .seerCount(0)
                 .orderCall(orderCall);
         if (skills != null) {
             for (Map.Entry<String, Object> entry : skills.entrySet()) {
@@ -1000,6 +1001,10 @@ public class DataInputService {
         }
         if (id == 37) {
             builder.disabledSkill(true);
+        }
+
+        if (id == 4) {
+            builder.seerCount(1);
         }
 
         return builder.build();

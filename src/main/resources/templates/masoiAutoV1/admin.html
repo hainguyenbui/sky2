@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quản Trò Ma Sói</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <style>
+        /* Toggle Switches */
+        .toggle-group { display: flex; gap: 12px; flex-direction: column; margin-bottom: 16px; }
+        .toggle-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(30,41,59,0.4); border-radius: 10px; border: 1px solid var(--card-border); }
+        .toggle-label { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 28px; }
+        .toggle-switch input:checked + .toggle-slider { background-color: var(--primary); }
+        .toggle-slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
+        
+        .board-card { border-left-width: 4px; }
+        .board-card.day-board { border-left-color: rgba(59,130,246,0.85); background: linear-gradient(180deg, rgba(59,130,246,0.10), rgba(30,41,59,0.35)); }
+        .board-card.night-board { border-left-color: rgba(168,85,247,0.85); background: linear-gradient(180deg, rgba(168,85,247,0.10), rgba(30,41,59,0.35)); }
+		.night-board.night-locked #nightPanels .panel-card {
+            border-color: rgba(239,68,68,0.75) !important;
+            background: linear-gradient(180deg, rgba(239,68,68,0.14), rgba(30,41,59,0.45));
+            box-shadow: 0 0 0 1px rgba(239,68,68,0.35), inset 0 0 0 1px rgba(239,68,68,0.25);
+        }
+		.section-title { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+        .section-title small { color: var(--text-muted); font-weight: 500; }
+		.config-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+		.config-group label { display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; }
+		.role-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; transition: all 0.2s; }
+		.role-title { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em; }
+		.switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+		.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(15,23,42,0.6); transition: .25s; border-radius: 24px; border: 1px solid var(--card-border); }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: #94a3b8; transition: .25s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); background-color: #ffffff; }
+		@media (max-width: 760px) {
+            .grid-2, .meta-grid, .config-row { grid-template-columns: 1fr; }
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>Quản Trò Ma Sói</h1>
+        <p class="desc">Bảng điều khiển ván đấu hiện tại</p>
+    </div>
+
+    <div class="card" style="text-align: center;">
+        <div class="qr-container">
+            <img th:src="${image}" alt="QR Code" class="qr-image" style="width: 150px; height: 150px;">
+        </div>
+        <p class="desc" style="font-size: 0.8rem; margin-top: 5px;">Quét mã QR để người chơi tham gia</p>
+    </div>
+    <!-- Điều khiển hiển thị bảng ngày/đêm/vote – broadcast qua WebSocket tới tất cả người chơi -->
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Điều khiển bảng chọn</h3>
+        <div class="card board-card night-board">
+            <div class="section-title">
+                <h3>Thiết lập thời gian</h3>
+                <small>Lưu trực tiếp vào service AutoV1</small>
+            </div>
+            <div class="config-row">
+                <div class="config-group">
+                    <label for="daySeconds">Ngày (giây)</label>
+                    <input id="daySeconds" type="number" min="5" class="input-text" th:value="${dayDurationSeconds}">
+                </div>
+                <div class="config-group">
+                    <label for="nightSeconds">Đêm (giây)</label>
+                    <input id="nightSeconds" type="number" min="5" class="input-text" th:value="${nightDurationSeconds}">
+                </div>
+            </div>
+            <div class="config-row">
+                <div class="config-group">
+                    <label for="selectionSeconds">Sói/Sát Thủ (giây)</label>
+                    <input id="selectionSeconds" type="number" min="5" class="input-text" th:value="${selectionSeconds}">
+                </div>
+                <div class="config-group">
+                    <label for="silentSeconds">Câm lặng (giây)</label>
+                    <input id="silentSeconds" type="number" min="5" class="input-text" th:value="${silentSeconds}">
+                </div>
+            </div>
+            <div class="config-row">
+                <div class="config-group">
+                    <label for="voteSeconds">Vote Ngày (giây)</label>
+                    <input id="voteSeconds" type="number" min="5" class="input-text" th:value="${voteDurationSeconds}">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="saveTimers()">Lưu</button>
+            </div>
+
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="role-card" style="border-left: 4px solid #60a5fa;">
+                <div>
+                    <span class="role-title" style="color: #93c5fd;">BẢNG NGÀY</span>
+                    <p style="font-size: 0.75rem; color: var(--text-muted);">Hiện/ẩn bảng vote ngày với toàn bộ người chơi</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggleDayBoard" onchange="setBoardVisible('day', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="role-card" style="border-left: 4px solid #a78bfa;">
+                <div>
+                    <span class="role-title" style="color: #c4b5fd;">BẢNG ĐÊM</span>
+                    <p style="font-size: 0.75rem; color: var(--text-muted);">Hiện/ẩn bảng hành động đêm với toàn bộ người chơi</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggleNightBoard" onchange="setBoardVisible('night', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="role-card" style="border-left: 4px solid #34d399;">
+                <div>
+                    <span class="role-title" style="color: #6ee7b7;">BẢNG VOTE YES/NO</span>
+                    <p style="font-size: 0.75rem; color: var(--text-muted);">Hiện/ẩn bảng bình chọn Yes / No với toàn bộ người chơi</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="toggleVoteBoard" onchange="setBoardVisible('vote', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+
+    <button id="endGame" class="btn btn-danger" style="margin-top: 24px;">Kết Thúc Ván Đấu</button>
+
+     <script>
+        document.getElementById('endGame').addEventListener('click', function() {
+            const userConfirmed = confirm("Bạn có chắc chắn muốn KẾT THÚC GAME?");
+            if (userConfirmed) {
+                fetch('/ms/end', { method: 'POST' })
+                    .then(response => response.text())
+                    .then(responseData => {
+                        alert('Response: ' + responseData);
+                        window.location.href = '/msAutoV1/run';
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        });
+    </script>
+    <script>
+        function saveTimers() {
+        const daySeconds = parseInt(document.getElementById('daySeconds').value, 10) || 90;
+        const nightSeconds = parseInt(document.getElementById('nightSeconds').value, 10) || 120;
+        const voteSeconds = parseInt(document.getElementById('voteSeconds').value, 10) || 60;
+        const selectionSeconds = parseInt(document.getElementById('selectionSeconds').value, 10) || 40;
+        const silentSeconds = parseInt(document.getElementById('silentSeconds').value, 10) || 40;
+        fetch('/msAutoV1/timers?daySeconds=' + encodeURIComponent(daySeconds) + '&nightSeconds=' + encodeURIComponent(nightSeconds) +
+        '&voteSeconds=' + encodeURIComponent(voteSeconds) + '&selectionSeconds=' + encodeURIComponent(selectionSeconds) +
+        '&silentSeconds=' + encodeURIComponent(silentSeconds), {
+            method: 'POST'
+        })
+        .then(handleJsonResponse)
+        .then(renderState)
+        .catch(function(error) { alert(error.message || 'Không lưu được thời gian'); });
+    }
+    </script>
+    <script>
+        // Gọi API bật/tắt bảng ngày hoặc đêm; server broadcast WebSocket tới tất cả người chơi
+       function setBoardVisible(type, show) {
+           var url = '/msAutoV1/board/' + type + '?show=' + show;
+           fetch(url, { method: 'POST' })
+               .then(function(res) { return res.json(); })
+               .catch(function(err) { console.error('setBoardVisible error', err); });
+       }
+    </script>
+
+</div>
+</body>
+</html>

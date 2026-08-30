@@ -56,6 +56,8 @@ public class DataMember {
 
     String oldTargetId;
 
+    int seerCount = 0;
+
     /**
      * 1 thợ săn
      * 2 nhân bản

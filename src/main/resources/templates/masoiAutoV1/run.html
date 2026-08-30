@@ -97,67 +97,6 @@
             </div>
         </div>
 
-        <!-- Điều khiển hiển thị bảng ngày/đêm/vote – broadcast qua WebSocket tới tất cả người chơi -->
-        <div class="card" style="margin-bottom: 20px;">
-            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Điều khiển bảng chọn</h3>
-            <div class="card board-card night-board">
-                <div class="section-title">
-                    <h3>Thiết lập thời gian</h3>
-                    <small>Lưu trực tiếp vào service AutoV1</small>
-                </div>
-<!--                <div class="config-row">-->
-<!--                    <div class="config-group">-->
-<!--                        <label for="daySeconds">Ngày (giây)</label>-->
-<!--                        <input id="daySeconds" type="number" min="5" class="input-text" th:value="${autoState['dayDurationSeconds']}">-->
-<!--                    </div>-->
-<!--                    <div class="config-group">-->
-<!--                        <label for="nightSeconds">Đêm (giây)</label>-->
-<!--                        <input id="nightSeconds" type="number" min="5" class="input-text" th:value="${autoState['nightDurationSeconds']}">-->
-<!--                    </div>-->
-<!--                    <button type="button" class="btn btn-primary" onclick="saveTimers()">Lưu</button>-->
-<!--                </div>-->
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <div class="role-card" style="border-left: 4px solid #60a5fa;">
-                    <div>
-                        <span class="role-title" style="color: #93c5fd;">BẢNG NGÀY</span>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">Hiện/ẩn bảng vote ngày với toàn bộ người chơi</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="toggleDayBoard" onchange="setBoardVisible('day', this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="role-card" style="border-left: 4px solid #a78bfa;">
-                    <div>
-                        <span class="role-title" style="color: #c4b5fd;">BẢNG ĐÊM</span>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">Hiện/ẩn bảng hành động đêm với toàn bộ người chơi</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="toggleNightBoard" onchange="setBoardVisible('night', this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="role-card" style="border-left: 4px solid #34d399;">
-                    <div>
-                        <span class="role-title" style="color: #6ee7b7;">BẢNG VOTE YES/NO</span>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">Hiện/ẩn bảng bình chọn Yes / No với toàn bộ người chơi</p>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="toggleVoteBoard" onchange="setBoardVisible('vote', this.checked)">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <!-- Thời gian đếm ngược cho bảng vote – có thể chỉnh ngay trên giao diện -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--card-border);">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);">Thời gian vote (giây):</span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="number" id="voteSecondsInput" min="5" value="60" class="input-text" style="width: 70px; padding: 6px 8px; text-align: center;">
-                        <button type="button" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.82rem;" onclick="saveVoteTimer()">Lưu</button>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Chạy Game</button>
     </form>
@@ -216,45 +155,37 @@
             saveSetupState();
         }
 
-        // Gọi API bật/tắt bảng ngày hoặc đêm; server broadcast WebSocket tới tất cả người chơi
-        function setBoardVisible(type, show) {
-            var url = '/msAutoV1/board/' + type + '?show=' + show;
-            fetch(url, { method: 'POST' })
-                .then(function(res) { return res.json(); })
-                .catch(function(err) { console.error('setBoardVisible error', err); });
-        }
+<!--        // Đồng bộ trạng thái thanh gạt khi load trang – lấy từ state API-->
+<!--        function loadBoardToggles() {-->
+<!--            fetch('/msAutoV1/state')-->
+<!--                .then(function(res) { return res.json(); })-->
+<!--                .then(function(state) {-->
+<!--                    document.getElementById('toggleDayBoard').checked = !!state.showDayBoard;-->
+<!--                    document.getElementById('toggleNightBoard').checked = !!state.showNightBoard;-->
+<!--                    document.getElementById('toggleVoteBoard').checked = !!state.showVoteBoard;-->
+<!--                    // Đồng bộ thời gian vote từ state-->
+<!--                    if (state.voteDurationSeconds) {-->
+<!--                        document.getElementById('voteSecondsInput').value = state.voteDurationSeconds;-->
+<!--                    }-->
+<!--                })-->
+<!--                .catch(function(err) { console.warn('loadBoardToggles error', err); });-->
+<!--        }-->
 
-        // Đồng bộ trạng thái thanh gạt khi load trang – lấy từ state API
-        function loadBoardToggles() {
-            fetch('/msAutoV1/state')
-                .then(function(res) { return res.json(); })
-                .then(function(state) {
-                    document.getElementById('toggleDayBoard').checked = !!state.showDayBoard;
-                    document.getElementById('toggleNightBoard').checked = !!state.showNightBoard;
-                    document.getElementById('toggleVoteBoard').checked = !!state.showVoteBoard;
-                    // Đồng bộ thời gian vote từ state
-                    if (state.voteDurationSeconds) {
-                        document.getElementById('voteSecondsInput').value = state.voteDurationSeconds;
-                    }
-                })
-                .catch(function(err) { console.warn('loadBoardToggles error', err); });
-        }
-
-        // Lưu thời gian vote riêng (chỉ cập nhật voteDuration)
-        function saveVoteTimer() {
-            var voteSeconds = parseInt(document.getElementById('voteSecondsInput').value, 10) || 60;
-            // Gọi /timers với day/night giữ nguyên, chỉ cập nhật vote
-            fetch('/msAutoV1/state')
-                .then(function(res) { return res.json(); })
-                .then(function(state) {
-                    var daySeconds = state.dayDurationSeconds || 90;
-                    var nightSeconds = state.nightDurationSeconds || 150;
-                    return fetch('/msAutoV1/timers?daySeconds=' + daySeconds + '&nightSeconds=' + nightSeconds + '&voteSeconds=' + voteSeconds, { method: 'POST' });
-                })
-                .then(function(res) { return res.json(); })
-                .then(function() { alert('Đã lưu thời gian vote: ' + voteSeconds + 's'); })
-                .catch(function(err) { console.error('saveVoteTimer error', err); });
-        }
+<!--        // Lưu thời gian vote riêng (chỉ cập nhật voteDuration)-->
+<!--        function saveVoteTimer() {-->
+<!--            var voteSeconds = parseInt(document.getElementById('voteSecondsInput').value, 10) || 60;-->
+<!--            // Gọi /timers với day/night giữ nguyên, chỉ cập nhật vote-->
+<!--            fetch('/msAutoV1/state')-->
+<!--                .then(function(res) { return res.json(); })-->
+<!--                .then(function(state) {-->
+<!--                    var daySeconds = state.dayDurationSeconds || 90;-->
+<!--                    var nightSeconds = state.nightDurationSeconds || 150;-->
+<!--                    return fetch('/msAutoV1/timers?daySeconds=' + daySeconds + '&nightSeconds=' + nightSeconds + '&voteSeconds=' + voteSeconds, { method: 'POST' });-->
+<!--                })-->
+<!--                .then(function(res) { return res.json(); })-->
+<!--                .then(function() { alert('Đã lưu thời gian vote: ' + voteSeconds + 's'); })-->
+<!--                .catch(function(err) { console.error('saveVoteTimer error', err); });-->
+<!--        }-->
 
         function bindSetupStateListeners() {
             var fields = document.querySelectorAll('#dataForm input[name]');
@@ -267,7 +198,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             bindSetupStateListeners();
             restoreSetupState();
-            loadBoardToggles();
         });
 
         document.getElementById('sendButton').onclick = function() {
@@ -297,18 +227,7 @@
                 .catch(error => console.error('Error:', error));
         };
     </script>
-    <script>
-        function saveTimers() {
-        const daySeconds = parseInt(document.getElementById('daySeconds').value, 10) || 90;
-        const nightSeconds = parseInt(document.getElementById('nightSeconds').value, 10) || 150;
-        fetch('/msAutoV1/timers?daySeconds=' + encodeURIComponent(daySeconds) + '&nightSeconds=' + encodeURIComponent(nightSeconds), {
-            method: 'POST'
-        })
-        .then(handleJsonResponse)
-        .then(renderState)
-        .catch(function(error) { alert(error.message || 'Không lưu được thời gian'); });
-    }
-    </script>
+
 </div>
 </body>
 </html>

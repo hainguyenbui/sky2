@@ -26,11 +26,15 @@
             justify-content: center;
             transition: all 0.25s ease;
         }
-        .reveal-box.blurred .reveal-content { filter: blur(20px); opacity: 0.08; pointer-events: none; user-select: none; }
+        .reveal-box.blurred .reveal-content { filter: blur(20px); opacity: 0.08; pointer-events: none; user-select: none; display: none;}
         .reveal-box.blurred .reveal-placeholder { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-muted); font-weight: 700; }
         .reveal-box.blurred .reveal-placeholder::before { content: '👁️'; }
         .reveal-box:not(.blurred) { border-style: solid; border-color: rgba(59,130,246,0.35); background: rgba(59,130,246,0.08); }
         .reveal-box:not(.blurred) .reveal-placeholder { display: none; }
+        .reveal-box.blurred {
+            min-height: 0;
+            height: 95px;
+        }
         .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .meta-box { padding: 12px; background: rgba(30,41,59,0.35); border: 1px solid var(--card-border); border-radius: 12px; }
         .meta-label { display:block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
@@ -151,6 +155,54 @@
             border-color: rgba(168,85,247,1) !important;
             box-shadow: 0 0 0 1px rgba(168,85,247,0.60), 0 0 22px rgba(168,85,247,0.28) !important;
         }
+        .night-board.night-locked #nightPanels .select-row {
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+        .night-board.night-locked #nightPanels .select-row:not(.active) {
+            opacity: 0.5;
+        }
+        .night-board.night-locked #nightPanels .select-row.active {
+            opacity: 1;
+            box-shadow: 0 0 0 1px rgba(251,191,36,0.75), 0 0 20px rgba(251,191,36,0.22);
+        }
+        .night-board #nightPanels .select-row.locked {
+            pointer-events: none;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .night-board #nightPanels .select-row.locked.active {
+            opacity: 1;
+        }
+        /* Vấn đề 12: màu sắc riêng cho role Boom (46) theo trạng thái oldTarget */
+        .night-board .player-tile.boom-old-target {
+            background: rgba(250,204,21,0.10);
+            border-color: rgba(250,204,21,0.55);
+        }
+        .night-board .player-tile.boom-old-target.active {
+            background: linear-gradient(180deg, rgba(239,68,68,0.50), rgba(239,68,68,0.22)) !important;
+            border-color: rgba(239,68,68,1) !important;
+            box-shadow: 0 0 0 1px rgba(239,68,68,0.60), 0 0 22px rgba(239,68,68,0.28) !important;
+        }
+        .night-board .player-tile.boom-other-selected {
+            background: rgba(249,115,22,0.14);
+            border-color: rgba(249,115,22,0.65);
+        }
+        .seer-result-box {
+            margin: 0 0 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(56,189,248,0.45);
+            background: rgba(56,189,248,0.12);
+            color: #bae6fd;
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+        .night-board.night-locked #nightPanels .panel-card {
+            border-color: rgba(239,68,68,0.75) !important;
+            background: linear-gradient(180deg, rgba(239,68,68,0.14), rgba(30,41,59,0.45));
+            box-shadow: 0 0 0 1px rgba(239,68,68,0.35), inset 0 0 0 1px rgba(239,68,68,0.25);
+        }
         .board-card.vote-board { border-left-color: rgba(52,211,153,0.85); background: linear-gradient(180deg, rgba(52,211,153,0.09), rgba(30,41,59,0.35)); }
         /* Lưới 2 nút Yes/No chiếm toàn bộ chiều ngang */
         .vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -214,6 +266,10 @@
         @media (max-width: 760px) {
             .grid-2, .meta-grid, .config-row { grid-template-columns: 1fr; }
         }
+        .role-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; }
+        .role-card-soi { border-left: 4px solid var(--danger); }
+        .role-card-dan { border-left: 4px solid var(--success); }
+        .role-card-other { border-left: 4px solid var(--warning); }
     </style>
 </head>
 <body>
@@ -224,10 +280,11 @@
      th:data-member-kill="${member != null ? member.killSkill : 0}"
      th:data-member-prot="${member != null ? member.protectedSkill : 0}"
      th:data-member-conn="${member != null ? member.connectSkill : 0}"
-     th:data-member-dead="${member != null ? member.dead : false}">
+     th:data-member-dead="${member != null ? member.dead : false}"
+     th:data-member-super-prot="${member != null ? member.superProtectedSkill : false}">
     <div class="header-section">
         <h1>Ma Sói Auto V1</h1>
-        <p class="desc">Bảng ngày / đêm đồng bộ qua WebSocket</p>
+        <p class="desc">Admin: Haigacon, Design: Longdaica</p>
     </div>
 
     <div th:if="${notSetup}" class="card" style="text-align:center;">
@@ -241,35 +298,21 @@
     </div>
 
     <th:block th:if="${notSetup != true and fullSlot != true and member != null}">
-        <div class="card day-board">
+        <div class="card" style="text-align: center;">
             <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">CHỨC NĂNG CỦA BẠN:</h3>
             <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
                 <div class="reveal-placeholder">Nhấp để ẩn/hiện chức năng</div>
                 <div class="reveal-content">
-                    <h2 style="font-size: 1.9rem; color: #f87171;" th:utext="${member.role}"></h2>
+                    <h2 id="location" th:style="'font-size: 2rem; color: #f87171; ' + (${isDead} ? 'text-decoration: line-through;' : '')" th:utext="${member.role}"></h2>
                     <p class="desc" style="margin-top: 10px; font-size: 0.9rem;" th:text="${member.description}"></p>
+                    <p class="desc" style="margin-top: 10px; font-size: 1.3rem; color:red;" th:text="${member.roleShow}"></p>
                 </div>
             </div>
         </div>
 
-<!--        <div class="grid-2">-->
-<!--            <div class="card timer-card">-->
-<!--                <div class="section-title">-->
-<!--                    <h3>Thời gian ngày</h3>-->
-<!--                    <small>Đồng bộ qua broker /ms</small>-->
-<!--                </div>-->
-<!--                <div id="dayTimer" class="timer-value"></div>-->
-<!--                <div class="timer-sub" id="dayTimerSub"></div>-->
-<!--            </div>-->
-<!--            <div class="card timer-card">-->
-<!--                <div class="section-title">-->
-<!--                    <h3>Thời gian đêm</h3>-->
-<!--                    <small>Đồng bộ qua broker /ms</small>-->
-<!--                </div>-->
-<!--                <div id="nightTimer" class="timer-value"></div>-->
-<!--                <div class="timer-sub" id="nightTimerSub"></div>-->
-<!--            </div>-->
-<!--        </div>-->
+        <div style="display: flex; gap: 10px;">
+            <button type="button" id="showHistory" class="btn btn-primary" style="flex: 1;">Xem Lịch Sử</button>
+        </div>
 
         <div class="grid-2"  th:if="${!isDead}">
             <!-- id dùng để JS ẩn/hiện theo state.showDayBoard từ WebSocket -->
@@ -277,7 +320,7 @@
                 <div class="card timer-card">
                     <div class="section-title">
                         <h3>Thời gian ngày</h3>
-                        <small>Đồng bộ qua broker /ms</small>
+                        <small>Vote đi các bé</small>
                     </div>
                     <div id="dayTimer" class="timer-value"></div>
                     <div class="timer-sub" id="dayTimerSub"></div>
@@ -296,14 +339,13 @@
                 <div class="card timer-card">
                     <div class="section-title">
                         <h3>Thời gian đêm</h3>
-                        <small>Đồng bộ qua broker /ms</small>
+                        <small>Thời gian đêm kết thúc sau: <span id="nightTimerInline"></span></small>
                     </div>
                     <div id="nightTimer" class="timer-value"></div>
                     <div class="timer-sub" id="nightTimerSub"></div>
                 </div>
                 <div class="section-title">
                     <h3>Bảng đêm</h3>
-                    <small>Mỗi chức năng tách thành bảng riêng</small>
                 </div>
                 <div id="nightPanels" class="panel-grid"></div>
                 <div id="nightEmpty" class="empty-state" style="display:none;">Không có hành động đêm khả dụng.</div>
@@ -342,14 +384,6 @@
 
         <div>
             <div class="card">
-
-                <div class="section-title">
-                    <small>Chi tiết ván game</small>
-                </div>
-                <div id="autoHistories" class="lists-container"></div>
-
-            </div>
-            <div class="card">
                 <div class="section-title">
                     <small>Danh sách hiện tại</small>
                 </div>
@@ -358,6 +392,53 @@
                         <span th:text="${item.nameMember != null ? item.nameMember : 'Ẩn danh'}"></span>
                     </div>
                 </div>
+            </div>
+            <div class="card">
+                <div class="section-title">
+                    <small>Chi tiết ván game</small>
+                </div>
+                <div id="autoHistories" class="lists-container"></div>
+            </div>
+        </div>
+
+        <!-- Alive/Dead Lists -->
+        <div th:if="${historyGame}" class="lists-container">
+            <div th:each="entry : ${historyGame}">
+                <span th:text="${entry.key}"></span>
+                :<br>
+                <span th:utext="${entry.value}"></span>
+            </div>
+        </div>
+
+        <!-- History Modal -->
+        <div id="popupModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; background: rgba(9,13,22,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); justify-content: center; align-items: center; padding: 20px;">
+            <div class="card" style="width: 100%; max-width: 450px; max-height: 85%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: #131b2e;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    <h2 style="font-size: 1.3rem;">Lịch Sử Ván Đấu</h2>
+                    <button id="closePopup" style="background: transparent; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+                </div>
+                <div id="popupContent" style="overflow-y: auto; flex: 1; padding-right: 4px; display: flex; flex-direction: column; gap: 16px;"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
+            <div class="item-list">
+                <th:block th:each="item : ${showRoles}">
+                    <div th:classappend="${#lists.contains(idSoi, item.id)} ? 'role-card role-card-soi' : (${#lists.contains(idOutsider, item.id)} ? 'role-card role-card-other' : 'role-card role-card-dan')">
+                    <span class="role-title"
+                          th:classappend="${#lists.contains(idSoi, item.id)} ? '' : (${#lists.contains(idOutsider, item.id)} ? 'style=color:#fbbf24' : '')"
+                          th:text="${item.role + (item.id == '1' or item.id == '30' or item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
+                    </div>
+                </th:block>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <h3 style="margin-bottom: 10px; font-size: 1.1rem;">Mã QR tham gia</h3>
+            <div class="qr-container">
+                <img th:src="${image}" alt="QR Code" class="qr-image">
             </div>
         </div>
     </th:block>
@@ -381,14 +462,13 @@
     const showGame = /*[[${notSetup != true and fullSlot != true and member != null}]]*/ false;
     const currentDeviceId = memberBox ? (memberBox.dataset.memberDevice || '') : '';
     const currentRoleId = memberBox ? parseInt(memberBox.dataset.memberId || '0', 10) : 0;
-    const currentKillSkill = memberBox ? parseInt(memberBox.dataset.memberKill || '0', 10) : 0;
-    const currentProtectedSkill = memberBox ? parseInt(memberBox.dataset.memberProt || '0', 10) : 0;
-    const currentConnectSkill = memberBox ? parseInt(memberBox.dataset.memberConn || '0', 10) : 0;
+    // Vấn đề 15: đọc superProtectedSkill của role 44 từ data attribute (được truyền qua model.addAttribute("member", member)).
+    const currentSuperProtectedSkill = memberBox ? memberBox.dataset.memberSuperProt === 'true' : false;
     let currentIsDead = /*[[${isDead}]]*/ false;
     const currentIsWolf = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].indexOf(currentRoleId) >= 0;
     const canSeeNightSignals = currentIsWolf || currentRoleId === 31;
-
     let appState = initialState;
+    let currentNightRoleState = {};
     // currentPlayers là map deviceId->name được cập nhật từ state mỗi khi bảng bật
     let currentPlayers = Object.assign({}, initialPlayers || {});
     let selectedNightTargets = {};
@@ -437,10 +517,18 @@
     function renderTimers(state) {
         const day = parseInt(state.dayRemainingSeconds || 0, 10);
         const night = parseInt(state.nightRemainingSeconds || 0, 10);
+        const selectionCountdown = parseInt(state.selectionCountdownSeconds || 0, 10);
+        const silentCountdown = parseInt(state.silentCountdownSeconds || 0, 10);
+        // Vấn đề 2: role 50/51 (hoặc role được backend cấu hình) luôn dùng countdown riêng của role đó.
+        const isRoleUsingSelectionCountdown = isRoleBoundToSelectionCountdown(state);
+        const isRoleUsingSilentCountdown = isRoleBoundToSilentCountdown(state);
+        const displayNight = isRoleUsingSilentCountdown
+            ? silentCountdown
+            : (isRoleUsingSelectionCountdown ? selectionCountdown : night);
         const aliveCount = visiblePlayers().filter(function(player) {
             return !player.isDead;
         }).length;
-        const actionCount = viewerActionsFromMember().length || 1;
+        const actionCount = viewerActionsFromState(state).length || 1;
         const dayCount = (state.daySelections || []).filter(function(item) {
             return item.actorDeviceId === currentDeviceId;
         }).length;
@@ -449,14 +537,16 @@
         }).length;
         const dayTimer = document.getElementById('dayTimer');
         const nightTimer = document.getElementById('nightTimer');
+        const nightTimerInline = document.getElementById('nightTimerInline');
         dayTimer.textContent = fmtSeconds(day);
-        nightTimer.textContent = fmtSeconds(night);
+        nightTimer.textContent = fmtSeconds(displayNight);
+        if (nightTimerInline) { nightTimerInline.textContent = fmtSeconds(night); }
         const votedPlayer = document.getElementById('votedPlayer');
         votedPlayer.textContent = state.votedPlayer;
         dayTimer.className = 'timer-value' + (day <= 5 ? ' danger' : (day <= 15 ? ' warn' : ''));
-        nightTimer.className = 'timer-value' + (night <= 5 ? ' danger' : (night <= 15 ? ' warn' : ''));
+        nightTimer.className = 'timer-value' + (displayNight <= 5 ? ' danger' : (displayNight <= 15 ? ' warn' : ''));
         document.getElementById('dayTimerSub').textContent = 'Đã chọn ' + dayCount + '/' + aliveCount;
-        document.getElementById('nightTimerSub').textContent = 'Đã chọn ' + nightCount + '/' + actionCount;
+        document.getElementById('nightTimerSub').textContent = 'Đã chọn ' + nightCount + '/' + actionCount + (isNightSelectionDisabled(state) ? ' • Đã tắt chọn đêm' : '');
         const container = document.getElementById("autoHistories");
 
         container.innerHTML = "";
@@ -482,6 +572,39 @@
     function daySelectionsByTarget(state) {
         const map = {};
         (state.daySelections || []).forEach(function(item) {
+            if (!map[item.targetDeviceId]) {
+                map[item.targetDeviceId] = [];
+            }
+            map[item.targetDeviceId].push(item);
+        });
+        return map;
+    }
+
+    function normalizeWolfSelections(state) {
+        const sourceState = state || {};
+        const roleState = (sourceState.nightRoleState && typeof sourceState.nightRoleState === 'object')
+            ? sourceState.nightRoleState
+            : {};
+        const raw = Array.isArray(roleState.wolfSelections) ? roleState.wolfSelections
+            : (Array.isArray(roleState.wolfSelected) ? roleState.wolfSelected
+                : (Array.isArray(sourceState.wolfSelections) ? sourceState.wolfSelections
+                    : (Array.isArray(sourceState.wolfSelected) ? sourceState.wolfSelected : [])));
+        return raw.filter(function(item) {
+            return item && typeof item === 'object' && item.targetDeviceId && !item.isSkip;
+        }).map(function(item) {
+            return {
+                actorDeviceId: item.actorDeviceId || '',
+                actorName: item.actorName || currentPlayers[item.actorDeviceId] || 'Ẩn danh',
+                targetDeviceId: item.targetDeviceId || '',
+                targetName: item.targetName || currentPlayers[item.targetDeviceId] || 'Ẩn danh',
+                isSkip: !!item.isSkip
+            };
+        });
+    }
+
+    function wolfSelectionsByTarget(state) {
+        const map = {};
+        normalizeWolfSelections(state).forEach(function(item) {
             if (!map[item.targetDeviceId]) {
                 map[item.targetDeviceId] = [];
             }
@@ -604,56 +727,290 @@
         return { icon: '✦', title: action.label || action.colType, signal: action.colType, tone: action.colType };
     }
 
-    function viewerActionsFromMember() {
-        const actions = [];
-        if (currentKillSkill > 0) {
-            actions.push({ colType: 'kill', label: '⚔️ Giết', connValue: '', needsConfirm: false });
+    function viewerActionsFromState(state) {
+        // Vấn đề 1: đọc action từ state backend, không tự build trong play.html.
+        const sourceState = state || appState || {};
+        const map = (sourceState.viewerActionsByDevice && typeof sourceState.viewerActionsByDevice === 'object')
+            ? sourceState.viewerActionsByDevice
+            : {};
+        return Array.isArray(map[currentDeviceId]) ? map[currentDeviceId] : [];
+    }
+
+    function isNightSelectionDisabled(state) {
+        // Disable chọn đêm theo countdown role-based (selection/silent).
+        const sourceState = state || appState || {};
+        // Role 32 (Tiên tri theo rule hiện tại): khóa tới khi silent countdown về 0.
+        if (currentRoleId === 32) {
+            return parseInt(sourceState.silentCountdownSeconds || 0, 10) > 0;
         }
-        if (currentProtectedSkill > 0) {
-            actions.push({ colType: 'prot', label: '🛡️ Bảo vệ', connValue: '', needsConfirm: false });
+        if (isRoleBoundToSilentCountdown(sourceState)) {
+            return parseInt(sourceState.silentCountdownSeconds || 0, 10) <= 0;
         }
-        if (currentConnectSkill > 0 && [5, 6].indexOf(currentConnectSkill) < 0) {
-            actions.push({
-                colType: 'conn',
-                label: currentConnectSkill === 8 ? '🔮 Tiên tri' : '🔗 Kết nối',
-                connValue: String(currentConnectSkill),
-                needsConfirm: currentRoleId === 32
+        if (isRoleBoundToSelectionCountdown(sourceState)) {
+            return parseInt(sourceState.selectionCountdownSeconds || 0, 10) <= 0;
+        }
+        return false;
+    }
+
+    function isRoleBoundToSelectionCountdown(state) {
+        const sourceState = state || appState || {};
+        const roleCountdownIds = (sourceState.selectionCountdownRoleIds || []).map(function(item) {
+            return parseInt(item, 10) || 0;
+        });
+        return roleCountdownIds.indexOf(currentRoleId) >= 0;
+    }
+
+    function isRoleBoundToSilentCountdown(state) {
+        // Vấn đề 7: role trong silentCountdownRoleIds dùng countdown riêng tương tự vấn đề 2.
+        const sourceState = state || appState || {};
+        const roleCountdownIds = (sourceState.silentCountdownRoleIds || []).map(function(item) {
+            return parseInt(item, 10) || 0;
+        });
+        return roleCountdownIds.indexOf(currentRoleId) >= 0;
+    }
+
+    function seerResultForCurrentRole(state) {
+        // Vấn đề 4: role 32 đọc nightRoleState.seerResult từ state, không tự tính ở FE.
+        if (currentRoleId !== 32) {
+            return null;
+        }
+        const sourceState = state || appState || {};
+        const roleState = (sourceState.nightRoleState && typeof sourceState.nightRoleState === 'object')
+            ? sourceState.nightRoleState
+            : {};
+        const seerResult = roleState.seerResult;
+        if (seerResult == null || seerResult === '') {
+            return null;
+        }
+        if (typeof seerResult === 'string') {
+            return { text: seerResult };
+        }
+        if (Array.isArray(seerResult)) {
+            if (!seerResult.length) {
+                return null;
+            }
+            return { text: seerResult.map(function(item) { return String(item); }).join(', ') };
+        }
+        if (typeof seerResult === 'object') {
+            // Hỗ trợ cả 2 dạng:
+            // 1) seerResult là object kết quả trực tiếp
+            // 2) seerResult là map theo deviceId
+            const byDevice = seerResult[currentDeviceId];
+            const result = (byDevice != null && byDevice !== '') ? byDevice : seerResult;
+            if (typeof result === 'string') {
+                return { text: result };
+            }
+            if (result && typeof result === 'object') {
+                const text = result.message || result.text
+                    || ((result.targetName && result.isWolfOrAssassin != null)
+                        ? (result.targetName + (result.isWolfOrAssassin ? ' là Sói/Sát thủ' : ' không phải Sói/Sát thủ'))
+                        : '');
+                if (text) {
+                    return { text: text };
+                }
+            }
+        }
+        return null;
+    }
+
+    function witchKilledPlayers(state) {
+        // Vấn đề 5: role 31 chỉ đọc danh sách nightRoleState.killedPlayer từ state.
+        if (currentRoleId !== 31) {
+            return [];
+        }
+        const sourceState = state || appState || {};
+        const roleState = (sourceState.nightRoleState && typeof sourceState.nightRoleState === 'object')
+            ? sourceState.nightRoleState
+            : {};
+        const raw = roleState.killedPlayer;
+        const mapById = {};
+
+        function pushPlayer(deviceId, name) {
+            if (!deviceId || mapById[deviceId]) {
+                return;
+            }
+            mapById[deviceId] = {
+                deviceId: deviceId,
+                name: name || currentPlayers[deviceId] || 'Ẩn danh',
+                isDead: false
+            };
+        }
+
+        if (Array.isArray(raw)) {
+            raw.forEach(function(item) {
+                if (typeof item === 'string') {
+                    pushPlayer(item, currentPlayers[item]);
+                    return;
+                }
+                if (item && typeof item === 'object') {
+                    const deviceId = item.deviceId || item.targetDeviceId || item.ipData || '';
+                    const name = item.name || item.targetName || currentPlayers[deviceId] || '';
+                    pushPlayer(deviceId, name);
+                }
+            });
+        } else if (raw && typeof raw === 'object') {
+            Object.keys(raw).forEach(function(key) {
+                const value = raw[key];
+                if (typeof value === 'string') {
+                    pushPlayer(key, value);
+                    return;
+                }
+                if (value && typeof value === 'object') {
+                    const deviceId = value.deviceId || value.targetDeviceId || value.ipData || key;
+                    const name = value.name || value.targetName || currentPlayers[deviceId] || '';
+                    pushPlayer(deviceId, name);
+                }
             });
         }
-        return actions;
+        return Object.keys(mapById).map(function(deviceId) { return mapById[deviceId]; });
     }
 
     function renderNightPanels(state) {
         const wrap = document.getElementById('nightPanels');
         const empty = document.getElementById('nightEmpty');
-        const actions = viewerActionsFromMember();
+        const actions = viewerActionsFromState(state);
+        const wolfSelections = wolfSelectionsByTarget(state);
+        const seerResult = seerResultForCurrentRole(state);
+        const killedPlayers = witchKilledPlayers(state);
+        const silentCountdown = parseInt(state.silentCountdownSeconds || 0, 10);
+
+        // Vấn đề 15: role 44 – thay toàn bộ bảng đêm bằng panel Yes/No hoặc thông báo hết skill.
+        if (currentRoleId === 44) {
+            empty.style.display = 'none';
+            if (!currentSuperProtectedSkill) {
+                // superProtectedSkill = false: không còn skill, không có action gì.
+                wrap.innerHTML = '<div class="empty-state">Bạn đã dùng skill bảo vệ rồi.</div>';
+            } else {
+                // superProtectedSkill = true: hiện panel Yes/No với câu hỏi bảo vệ tất cả.
+                const superProtSelected = selectedNightTargets['superProt'] === '__ALL__';
+                wrap.innerHTML =
+                    '<section class="panel-card prot">' +
+                        '<div class="panel-head">' +
+                            '<div class="panel-title"><span class="panel-icon prot">🛡️</span><span>Bảo vệ tất cả</span></div>' +
+                        '</div>' +
+                        '<p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:12px;">Bạn có muốn bảo vệ tất cả mọi người không?</p>' +
+                        '<div class="vote-grid">' +
+                            '<div class="vote-tile vote-yes' + (superProtSelected ? ' active' : '') + '" data-phase="night-super-prot" data-answer="yes">' +
+                                '<div class="vote-label">✅ YES</div>' +
+                            '</div>' +
+                            '<div class="vote-tile vote-no' + (!superProtSelected && selectedNightTargets['superProt'] ? ' active' : '') + '" data-phase="night-super-prot" data-answer="no">' +
+                                '<div class="vote-label">❌ NO</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</section>';
+            }
+            return;
+        }
+
         if (!actions.length || currentIsDead) {
             wrap.innerHTML = '';
             empty.style.display = 'block';
             return;
         }
         empty.style.display = 'none';
-        wrap.innerHTML = actions.map(function(action) {
+        // Vấn đề 11: lấy list roleId không được tự chọn bản thân từ state.
+        const selfSelectDisabledRoleIds = (state.selfSelectDisabledRoleIds || []).map(function(id) { return parseInt(id, 10); });
+        const isSelfSelectDisabled = selfSelectDisabledRoleIds.indexOf(currentRoleId) >= 0;
+        // Vấn đề 12: lấy oldTargetId của người chơi hiện tại từ state.
+        const playerOldTargets = state.playerOldTargets || {};
+        const myOldTargetId = playerOldTargets[currentDeviceId] || null;
+        // Vấn đề 14: role 42 có oldTargetId → block toàn bộ bảng đêm, không cho chọn ai nữa.
+        if (currentRoleId === 42 && myOldTargetId) {
+            wrap.innerHTML = '<div class="empty-state">Bạn đã copy người chơi: [[${oldTargetName}]] .</div>';
+            return;
+        }
+        const isBoom = currentRoleId === 46;
+        const hasWitchProtectAction = actions.some(function(action) {
+            return action && action.colType === 'prot';
+        });
+        const panelsHtml = actions.map(function(action) {
             const meta = actionMeta(action);
-            const players = visiblePlayers();
+            const isSeerAction = currentRoleId === 32 && action.colType === 'conn';
+            const hasSeerResult = !!seerResult;
+            const lockSeerAction = isSeerAction && hasSeerResult;
+            const players = (currentRoleId === 31 && action.colType === 'prot')
+                ? killedPlayers
+                : visiblePlayers();
             const rows = players.map(function(player) {
                 const selected = selectedNightTargets[action.colType] === player.deviceId;
-                return '<div class="player-tile select-row action-' + escapeAttr(meta.tone) + (selected ? ' active' : '') + (player.isDead ? ' dead' : '') + '" data-phase="night" data-target="' + escapeAttr(player.deviceId) + '" data-action="' + escapeAttr(action.colType) + '" data-confirm="' + (action.needsConfirm ? '1' : '0') + '" data-conn="' + escapeAttr(action.connValue || '') + '">' +
+                const actorTags = currentRoleId >= 1 && currentRoleId <= 14
+                    ? (wolfSelections[player.deviceId] || []).map(function(item) {
+                        return '<span class="tag blue">' + escapeHtml(item.actorName) + '</span>';
+                    }).join('')
+                    : '';
+                // Vấn đề 11: disable tile nếu role trong SELF_SELECT_DISABLED_ROLE_IDS và tile đó là chính bản thân.
+                const isSelfTile = isSelfSelectDisabled && player.deviceId === currentDeviceId;
+                // Vấn đề 12: xác định trạng thái oldTarget cho role Boom (46) và các role khác.
+                const isOldTarget = myOldTargetId && player.deviceId === myOldTargetId;
+                // Role khác (không phải Boom): disable tile có deviceId trùng oldTargetId.
+                const isDisabledByOldTarget = !isBoom && isOldTarget;
+                // Boom: tô màu vàng nhạt nếu chưa chọn, đỏ nếu đang chọn lại oldTarget, cam nếu chọn ô khác.
+                const boomOldTargetClass = (isBoom && isOldTarget) ? ' boom-old-target' : '';
+                const boomOtherClass = (isBoom && myOldTargetId && !isOldTarget && selected) ? ' boom-other-selected' : '';
+                const isDisabled = player.isDead || isSelfTile || isDisabledByOldTarget;
+                return '<div class="player-tile select-row action-' + escapeAttr(meta.tone) + (selected ? ' active' : '') + (isDisabled ? ' dead' : '') + (lockSeerAction ? ' locked' : '') + boomOldTargetClass + boomOtherClass + '" data-phase="night" data-target="' + escapeAttr(player.deviceId) + '" data-action="' + escapeAttr(action.colType) + '" data-confirm="' + (action.needsConfirm ? '1' : '0') + '" data-conn="' + escapeAttr(action.connValue || '') + '" data-locked="' + (lockSeerAction ? '1' : '0') + '">' +
                     '<div class="player-name">' + escapeHtml(player.name) + '</div>' +
+                    (actorTags ? '<div class="player-note"><div class="tag-wrap">' + actorTags + '</div></div>' : '') +
                 '</div>';
             }).join('');
+            const skipSelected = selectedNightTargets[action.colType] === '__SKIP__';
+            const skipActorTags = currentRoleId >= 1 && currentRoleId <= 14
+                ? (wolfSelections['__SKIP__'] || []).map(function(item) {
+                    return '<span class="tag blue">' + escapeHtml(item.actorName) + '</span>';
+                }).join('')
+                : '';
+            const skipRow = '<div class="player-tile skip-tile select-row' + (skipSelected ? ' active' : '') + '" data-phase="night" data-target="__SKIP__" data-action="' + escapeAttr(action.colType) + '" data-confirm="0" data-conn="' + escapeAttr(action.connValue || '') + '" data-locked="' + (lockSeerAction ? '1' : '0') + '">' +
+                '<div class="player-name">⏭ Bỏ qua</div>' +
+                (skipActorTags ? '<div class="player-note"><div class="tag-wrap">' + skipActorTags + '</div></div>' : '') +
+            '</div>';
+            const seerResultHtml = lockSeerAction
+                ? '<div class="seer-result-box">🔮 ' + escapeHtml(seerResult.text || '') + '</div>'
+                : '';
+            const witchProtectCountdownHtml = (currentRoleId === 31 && action.colType === 'prot' && parseInt(state.selectionCountdownSeconds || 0, 10) > 0)
+                // Vấn đề 6: role Phù thủy chỉ hiển thị đếm ngược selectionCountdownSeconds ở bảng bảo vệ.
+                ? '<div class="seer-result-box">⏳ Người cần bảo vệ xuất hiện sau: ' + escapeHtml(fmtSeconds(parseInt(state.selectionCountdownSeconds || 0, 10))) + '</div>'
+                : '';
+            const gridContent = '<div class="player-grid">' + rows + skipRow + '</div>';
+            const emptyInfo = !rows
+                ? '<div class="empty-state">' + (currentRoleId === 31 && action.colType === 'prot'
+                    ? 'Không có ai bị loại.'
+                    : 'Không có ai bị loại.') + '</div>'
+                : '';
             return '<section class="panel-card ' + meta.tone + '">' +
                 '<div class="panel-head">' +
                     '<div class="panel-title"><span class="panel-icon ' + action.colType + '">' + meta.icon + '</span><span>' + escapeHtml(meta.title) + '</span></div>' +
-                    '<span class="signal-pill">' + (action.colType === 'conn' && currentRoleId === 32 ? 'Tiên tri' : meta.title) + '</span>' +
+                    '<span class="signal-pill">' + (lockSeerAction ? 'Đã soi xong' : (action.colType === 'conn' && currentRoleId === 32 ? 'Tiên tri' : meta.title)) + '</span>' +
                 '</div>' +
-                '<div class="player-grid">' + rows + '</div>' +
+                seerResultHtml +
+                witchProtectCountdownHtml +
+                gridContent +
+                emptyInfo +
             '</section>';
         }).join('');
+        // Đảm bảo role 31 luôn thấy panel bảo vệ + countdown, kể cả khi backend chưa trả action "prot".
+        const fallbackWitchPanel = (currentRoleId === 31 && !hasWitchProtectAction)
+            ? ('<section class="panel-card prot">' +
+                '<div class="panel-head">' +
+                    '<div class="panel-title"><span class="panel-icon prot">🛡️</span><span>Bảo vệ</span></div>' +
+                    '<span class="signal-pill">Bảo vệ</span>' +
+                '</div>' +
+                ((parseInt(state.selectionCountdownSeconds || 0, 10) > 0)
+                    ? '<div class="seer-result-box">⏳ Người cần bảo vệ xuất hiện sau: ' + escapeHtml(fmtSeconds(parseInt(state.selectionCountdownSeconds || 0, 10))) + '</div>'
+                    : '') +
+                '<div class="empty-state">Bạn đã mất phép cứu.</div>' +
+              '</section>')
+            : '';
+        const silentNoticeHtml = (currentRoleId === 32 && silentCountdown > 0)
+            ? '<div class="seer-result-box">Tiên tri có thể soi sau: ' + escapeHtml(fmtSeconds(silentCountdown)) + '</div>'
+            : '';
+        wrap.innerHTML = silentNoticeHtml + panelsHtml + fallbackWitchPanel;
     }
 
     function renderState(state) {
         appState = normalizeState(state);
+        currentNightRoleState = (appState.nightRoleState && typeof appState.nightRoleState === 'object')
+            ? appState.nightRoleState
+            : {};
 
         // Cập nhật danh sách người chơi khi server gửi kèm (xảy ra khi bảng được bật)
         if (appState.players && typeof appState.players === 'object') {
@@ -669,9 +1026,15 @@
             day: appState.dayRemainingSeconds,
             night: appState.nightRemainingSeconds,
             vote: appState.voteRemainingSeconds,
+            lock: appState.selectionCountdownSeconds,
+            lockRoles: appState.selectionCountdownRoleIds || [],
+            silentLock: appState.silentCountdownSeconds,
+            silentRoles: appState.silentCountdownRoleIds || [],
+            roleState: appState.nightRoleState || {},
             daySel: appState.daySelections,
             voteSel: appState.voteSelections,
             nightSel: selectedNightTargets,
+            wolfSel: normalizeWolfSelections(appState),
             players: currentPlayers,
             showDay: appState.showDayBoard,
             showNight: appState.showNightBoard,
@@ -687,9 +1050,17 @@
         var dayCard   = document.getElementById('dayBoardCard');
         var nightCard = document.getElementById('nightBoardCard');
         var voteCard  = document.getElementById('voteBoardCard');
-        if (dayCard)   { dayCard.style.display   = (appState.showDayBoard   && !currentIsDead) ? '' : 'none'; }
+
+    // Lấy notShowDay từ initialState (backend đã truyền trong state.put("notShowDay", NOT_SHOW_DAY))
+        const notShowDaySet = new Set((appState.notShowDay || []).map(item => String(item)));
+        const isNotShowDay = notShowDaySet.has(currentDeviceId);
+
+        if (dayCard)   { dayCard.style.display   = (appState.showDayBoard   && !currentIsDead && !isNotShowDay) ? '' : 'none'; }
         if (nightCard) { nightCard.style.display = (appState.showNightBoard && !currentIsDead) ? '' : 'none'; }
-        if (voteCard)  { voteCard.style.display  = (appState.showVoteBoard  && !currentIsDead) ? '' : 'none'; }
+        if (voteCard)  { voteCard.style.display  = (appState.showVoteBoard  && !currentIsDead && !isNotShowDay) ? '' : 'none'; }
+        if (nightCard) {
+            nightCard.classList.toggle('night-locked', isNightSelectionDisabled(appState));
+        }
 
         renderTimers(appState);
         if (appState.showDayBoard   && !currentIsDead) { renderDayBoard(appState); }
@@ -727,7 +1098,7 @@
     function openSeerModal(target) {
         pendingNightTarget = target;
         const modal = document.getElementById('seerModal');
-        document.getElementById('seerModalText').textContent = 'Tiên tri xác nhận chọn ' + target.name + ' (' + target.roleName + ') ?';
+        document.getElementById('seerModalText').textContent = 'Xác nhận kiểm tra: ' + target.name + ' ?';
         modal.style.display = 'flex';
     }
 
@@ -770,14 +1141,14 @@
             targetDeviceId: target.deviceId,
             colType: action.colType,
             connValue: action.connValue || ''
-        }).then(function() {
+        }).then(function(state) {
             if (selectedNightTargets[action.colType] === target.deviceId) {
                 selectedNightTargets[action.colType] = '';
             } else {
                 selectedNightTargets[action.colType] = target.deviceId;
             }
             closeSeerModal();
-            renderState(appState);
+            renderState(state);
         }).catch(function(error) {
             closeSeerModal();
             alert(error.message || 'Không lưu được lựa chọn đêm');
@@ -804,6 +1175,35 @@
             submitVoteAnswer(voteTarget.dataset.voteAnswer);
             return;
         }
+        // Vấn đề 15: xử lý click Yes/No của panel bảo vệ tất cả riêng cho role 44.
+        const superProtTarget = event.target.closest('[data-phase="night-super-prot"]');
+        if (superProtTarget) {
+            if (superProtTarget.dataset.answer === 'yes') {
+                // Chọn YES: gửi action với colType=superProt và connValue=ON.
+                selectedNightTargets['superProt'] = '__ALL__';
+                postJson('/msAutoV1/night/select', {
+                    actorDeviceId: currentDeviceId,
+                    targetDeviceId: currentDeviceId,
+                    colType: 'superProt',
+                    connValue: 'ON'
+                }).then(renderState).catch(function(err) {
+                    alert(err.message || 'Không lưu được');
+                });
+            } else {
+                // Chọn NO: xóa lựa chọn, không gửi action.
+                selectedNightTargets['superProt'] = '__NO__';
+                postJson('/msAutoV1/night/select', {
+                    actorDeviceId: currentDeviceId,
+                    targetDeviceId: currentDeviceId,
+                    colType: 'superProt',
+                    connValue: 'OFF'
+                }).then(renderState).catch(function(err) {
+                    alert(err.message || 'Không lưu được');
+                });
+                renderNightPanels(appState);
+            }
+            return;
+        }
         const row = event.target.closest('.select-row');
         if (!row) {
             return;
@@ -816,22 +1216,42 @@
             submitDaySkip();
             return;
         }
-        const player = visiblePlayers().find(function(item) {
-            return item.deviceId === row.dataset.target;
-        });
-        if (!player) {
-            return;
-        }
         if (row.dataset.phase === 'day') {
+            const player = visiblePlayers().find(function(item) {
+                return item.deviceId === row.dataset.target;
+            });
+            if (!player) {
+                return;
+            }
             submitDaySelection(player);
             return;
         }
-        const action = viewerActionsFromMember().find(function(item) {
+        if (row.dataset.phase === 'night' && isNightSelectionDisabled(appState)) {
+            return;
+        }
+        if (row.dataset.phase === 'night' && row.dataset.locked === '1') {
+            return;
+        }
+        const action = viewerActionsFromState(appState).find(function(item) {
             return item.colType === row.dataset.action;
         });
         if (!action) {
             return;
         }
+        if (row.dataset.phase === 'night' && row.dataset.target === '__SKIP__') {
+            submitNightSelection({ deviceId: '__SKIP__', name: 'Bỏ qua' }, action);
+            return;
+        }
+        const targetDeviceId = row.dataset.target || '';
+        if (!targetDeviceId) {
+            return;
+        }
+        const nameNode = row.querySelector('.player-name');
+        const fallbackName = nameNode ? nameNode.textContent : 'Ẩn danh';
+        const player = {
+            deviceId: targetDeviceId,
+            name: currentPlayers[targetDeviceId] || fallbackName
+        };
         if (row.dataset.confirm === '1') {
             pendingNightAction = action;
             openSeerModal(player);
@@ -875,6 +1295,10 @@
                 payload = JSON.parse(body);
             } catch (error) {
                 console.error('Cannot parse websocket payload', error, body);
+                return;
+            }
+            if (payload.event === 'refreshUi') {
+                window.location.reload();
                 return;
             }
             if (payload.state) {
@@ -940,6 +1364,26 @@
             document.getElementById('wsStatus').textContent = currentIsWolf ? 'Đang theo dõi Sói' : 'Đang kết nối';
         }
     });
+</script>
+<script>
+    document.getElementById('showHistory').onclick = function() {
+        const popupModal = document.getElementById('popupModal');
+        const popupContent = document.getElementById('popupContent');
+        fetch('/ms/showHistory', { method: 'POST' })
+            .then(response => response.text())
+            .then(responseData => {
+                popupContent.innerHTML = responseData;
+                popupModal.style.display = 'flex';
+            })
+            .catch(error => console.error('Error:', error));
+    };
+    document.getElementById('closePopup').onclick = function() {
+        document.getElementById('popupModal').style.display = 'none';
+    };
+    window.onclick = function(event) {
+        const modal = document.getElementById('popupModal');
+        if (event.target == modal) { modal.style.display = 'none'; }
+    };
 </script>
 </body>
 </html>

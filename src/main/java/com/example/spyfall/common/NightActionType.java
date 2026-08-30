@@ -9,7 +9,7 @@ public enum NightActionType {
     SUPER_PROTECT("superProt"),
     UNKNOWN("");
 
-    private final String code;
+    public final String code;
 
     NightActionType(String code) {
         this.code = code;
