@@ -4,6 +4,7 @@ import com.example.spyfall.common.AutoSelectRequest;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.GameSetupRequest;
 import com.example.spyfall.service.MaSoiAutoV1;
+import com.example.spyfall.service.MaSoiChatService;
 import com.example.spyfall.service.MaSoiService;
 import com.example.spyfall.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,10 +30,13 @@ public class MaSoiAutoV1Controller {
 
     private final MaSoiService maSoiService;
     private final MaSoiAutoV1 maSoiAutoV1;
+    // Chat: inject chatService để khởi tạo nhóm chat khi game mới bắt đầu
+    private final MaSoiChatService chatService;
 
-    public MaSoiAutoV1Controller(MaSoiService maSoiService, MaSoiAutoV1 maSoiAutoV1) {
+    public MaSoiAutoV1Controller(MaSoiService maSoiService, MaSoiAutoV1 maSoiAutoV1, MaSoiChatService chatService) {
         this.maSoiService = maSoiService;
         this.maSoiAutoV1 = maSoiAutoV1;
+        this.chatService = chatService;
     }
 
     @GetMapping("/play")
@@ -175,7 +179,12 @@ public class MaSoiAutoV1Controller {
     @GetMapping("/create")
     @ResponseBody
     String create(@RequestParam Map<String, String> params) throws Exception {
-        return maSoiService.loadGame(GameSetupRequest.fromQueryParams(params));
+        String result = maSoiService.loadGame(GameSetupRequest.fromQueryParams(params));
+        // Chat: khởi tạo các nhóm chat mới khi game được tạo thành công
+        if (result.startsWith("OK")) {
+            chatService.initChatGroups();
+        }
+        return result;
     }
 
     @GetMapping("/admin")
