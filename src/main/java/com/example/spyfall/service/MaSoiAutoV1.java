@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,7 @@ public class MaSoiAutoV1 {
     private static final String STATE_DESTINATION = "/ms/autoV1/state";
 //    private static final Set<Integer> HIDDEN_CONNECT_SKILLS = Set.of(5);
     private static final Set<Integer> HIDDEN_ID = Set.of(37, 40, 41);
-    private static final Set<Integer> ACTION_COUNTDOWN_ROLE_IDS = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20);
+    private static final Set<Integer> ACTION_COUNTDOWN_ROLE_IDS = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20); // lien quan den check endgame
 
     // Vấn đề 7: tách list countdown riêng cho role Silent (38).
     private static final Set<Integer> SILENT_COUNTDOWN_ROLE_IDS = Set.of(38);
@@ -862,15 +863,18 @@ public class MaSoiAutoV1 {
                     }
                 } else if (Objects.equals(target, "yes") && votes * 2 > alivePlayersRaw().size() && !ObjectUtils.isEmpty(killDayDevice)) {
                     maSoiService.processDay(List.of(killDayDevice));
+                    checkEndGame(true, killDayDevice);
                     killDayDevice = null;
                 }
             } else if (!Objects.equals(target, SKIP_TARGET) && votes * 2 > alivePlayersRaw().size()) {
                 maSoiService.processDay(List.of(target));
+                checkEndGame(true, target);
             }
         } finally {
             daySelections.clear();
             voteSelections.clear();
         }
+
     }
 
     private Map.Entry<String, Long> getMostCommon(Map<String, String> selections) {
@@ -906,6 +910,7 @@ public class MaSoiAutoV1 {
                 findPlayer(value.getDeviceId()).ifPresent(player -> player.setOldTargetId(null));
             });
         nightSelections.clear();
+        checkEndGame(false, null);
     }
 
     private NightActionDto wolfAction(List<NightActionDto> actions) {
@@ -936,5 +941,114 @@ public class MaSoiAutoV1 {
             actions.add(nightActionDto);
         }
         return nightActionDto;
+    }
+
+    private void checkEndGame(boolean isDay, String target) {
+        AtomicBoolean endGame = new AtomicBoolean(false);
+        if (isDay) {
+            findPlayer(target).ifPresent(dataMember -> {
+               if (dataMember.getId() == 21) {
+                    endGame("Chán đời chiến thắng");
+                    endGame.set(true);
+                }
+            });
+        }
+        if (!endGame.get()) {
+            endGameProcess();
+        }
+    }
+
+    private void endGameProcess() {
+        List<DataMember> alivePlayers = alivePlayersRaw();
+
+        boolean hasWolf = alivePlayers.stream()
+                .anyMatch(p -> p.getId() <= 14);
+
+        boolean hasAssassin = alivePlayers.stream()
+                .anyMatch(p -> p.getId() == 20);
+
+        boolean allVillager = alivePlayers.stream()
+                .noneMatch(p -> ACTION_COUNTDOWN_ROLE_IDS.contains(p.getId()));
+
+        // Dân thắng
+        if (allVillager) {
+            endGame("Người dân chiến thắng");
+            return;
+        }
+
+        // Chỉ còn Sói
+        boolean isWolfWin = hasWolf && !hasAssassin;
+
+        // Chỉ còn Sát thủ
+        boolean isAssassinWin = !hasWolf && hasAssassin;
+
+        if (isWolfWin) {
+            checkWolfEndGame(alivePlayers);
+        } else if (isAssassinWin) {
+            checkAssassinEndGame(alivePlayers);
+        }
+    }
+
+    private void checkWolfEndGame(List<DataMember> alivePlayers) {
+        List<DataMember> wolves = alivePlayers.stream()
+                .filter(p -> p.getId() <= 14)
+                .toList();
+
+        List<DataMember> villagers = alivePlayers.stream()
+                .filter(p -> p.getId() >= 30)
+                .toList();
+
+        boolean isOneVillagerNoDamage = villagers.size() == 1
+                && villagers.get(0).getKillSkill() == 0;
+
+        if (alivePlayers.stream().anyMatch(p -> p.getId() == 21)
+                && !villagers.isEmpty()) {
+            // neu con chan doi va dan game tiep tuc
+            return;
+        }
+
+        if (wolves.size() == 1 && villagers.size() == 1) {
+            int villagerId = villagers.get(0).getId();
+
+            if (villagerId == 38) {
+                endGame("Vòng lặp vô tận, sói chán quá bỏ đi");
+            } else if (villagerId == 34) {
+                endGame("Thế giới sụp đổ");
+            }
+        } else if (villagers.isEmpty() || isOneVillagerNoDamage) {
+            endGame("Sói chiến thắng");
+        }
+    }
+
+    private void checkAssassinEndGame(List<DataMember> alivePlayers) {
+        List<DataMember> villagers = alivePlayers.stream()
+                .filter(p -> p.getId() >= 30)
+                .toList();
+
+        if (alivePlayers.stream().anyMatch(p -> p.getId() == 21)
+                && !villagers.isEmpty()) {
+            // neu con chan doi va dan game tiep tuc
+            return;
+        }
+
+        if (villagers.size() == 1) {
+            int villagerId = villagers.get(0).getId();
+
+            if (villagerId == 38) {
+                endGame("Vòng lặp vô tận, sát thủ chán quá bỏ đi");
+            } else if (villagerId == 34) {
+                endGame("Thế giới sụp đổ");
+            } else if (villagers.get(0).getKillSkill() == 0) {
+                endGame("Sát thủ chiến thắng");
+            }
+        } else if (villagers.isEmpty()) {
+            endGame("Sát thủ chiến thắng");
+        }
+    }
+
+    private void endGame(String message) {
+        maSoiService.getAutoHistories().put("End Game:", " " + message);
+        maSoiService.getCurrentGameHistory().put("End Game:", " " + message);
+        maSoiService.endGame();
     }
 }
