@@ -76,6 +76,8 @@ public class MaSoiAutoV1 {
     private int silentSeconds = 40;
     private int silentCountdownSecondRandom = 1000;
 
+    private int toughGuyRemainingSeconds = 60;
+
     private final Map<String, String> daySelections = new LinkedHashMap<>();
     private final Map<String, NightActionDto> nightSelections = new LinkedHashMap<>();
     // Map deviceId → "yes" hoặc "no" cho bảng vote
@@ -95,6 +97,8 @@ public class MaSoiAutoV1 {
     private boolean showNightBoard = false;
     @Getter
     private boolean showVoteBoard = false;
+    @Getter
+    private boolean showToughGuy = false;
     private String killDayDevice = null;
 
     private Integer randomVictim = null;
@@ -106,6 +110,8 @@ public class MaSoiAutoV1 {
     public String getImage() {
         return IMAGE_PATH;
     }
+
+    String toughGuySelection = "";
 
     @Autowired
     public MaSoiAutoV1(MaSoiService maSoiService, SimpMessagingTemplate messagingTemplate) {
@@ -266,6 +272,27 @@ public class MaSoiAutoV1 {
         }
     }
 
+    public Map<String, Object> selectToughGuyTarget(AutoSelectRequest request) {
+        synchronized (lock) {
+            DataMember actor = findPlayer(request.getActorDeviceId()).orElse(null);
+            DataMember target = findPlayer(request.getTargetDeviceId()).orElse(null);
+            if (actor == null || target == null || actor.isDead() || target.isDead()) {
+                return errorState("Target không hợp lệ");
+            }
+            if (Objects.equals(toughGuySelection, target.getIpData())) {
+                toughGuySelection = "";
+                broadcastStateLocked();
+                return buildState(actor.getIpData());
+            }
+            toughGuySelection = target.getIpData();
+            if (toughGuyRemainingSeconds > 10) {
+                toughGuyRemainingSeconds = 10;
+            }
+            broadcastStateLocked();
+            return buildState(actor.getIpData());
+        }
+    }
+
     // Người chơi chọn "bỏ qua" thay vì vote ai đó; nếu đã skip thì toggle về chưa chọn
     public Map<String, Object> skipDaySelection(String actorDeviceId) {
         synchronized (lock) {
@@ -419,6 +446,13 @@ public class MaSoiAutoV1 {
                 voteRemainingSeconds = 5;
                 changed = true;
             }
+            if(showToughGuy && toughGuyRemainingSeconds > 0) {
+                toughGuyRemainingSeconds--;
+                changed = true;
+                if (toughGuyRemainingSeconds == 0) {
+                    toughGuyProcess();
+                }
+            }
             if (changed) {
                 broadcastStateLocked();
             }
@@ -480,9 +514,12 @@ public class MaSoiAutoV1 {
         state.put("showDayBoard", showDayBoard);
         state.put("showNightBoard", showNightBoard);
         state.put("showVoteBoard", showVoteBoard);
+        state.put("showToughGuy", showToughGuy);
+        state.put("toughGuyRemainingSeconds", toughGuyRemainingSeconds);
+        state.put("toughGuySelection", toughGuySelection);
         state.put("notShowDay", maSoiService.NOT_SHOW_DAY);
         // Khi bất kỳ bảng nào đang hiện, gửi danh sách người chơi mới nhất
-        if (showDayBoard || showNightBoard || showVoteBoard) {
+        if (showDayBoard || showNightBoard || showVoteBoard || showToughGuy) {
             Map<String, String> players = new LinkedHashMap<>();
             for (DataMember p : alivePlayersRaw()) {
                 if (!ObjectUtils.isEmpty(p.getIpData()) && !maSoiService.NOT_SHOW_DAY.contains(p.getIpData())) {
@@ -862,13 +899,10 @@ public class MaSoiAutoV1 {
                         setShowVoteBoard(true);
                     }
                 } else if (Objects.equals(target, "yes") && votes * 2 > alivePlayersRaw().size() && !ObjectUtils.isEmpty(killDayDevice)) {
-                    maSoiService.processDay(List.of(killDayDevice));
-                    checkEndGame(true, killDayDevice);
-                    killDayDevice = null;
+                    daySelection(killDayDevice);
                 }
             } else if (!Objects.equals(target, SKIP_TARGET) && votes * 2 > alivePlayersRaw().size()) {
-                maSoiService.processDay(List.of(target));
-                checkEndGame(true, target);
+                daySelection(target);
             }
         } finally {
             daySelections.clear();
@@ -1047,8 +1081,33 @@ public class MaSoiAutoV1 {
     }
 
     private void endGame(String message) {
-        maSoiService.getAutoHistories().put("End Game:", " " + message);
+        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("End Game:", " " + message));
         maSoiService.getCurrentGameHistory().put("End Game:", " " + message);
         maSoiService.endGame();
+    }
+
+    private void toughGuyProcess() {
+        if (!ObjectUtils.isEmpty(toughGuySelection)) {
+            maSoiService.processDay(List.of(toughGuySelection));
+            checkEndGame(false, null);
+        } else {
+            maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Không ai bị lôi ra chuồng gà", ""));
+        }
+        showToughGuy = false;
+        toughGuySelection = "";
+    }
+
+    private void daySelection(String device) {
+        Optional<DataMember> target = findPlayer(device);
+        if (target.isPresent() && target.get().getId() == 35 && ObjectUtils.isEmpty(target.get().getOldTargetId())) {
+            toughGuyRemainingSeconds = dayDurationSeconds;
+            showToughGuy = true;
+            maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Thanh niên cứng", target.get().getNameMember() + " có " + toughGuyRemainingSeconds + "s để lôi 1 người ra chuồng gà"));
+            target.get().setOldTargetId("toughGay"); // ke ca ko vote thi thanh nien cung cung mat luot giet
+        } else {
+            maSoiService.processDay(List.of(device));
+            checkEndGame(true, device);
+            killDayDevice = null;
+        }
     }
 }

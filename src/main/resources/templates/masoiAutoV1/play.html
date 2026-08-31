@@ -335,6 +335,10 @@
         <p class="desc">Vui lòng yêu cầu admin setup lại.</p>
     </div>
 
+    <div style="display: flex; gap: 10px;">
+        <button type="button" id="showHistory" class="btn btn-primary" style="flex: 1;">Xem Lịch Sử</button>
+    </div>
+
     <th:block th:if="${notSetup != true and fullSlot != true and member != null}">
         <div class="card" style="text-align: center;">
             <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">CHỨC NĂNG CỦA BẠN:</h3>
@@ -346,10 +350,6 @@
                     <p class="desc" style="margin-top: 10px; font-size: 1.3rem; color:red;" th:text="${member.roleShow}"></p>
                 </div>
             </div>
-        </div>
-
-        <div style="display: flex; gap: 10px;">
-            <button type="button" id="showHistory" class="btn btn-primary" style="flex: 1;">Xem Lịch Sử</button>
         </div>
 
         <div class="grid-2"  th:if="${!isDead}">
@@ -365,7 +365,6 @@
                 </div>
                 <div class="section-title">
                     <h3>Bảng ngày</h3>
-                    <small>Chỉ hiện tên người chơi</small>
                 </div>
                 <div id="dayBoardBody" class="player-grid"></div>
                 <div id="dayEmpty" class="empty-state" style="display:none;">Không còn người chơi sống để chọn.</div>
@@ -417,6 +416,22 @@
                         <div id="voteVotersNo"></div>
                     </div>
                 </div>
+            </div>
+
+            <!-- id dùng để JS ẩn/hiện theo state.showToughGuy từ WebSocket -->
+            <div id="toughGuyCard" class="card day-board" style="display:none;">
+                <div class="card timer-card">
+                    <div class="section-title">
+                        <h3>Thời gian ngày</h3>
+                        <small>Vote đi các bé</small>
+                    </div>
+                    <div id="toughGuyTimer" class="timer-value"></div>
+                    <div class="timer-sub" id="toughGuyTimerSub"></div>
+                </div>
+                <div class="section-title">
+                    <h3>Bảng ngày</h3>
+                </div>
+                <div id="toughGuyBody" class="player-grid"></div>
             </div>
         </div>
 
@@ -561,6 +576,7 @@
         const night = parseInt(state.nightRemainingSeconds || 0, 10);
         const selectionCountdown = parseInt(state.selectionCountdownSeconds || 0, 10);
         const silentCountdown = parseInt(state.silentCountdownSeconds || 0, 10);
+        const toughGuyRemainingSeconds = parseInt(state.toughGuyRemainingSeconds || 0, 10);
         // Vấn đề 2: role 50/51 (hoặc role được backend cấu hình) luôn dùng countdown riêng của role đó.
         const isRoleUsingSelectionCountdown = isRoleBoundToSelectionCountdown(state);
         const isRoleUsingSilentCountdown = isRoleBoundToSilentCountdown(state);
@@ -580,9 +596,11 @@
         const dayTimer = document.getElementById('dayTimer');
         const nightTimer = document.getElementById('nightTimer');
         const nightTimerInline = document.getElementById('nightTimerInline');
+        const toughGuyTimer = document.getElementById('toughGuyTimer');
         dayTimer.textContent = fmtSeconds(day);
         nightTimer.textContent = fmtSeconds(displayNight);
         if (nightTimerInline) { nightTimerInline.textContent = fmtSeconds(night); }
+        if (toughGuyTimer) { toughGuyTimer.textContent = fmtSeconds(toughGuyRemainingSeconds); }
         const votedPlayer = document.getElementById('votedPlayer');
         votedPlayer.textContent = state.votedPlayer;
         dayTimer.className = 'timer-value' + (day <= 5 ? ' danger' : (day <= 15 ? ' warn' : ''));
@@ -750,6 +768,23 @@
             (skipSelectors ? '<div class="player-note"><div class="tag-wrap">' + skipSelectors + '</div></div>' : '') +
         '</div>';
         body.innerHTML = playerTiles + skipTile;
+    }
+
+    function renderToughGuyBoard(state) {
+        const body = document.getElementById('toughGuyBody');
+        const rows = visiblePlayers();
+        if (!rows.length) {
+            body.innerHTML = '';
+            return;
+        }
+        const playerTiles = rows.map(function(player) {
+            const isActive = state.toughGuySelection == player.deviceId;
+            if (player.deviceId == currentDeviceId) return;
+            return '<div class="player-tile select-row' + (isActive ? ' active' : '') + (player.isDead ? ' dead' : '') + '" data-phase="toughGuy" data-target="' + escapeAttr(player.deviceId) + '">' +
+                '<div class="player-name">' + escapeHtml(player.name) + '</div>' +
+            '</div>';
+        }).join('');
+        body.innerHTML = playerTiles;
     }
 
     function actionMeta(action) {
@@ -1081,6 +1116,7 @@
             showDay: appState.showDayBoard,
             showNight: appState.showNightBoard,
             showVote: appState.showVoteBoard,
+            toughGuy: appState.toughGuyRemainingSeconds,
             dead: currentIsDead
         });
         if (stateKey === lastStateKey) {
@@ -1092,6 +1128,7 @@
         var dayCard   = document.getElementById('dayBoardCard');
         var nightCard = document.getElementById('nightBoardCard');
         var voteCard  = document.getElementById('voteBoardCard');
+        var toughGuyCard  = document.getElementById('toughGuyCard');
 
     // Lấy notShowDay từ initialState (backend đã truyền trong state.put("notShowDay", NOT_SHOW_DAY))
         const notShowDaySet = new Set((appState.notShowDay || []).map(item => String(item)));
@@ -1100,6 +1137,7 @@
         if (dayCard)   { dayCard.style.display   = (appState.showDayBoard   && !currentIsDead && !isNotShowDay) ? '' : 'none'; }
         if (nightCard) { nightCard.style.display = (appState.showNightBoard && !currentIsDead) ? '' : 'none'; }
         if (voteCard)  { voteCard.style.display  = (appState.showVoteBoard  && !currentIsDead && !isNotShowDay) ? '' : 'none'; }
+        if (toughGuyCard)  { toughGuyCard.style.display  = (appState.showToughGuy && !currentIsDead && currentRoleId == 35) ? '' : 'none'; }
         if (nightCard) {
             nightCard.classList.toggle('night-locked', isNightSelectionDisabled(appState));
         }
@@ -1108,6 +1146,7 @@
         if (appState.showDayBoard   && !currentIsDead) { renderDayBoard(appState); }
         if (appState.showNightBoard && !currentIsDead) { renderNightPanels(appState); }
         if (appState.showVoteBoard  && !currentIsDead) { renderVoteBoard(appState); }
+        if (appState.showToughGuy   && !currentIsDead && currentRoleId == 35) { renderToughGuyBoard(appState); }
     }
 
     function refreshState() {
@@ -1171,6 +1210,22 @@
             renderState(state);
         }).catch(function(error) {
             alert(error.message || 'Không lưu được lựa chọn ngày');
+        });
+    }
+
+    function submitToughGuySelection(target) {
+        if (!currentDeviceId) {
+            return;
+        }
+        postJson('/msAutoV1/toughGuy/select', {
+            actorDeviceId: currentDeviceId,
+            targetDeviceId: target.deviceId,
+            colType: 'toughGuy',
+            connValue: ''
+        }).then(function(state) {
+            renderState(state);
+        }).catch(function(error) {
+            alert(error.message || 'Không lưu được lựa chọn toughGuy');
         });
     }
 
@@ -1268,6 +1323,18 @@
             submitDaySelection(player);
             return;
         }
+
+        if (row.dataset.phase === 'toughGuy') {
+            const player = visiblePlayers().find(function(item) {
+                return item.deviceId === row.dataset.target;
+            });
+            if (!player) {
+                return;
+            }
+            submitToughGuySelection(player);
+            return;
+        }
+
         if (row.dataset.phase === 'night' && isNightSelectionDisabled(appState)) {
             return;
         }
@@ -1593,7 +1660,7 @@
     document.getElementById('showHistory').onclick = function() {
         const popupModal = document.getElementById('popupModal');
         const popupContent = document.getElementById('popupContent');
-        fetch('/ms/showHistory', { method: 'POST' })
+        fetch('/msAutoV1/showHistory', { method: 'POST' })
             .then(response => response.text())
             .then(responseData => {
                 popupContent.innerHTML = responseData;

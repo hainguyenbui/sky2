@@ -38,7 +38,7 @@ public class MaSoiService {
     private final Map<String, String> currentGameHistory = new LinkedHashMap<>();
 
     @Getter
-    private final TreeMap<String, String> autoHistories = new TreeMap<>(Comparator.reverseOrder());
+    private final LinkedList<Map.Entry<String, String>> autoHistories = new LinkedList<>();
     public final Set<String> NOT_SHOW_DAY = new HashSet<>();
 
     @Getter
@@ -683,7 +683,7 @@ public class MaSoiService {
         nightDetails = story.toString();
 
         resolution.oldWithAndBoom.forEach((deviceId, message) -> autoHistory.append(message));
-        autoHistories.put("Đêm " + nightNumber, ObjectUtils.isEmpty(autoHistory.toString()) ? "không ai bị sao hết hẹ hẹ" : autoHistory.toString());
+        autoHistories.addFirst(new AbstractMap.SimpleEntry<>("Đêm " + nightNumber, ObjectUtils.isEmpty(autoHistory.toString()) ? "không ai bị sao hết hẹ hẹ" : autoHistory.toString()));
         currentGameHistory.put("Đêm " + nightNumber++, nightDetails);
         if (resolution.deaths.isEmpty()) {
             adminHistory.add("Không có ai bị giết đêm nay");
@@ -706,7 +706,7 @@ public class MaSoiService {
             }
             eliminateDuringDay(player, eliminatedPlayers, story, true);
             eliminateCupidPartner(player, eliminatedPlayers, story);
-            autoHistories.put("Ngày " + nightNumber, player.getNameMember() + " bị loại<br>");
+            autoHistories.addFirst(new AbstractMap.SimpleEntry<>("Ngày " + nightNumber, player.getNameMember() + " bị loại<br>"));
         }
         eliminatedPlayers.forEach((deviceId, player) -> applyDeathConsequences(deviceId, player, playersByDevice,
                 message -> story.append(message).append("<br>")));

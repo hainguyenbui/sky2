@@ -20,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -112,6 +110,12 @@ public class MaSoiAutoV1Controller {
         return maSoiAutoV1.selectDayTarget(request);
     }
 
+    @PostMapping("/toughGuy/select")
+    @ResponseBody
+    Map<String, Object> selectToughGuy(@RequestBody AutoSelectRequest request) {
+        return maSoiAutoV1.selectToughGuyTarget(request);
+    }
+
     // Người chơi chọn bỏ qua vote ngày (không chọn ai)
     @PostMapping("/day/skip")
     @ResponseBody
@@ -155,10 +159,8 @@ public class MaSoiAutoV1Controller {
     // Admin bật/tắt bảng vote Yes/No – broadcast qua WebSocket tới tất cả người chơi
     @PostMapping("/board/vote")
     @ResponseBody
-    Map<String, Object> toggleVoteBoard(@RequestParam boolean show) {
+    void toggleVoteBoard(@RequestParam boolean show) {
         maSoiAutoV1.setNeedVote(show);//TODO clear return
-        return null;
-//                maSoiAutoV1.setShowVoteBoard(show);
     }
 
     // Người chơi gửi vote Yes/No
@@ -197,12 +199,18 @@ public class MaSoiAutoV1Controller {
         model.addAttribute("voteDurationSeconds", maSoiAutoV1.getVoteDurationSeconds());
         model.addAttribute("showDayBoard", maSoiAutoV1.isShowDayBoard());
         model.addAttribute("showNightBoard", maSoiAutoV1.isShowNightBoard());
-        model.addAttribute("showVoteBoard", maSoiAutoV1.isShowVoteBoard());
+        model.addAttribute("isNeedVote", maSoiAutoV1.isNeedVote());
         model.addAttribute("selectionSeconds", maSoiAutoV1.getSelectionSeconds());
         model.addAttribute("silentSeconds", maSoiAutoV1.getSilentSeconds());
         addCommonAttributes(model);
 
         return "masoiAutoV1/admin";
+    }
+
+    @PostMapping("/showHistory")
+    String showHistory(Model model) {
+        model.addAllAttributes(maSoiService.getGameHistoryData());
+        return "masoiAutoV1/history";
     }
 
     private void addCommonAttributes(Model model) {
