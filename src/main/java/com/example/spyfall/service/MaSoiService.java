@@ -602,6 +602,10 @@ public class MaSoiService {
         target.setDisabledSkill(false);
         target.setKillSkill(9999);
         target.setOldTargetId(null);
+        target.setDescription(roleCatalog.get(0).getDescription());
+        target.setProtectedSkill(0);
+        target.setSuperProtectedSkill(false);
+        target.setConnectSkill(0);
         String message = target.getNameMember() + ": " + target.getRoleDefault() + " bị nguyền thành Sói";
         adminHistory.add(message);
         resolution.events.add(message);

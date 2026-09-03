@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.example.spyfall.common.NightActionType.KILL;
+import static com.example.spyfall.common.NightActionType.RECRUIT;
 import static com.example.spyfall.common.NightActionType.SOI;
 
 @Service
@@ -333,6 +335,10 @@ public class MaSoiAutoV1 {
             action.setRoleId(actor.getId());
             action.setRoleName(removeHtml(actor.getRole()));
             action.setColType(normalizeActionType(request.getColType()));
+            if (RECRUIT.code.equals(action.getColType())
+                    && (!isWolfNightActor(actor.getId()) || !maSoiService.isShowSoiNguyen())) {
+                return errorState("Sói hiện không thể nguyền");
+            }
             action.setConnValue(request.getConnValue());
             if (isSkip) {
                 // Cho phép mọi chức năng ban đêm chọn bỏ qua.
@@ -353,6 +359,11 @@ public class MaSoiAutoV1 {
                 nightSelections.remove(key);
                 broadcastStateLocked();
                 return buildState(actor.getIpData());
+            }
+            // Vấn đề 16: bảng cắn và bảng nguyền của Sói dùng chung 1 lượt chọn nên phải bỏ chọn bảng còn lại.
+            String exclusiveWolfKey = exclusiveWolfActionKey(action);
+            if (!ObjectUtils.isEmpty(exclusiveWolfKey)) {
+                nightSelections.remove(exclusiveWolfKey);
             }
             nightSelections.put(key, action);
             if (allNightSelected() && nightRemainingSeconds > 5) {
@@ -539,7 +550,7 @@ public class MaSoiAutoV1 {
                 .toList();
         state.put("deadDeviceIds", deadIds);
         state.put("nightRoleState", buildNightRoleState(viewerDeviceId));
-        state.put("autoHistories", maSoiService.getAutoHistories());
+        state.put("autoHistories", buildAutoHistoriesView());
         // Vấn đề 11: gửi list roleId không được tự chọn bản thân để FE disable tile tương ứng.
         state.put("selfSelectDisabledRoleIds", SELF_SELECT_DISABLED_ROLE_IDS);
         // Vấn đề 12: gửi map deviceId → oldTargetId để FE biết ai không được chọn lại.
@@ -553,17 +564,26 @@ public class MaSoiAutoV1 {
         return state;
     }
 
+    private List<String> buildAutoHistoriesView() {
+        List<String> result = new ArrayList<>();
+        for (Map.Entry<String, String> entry : maSoiService.getAutoHistories()) {
+            result.add(entry.getKey() + ": " + entry.getValue());
+        }
+        return result;
+    }
+
     // Ví dụ tạm: trả về state riêng theo role của người đang xem bảng đêm.
     private Map<String, Object> buildNightRoleState(String viewerDeviceId) {
         Map<String, Object> nightRoleState = new LinkedHashMap<>();
         List<Map<String, Object>> wolfSelected = new ArrayList<>();
+        List<Map<String, Object>> wolfRecruitSelected = new ArrayList<>();
         String seerResult = "";
         Set<DataMember> killedPlayer = new HashSet<>();
         for (Map.Entry<String, NightActionDto> entry : nightSelections.entrySet()) {
             NightActionDto value = entry.getValue();
             DataMember actor = findPlayer(value.getDeviceId()).orElse(new DataMember());
             DataMember target = findPlayer(value.getTargetDeviceId()).orElse(new DataMember());
-            if ((MaSoiService.WOLF_ROLE_IDS.contains(value.getRoleId()) && value.getRoleId() != 15)) {
+            if (isWolfNightActor(value.getRoleId())) {
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("actorDeviceId", actor.getIpData());
                 if (ObjectUtils.isEmpty(target.getIpData())) {
@@ -576,7 +596,12 @@ public class MaSoiAutoV1 {
                     item.put("isSkip", false);
                 }
                 item.put("actorName", actor.getNameMember() != null ? actor.getNameMember() : "Ẩn danh");
-                wolfSelected.add(item);
+                item.put("colType", normalizeActionType(value.getColType()));
+                if (RECRUIT.code.equals(item.get("colType"))) {
+                    wolfRecruitSelected.add(item);
+                } else {
+                    wolfSelected.add(item);
+                }
             }
             if (actor.getId() == 20 && selectionCountdownSeconds == 0 && !maSoiService.nextDayBlocks.containsKey(20)) {
                 killedPlayer.add(target);
@@ -598,7 +623,7 @@ public class MaSoiAutoV1 {
                     .filter(action -> !SKIP_TARGET.equals(action.getTargetDeviceId()))
                     .toList());
             NightActionDto wolfAction = wolfAction(actions);
-            if (!ObjectUtils.isEmpty(wolfAction.getRoleName())) {
+            if (!ObjectUtils.isEmpty(wolfAction.getRoleName()) && wolfAction.actionType() == SOI) {
                 killedPlayer.add(findPlayer(wolfAction.getTargetDeviceId()).orElse(new DataMember()));
             }
         }
@@ -609,6 +634,8 @@ public class MaSoiAutoV1 {
         }
         if (viewerDeviceId == null || (maSoiService.WOLF_ROLE_IDS.contains(viewer.getId()) && viewer.getId() != 15)) {
             nightRoleState.put("wolfSelected", wolfSelected); // SOI
+            // Vấn đề 16: bảng Nguyền dùng state riêng để FE hiển thị độc lập với bảng cắn.
+            nightRoleState.put("wolfRecruitSelected", wolfRecruitSelected); // SOI NGUYEN
         }
 
         if (viewerDeviceId == null || viewer.getId() == 31) {
@@ -776,6 +803,10 @@ public class MaSoiAutoV1 {
                         && wolfActions.stream()
                         .map(NightActionDto::getTargetDeviceId)
                         .collect(Collectors.toSet())
+                        .size() == 1
+                        && wolfActions.stream()
+                        .map(action -> normalizeActionType(action.getColType()))
+                        .collect(Collectors.toSet())
                         .size() == 1);
 
         boolean actionCheck = (assassinPlayer.isEmpty() || assassinSelected) && wolfSelected;
@@ -814,6 +845,24 @@ public class MaSoiAutoV1 {
 
     private String actionKey(NightActionDto action) {
         return action.getDeviceId() + "|" + normalizeActionType(action.getColType());
+    }
+
+    private String exclusiveWolfActionKey(NightActionDto action) {
+        if (action == null || !isWolfNightActor(action.getRoleId())) {
+            return null;
+        }
+        String actionType = normalizeActionType(action.getColType());
+        if (KILL.code.equals(actionType)) {
+            return action.getDeviceId() + "|" + RECRUIT.code;
+        }
+        if (RECRUIT.code.equals(actionType)) {
+            return action.getDeviceId() + "|" + KILL.code;
+        }
+        return null;
+    }
+
+    private boolean isWolfNightActor(int roleId) {
+        return MaSoiService.WOLF_ROLE_IDS.contains(roleId) && roleId != 15;
     }
 
     private String normalizeActionType(String colType) {
@@ -855,6 +904,10 @@ public class MaSoiAutoV1 {
         List<Map<String, Object>> actions = new ArrayList<>();
         if (viewer.getKillSkill() > 0) {
             actions.add(buildAction("kill", "⚔️ Giết", "", false));
+        }
+        // Vấn đề 16: khi còn nguyền, Sói roleId <= 14 có thêm bảng Nguyền nhưng vẫn chỉ chọn 1 trong 2 bảng.
+        if (isWolfNightActor(viewer.getId()) && maSoiService.isShowSoiNguyen()) {
+            actions.add(buildAction(RECRUIT.code, "🪄 Nguyền", "", false));
         }
         if (viewer.getProtectedSkill() > 0) {
             actions.add(buildAction("prot", "🛡️ Bảo vệ", "", false));
@@ -970,8 +1023,9 @@ public class MaSoiAutoV1 {
 
         }
         if (!ObjectUtils.isEmpty(nightActionDto.getRoleName())) {
+            String selectedWolfAction = normalizeActionType(nightActionDto.getColType());
             nightActionDto.setRoleName(SOI.code);
-            nightActionDto.setColType(SOI.code);
+            nightActionDto.setColType(RECRUIT.code.equals(selectedWolfAction) ? RECRUIT.code : SOI.code);
             actions.add(nightActionDto);
         }
         return nightActionDto;
@@ -1033,7 +1087,7 @@ public class MaSoiAutoV1 {
                 .toList();
 
         boolean isOneVillagerNoDamage = villagers.size() == 1
-                && villagers.get(0).getKillSkill() == 0;
+                && villagers.get(0).getKillSkill() == 0 && villagers.get(0).getId() != 35; // neu thanh nien cứng thì khác
 
         if (alivePlayers.stream().anyMatch(p -> p.getId() == 21)
                 && !villagers.isEmpty()) {

@@ -15,7 +15,7 @@ public class NightActionDto {
     private int roleId;     // roleId của cột
     private String roleName;   // tên cột (tên vai trò thực hiện)
     private String deviceId;
-    private String colType;    // soi | kill | prot | conn
+    private String colType;    // soi | kill | recruit | prot | conn
     private String connValue;  // chỉ có khi colType=conn
 
     public NightActionType actionType() {
