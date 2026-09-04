@@ -623,7 +623,7 @@ public class MaSoiAutoV1 {
                     .filter(action -> !SKIP_TARGET.equals(action.getTargetDeviceId()))
                     .toList());
             NightActionDto wolfAction = wolfAction(actions);
-            if (!ObjectUtils.isEmpty(wolfAction.getRoleName()) && wolfAction.actionType() == SOI) {
+            if (!ObjectUtils.isEmpty(wolfAction.getRoleName()) && (wolfAction.actionType() == SOI || wolfAction.actionType() == RECRUIT)) {
                 killedPlayer.add(findPlayer(wolfAction.getTargetDeviceId()).orElse(new DataMember()));
             }
         }
@@ -1058,6 +1058,10 @@ public class MaSoiAutoV1 {
         boolean allVillager = alivePlayers.stream()
                 .noneMatch(p -> ACTION_COUNTDOWN_ROLE_IDS.contains(p.getId()));
 
+        if (alivePlayers.isEmpty()) {
+            endGame("Thế giới sụp đổ");
+            return;
+        }
         // Dân thắng
         if (allVillager) {
             endGame("Người dân chiến thắng");
@@ -1135,8 +1139,8 @@ public class MaSoiAutoV1 {
     }
 
     private void endGame(String message) {
-        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("End Game:", " " + message));
-        maSoiService.getCurrentGameHistory().put("End Game:", " " + message);
+        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("End Game", " " + message));
+        maSoiService.getCurrentGameHistory().put("End Game", " " + message);
         maSoiService.endGame();
     }
 

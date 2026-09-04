@@ -213,6 +213,11 @@ public class MaSoiAutoV1Controller {
         return "masoiAutoV1/history";
     }
 
+    @PostMapping("/showOrderEditor")
+    String showOrderEditor() {
+        return "masoiAutoV1/orderEditor";
+    }
+
     private void addCommonAttributes(Model model) {
         model.addAttribute("image", maSoiAutoV1.getImage());
     }

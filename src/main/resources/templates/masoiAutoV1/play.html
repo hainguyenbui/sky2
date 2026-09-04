@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ma Sói Auto V1</title>
     <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <link rel="stylesheet" href="/css/masoiAuto-order.css">
     <style>
         .grid-2 { display: flex; flex-direction: column; gap: 12px; }
         .grid-2.tight { gap: 10px; }
@@ -346,6 +347,7 @@
 
     <div style="display: flex; gap: 10px;">
         <button type="button" id="showHistory" class="btn btn-primary" style="flex: 1;">Xem Lịch Sử</button>
+        <button type="button" id="editOrderBtn" class="btn btn-primary" style="flex: 1;">Chỉnh sửa thứ tự</button>
     </div>
 
     <th:block th:if="${notSetup != true and fullSlot != true and member != null}">
@@ -483,6 +485,8 @@
             </div>
         </div>
 
+        <div id="orderModalHost"></div>
+
         <div class="card">
             <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
             <div class="item-list">
@@ -535,7 +539,7 @@
     const canSeeNightSignals = currentIsWolf || currentRoleId === 31;
     let appState = initialState;
     let currentNightRoleState = {};
-    // currentPlayers là map deviceId->name được cập nhật từ state mỗi khi bảng bật
+    // currentPlayers là map deviceId->name hiển thị ở bảng ngày/đêm (thường là người còn sống)
     let currentPlayers = Object.assign({}, initialPlayers || {});
     let selectedNightTargets = {};
     let pendingNightTarget = null;
@@ -606,16 +610,19 @@
         const nightTimer = document.getElementById('nightTimer');
         const nightTimerInline = document.getElementById('nightTimerInline');
         const toughGuyTimer = document.getElementById('toughGuyTimer');
-        dayTimer.textContent = fmtSeconds(day);
-        nightTimer.textContent = fmtSeconds(displayNight);
+        // Vấn đề 21: người chết refresh trang không có board timer DOM, cần guard để không vỡ JS và vẫn init chat.
+        if (dayTimer) { dayTimer.textContent = fmtSeconds(day); }
+        if (nightTimer) { nightTimer.textContent = fmtSeconds(displayNight); }
         if (nightTimerInline) { nightTimerInline.textContent = fmtSeconds(night); }
         if (toughGuyTimer) { toughGuyTimer.textContent = fmtSeconds(toughGuyRemainingSeconds); }
         const votedPlayer = document.getElementById('votedPlayer');
-        votedPlayer.textContent = state.votedPlayer;
-        dayTimer.className = 'timer-value' + (day <= 5 ? ' danger' : (day <= 15 ? ' warn' : ''));
-        nightTimer.className = 'timer-value' + (displayNight <= 5 ? ' danger' : (displayNight <= 15 ? ' warn' : ''));
-        document.getElementById('dayTimerSub').textContent = 'Đã chọn ' + dayCount + '/' + aliveCount;
-        document.getElementById('nightTimerSub').textContent = 'Đã chọn ' + nightCount + '/' + actionCount + (isNightSelectionDisabled(state) ? ' • Đã tắt chọn đêm' : '');
+        if (votedPlayer) { votedPlayer.textContent = state.votedPlayer; }
+        if (dayTimer) { dayTimer.className = 'timer-value' + (day <= 5 ? ' danger' : (day <= 15 ? ' warn' : '')); }
+        if (nightTimer) { nightTimer.className = 'timer-value' + (displayNight <= 5 ? ' danger' : (displayNight <= 15 ? ' warn' : '')); }
+        const dayTimerSub = document.getElementById('dayTimerSub');
+        const nightTimerSub = document.getElementById('nightTimerSub');
+        if (dayTimerSub) { dayTimerSub.textContent = 'Đã chọn ' + dayCount + '/' + aliveCount; }
+        if (nightTimerSub) { nightTimerSub.textContent = 'Đã chọn ' + nightCount + '/' + actionCount + (isNightSelectionDisabled(state) ? ' • Đã tắt chọn đêm' : ''); }
         const container = document.getElementById("autoHistories");
         if (!container) {
             return;
@@ -633,11 +640,14 @@
     }
 
     function visiblePlayers() {
-        // Dùng currentPlayers (được cập nhật từ state mỗi khi bảng bật) thay vì initialPlayers cố định
         const source = currentPlayers;
-        return Object.keys(source).map(function(deviceId) {
+        const rows = Object.keys(source).map(function(deviceId) {
             return { deviceId: deviceId, name: source[deviceId], isDead: false };
         });
+        if (!window.MaSoiOrder) {
+            return rows;
+        }
+        return window.MaSoiOrder.applyViewerOrder(rows);
     }
 
     function daySelectionsByTarget(state) {
@@ -1109,11 +1119,17 @@
         // Cập nhật danh sách người chơi khi server gửi kèm (xảy ra khi bảng được bật)
         if (appState.players && typeof appState.players === 'object') {
             currentPlayers = appState.players;
+            if (window.MaSoiOrder) {
+                window.MaSoiOrder.mergeKnownPlayers(appState.players);
+            }
         }
 
         // Cập nhật isDead mid-game từ danh sách deadDeviceIds server gửi về
         if (Array.isArray(appState.deadDeviceIds) && currentDeviceId) {
             currentIsDead = appState.deadDeviceIds.indexOf(currentDeviceId) >= 0;
+        }
+        if (window.MaSoiOrder) {
+            window.MaSoiOrder.updateDeadFlags(appState.deadDeviceIds || []);
         }
 
         const stateKey = JSON.stringify({
@@ -1130,6 +1146,8 @@
             nightSel: selectedNightTargets,
             wolfSel: normalizeWolfSelections(appState, 'wolfSelected', 'wolfSelections'),
             wolfRecruitSel: normalizeWolfSelections(appState, 'wolfRecruitSelected', 'wolfRecruitSelections'),
+            viewerOrder: window.MaSoiOrder ? window.MaSoiOrder.getOrderState() : {},
+            viewerActions: viewerActionsFromState(appState),
             players: currentPlayers,
             showDay: appState.showDayBoard,
             showNight: appState.showNightBoard,
@@ -1682,6 +1700,18 @@
             return;
         }
         renderState(initialState);
+        if (window.MaSoiOrder) {
+            // Vấn đề 20: tách toàn bộ logic order sang file JS/CSS riêng, play.html chỉ giữ hook khởi tạo.
+            window.MaSoiOrder.init({
+                orderApiBase: '/msAuto/order',
+                templateUrl: '/msAutoV1/showOrderEditor',
+                onOrderUpdated: function() {
+                    lastStateKey = '';
+                    renderState(appState || {});
+                },
+                handleJsonResponse: handleJsonResponse
+            });
+        }
         refreshState();
         startFallbackPolling();
         connectWs();
@@ -1698,6 +1728,7 @@
         }
     });
 </script>
+<script src="/js/masoiAuto-order.js"></script>
 <script>
     document.getElementById('showHistory').onclick = function() {
         const popupModal = document.getElementById('popupModal');

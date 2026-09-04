@@ -1,0 +1,46 @@
+.order-list {
+    max-height: 360px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 2px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.45);
+    cursor: grab;
+}
+
+.order-item.dragging {
+    opacity: 0.5;
+}
+
+.order-item.dead {
+    opacity: 0.72;
+}
+
+.order-item-name {
+    font-weight: 700;
+}
+
+.order-item-meta {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+.order-item-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: rgba(239, 68, 68, 0.16);
+    color: #fca5a5;
+}
