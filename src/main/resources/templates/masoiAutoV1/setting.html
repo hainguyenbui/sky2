@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<body>
+<th:block th:fragment="styles">
+    <style>
+        .feature-dock {
+            position: fixed;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1200;
+        }
+        .feature-dock-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(15,23,42,0.85);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.34);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 8px;
+            position: relative;
+        }
+        .feature-dock-btn:hover { transform: translateY(-1px); border-color: rgba(96,165,250,0.6); }
+        .feature-dock-btn.active { border-color: rgba(96,165,250,0.8); background: rgba(30,41,59,0.95); }
+        .feature-dock-btn img { width: 36px; height: 36px; display: block; }
+        .feature-dock-btn.has-unread::after {
+            content: "";
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 11px;
+            height: 11px;
+            border-radius: 999px;
+            background: #fb7185;
+            box-shadow: 0 0 0 2px rgba(15,23,42,0.9), 0 0 10px rgba(251,113,133,0.7);
+            animation: chatUnreadPulse 1.6s ease-in-out infinite;
+        }
+        @keyframes chatUnreadPulse {
+            0%, 100% { transform: scale(1); opacity: 0.92; }
+            50% { transform: scale(1.18); opacity: 1; }
+        }
+        .feature-panel {
+            position: fixed;
+            top: 50%;
+            right: 80px;
+            transform: translateY(-50%);
+            width: min(420px, calc(100vw - 110px));
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: rgba(15,23,42,0.96);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+            padding: 14px;
+            z-index: 1190;
+            display: none;
+        }
+        .feature-panel.open { display: block; }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            background: rgba(30,41,59,0.32);
+            margin-bottom: 8px;
+        }
+        .setting-row-label { font-weight: 700; }
+        .setting-toggle {
+            width: 48px;
+            height: 28px;
+            border-radius: 999px;
+            border: 1px solid var(--card-border);
+            background: rgba(30,41,59,0.8);
+            position: relative;
+            cursor: pointer;
+        }
+        .setting-toggle::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            background: #94a3b8;
+            transition: all 0.2s ease;
+        }
+        .setting-toggle.on { background: rgba(59,130,246,0.8); }
+        .setting-toggle.on::after { left: 23px; background: #fff; }
+        .setting-value { color: var(--text-muted); font-size: 0.8rem; font-weight: 700; }
+        .inline-hidden { display: none !important; }
+        @media (max-width: 760px) {
+            .feature-dock { right: 8px; gap: 8px; }
+            .feature-dock-btn { width: 48px; height: 48px; border-radius: 14px; }
+            .feature-dock-btn img { width: 30px; height: 30px; }
+            .feature-panel { right: 62px; width: min(360px, calc(100vw - 80px)); }
+        }
+    </style>
+</th:block>
+
+<th:block th:fragment="html">
+    <div id="featureDock" class="feature-dock">
+        <button type="button" id="dockSettingBtn" class="feature-dock-btn" title="Setting">
+            <img src="/cute-setting.svg" alt="Setting">
+        </button>
+        <button type="button" id="dockChatBtn" class="feature-dock-btn" title="Chat" style="display:none;">
+            <img src="/cute-chat.svg" alt="Chat">
+        </button>
+        <button type="button" id="dockFunctionBtn" class="feature-dock-btn" title="Chức năng" style="display:none;">
+            <img src="/cute-function.svg" alt="Function">
+        </button>
+    </div>
+
+    <div id="settingPanel" class="feature-panel">
+        <div class="section-title" style="margin-bottom: 10px;">
+            <h3>Setting</h3>
+            <small id="wsStatus" class="status-pill ws-badge warn">Đang kết nối</small>
+        </div>
+        <div id="settingRows"></div>
+    </div>
+</th:block>
+
+<th:block th:fragment="script">
+    <script>
+        (function() {
+            if (window.SettingComponent) {
+                return;
+            }
+            window.settingsLoaded = false;
+            const contextInitialState = (window.__msAutoCtx && window.__msAutoCtx.initialState) || {};
+
+            function normalizeViewerSetting(raw) {
+                const normalized = {
+                    chatOn: false,
+                    functionOn: false
+                };
+                if (!raw || typeof raw !== 'object') {
+                    return normalized;
+                }
+                normalized.chatOn = !!raw.chatOn;
+                normalized.functionOn = !!raw.functionOn;
+                return normalized;
+            }
+
+            window.SettingComponent = {
+                state: normalizeViewerSetting(contextInitialState.viewerSetting),
+                init: function() {
+                    this.render();
+                    this.bind();
+                    this.apply();
+                    return fetch('/msAutoV1/settings')
+                        .then(handleJsonResponse)
+                        .then(function(serverSetting) {
+                            window.SettingComponent.applyServerSetting(serverSetting);
+                        })
+                        .catch(function(err) {
+                            console.warn('Cannot load setting', err);
+                        })
+                        .finally(function() {
+                            window.settingsLoaded = true;
+                        });
+                },
+                bind: function() {
+                    const self = this;
+                    document.getElementById('dockSettingBtn').addEventListener('click', function() {
+                        self.togglePanel('setting');
+                    });
+                    document.getElementById('dockChatBtn').addEventListener('click', function() {
+                        self.togglePanel('chat');
+                    });
+                    document.getElementById('dockFunctionBtn').addEventListener('click', function() {
+                        self.togglePanel('functions');
+                    });
+                    document.getElementById('settingRows').addEventListener('click', function(event) {
+                        const toggle = event.target.closest('[data-setting-key]');
+                        if (!toggle) {
+                            return;
+                        }
+                        const key = toggle.dataset.settingKey;
+                        if (key === 'chat') {
+                            self.state.chatOn = !self.state.chatOn;
+                        } else if (key === 'function') {
+                            self.state.functionOn = !self.state.functionOn;
+                        }
+                        self.render();
+                        self.apply();
+                        self.save();
+                    });
+                    document.addEventListener('click', function(event) {
+                        const dock = document.getElementById('featureDock');
+                        const panels = document.querySelectorAll('.feature-panel');
+                        const isInDock = dock && dock.contains(event.target);
+                        const isInPanel = Array.from(panels).some(function(panel) { return panel.contains(event.target); });
+                        if (isInDock || isInPanel) {
+                            return;
+                        }
+                        self.closePanel('setting');
+                        self.closePanel('chat');
+                        self.closePanel('functions');
+                    });
+                },
+                save: function() {
+                    return fetch('/msAutoV1/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chatOn: !!this.state.chatOn,
+                            functionOn: !!this.state.functionOn
+                        })
+                    })
+                        .then(handleJsonResponse)
+                        .then(function(saved) {
+                            window.SettingComponent.applyServerSetting(saved);
+                        })
+                        .catch(function(err) {
+                            console.warn('Cannot save setting', err);
+                        });
+                },
+                applyServerSetting: function(raw) {
+                    const next = normalizeViewerSetting(raw);
+                    this.state = next;
+                    this.render();
+                    this.apply();
+                },
+                render: function() {
+                    const rows = document.getElementById('settingRows');
+                    if (!rows) {
+                        return;
+                    }
+                    rows.innerHTML =
+                        '<div class="setting-row">' +
+                            '<div>' +
+                                '<div class="setting-row-label">Chat</div>' +
+                                '<div class="setting-value">' + (this.state.chatOn ? 'ON' : 'OFF') + '</div>' +
+                            '</div>' +
+                            '<button type="button" class="setting-toggle' + (this.state.chatOn ? ' on' : '') + '" data-setting-key="chat"></button>' +
+                        '</div>' +
+                        '<div class="setting-row">' +
+                            '<div>' +
+                                '<div class="setting-row-label">Chức năng</div>' +
+                                '<div class="setting-value">' + (this.state.functionOn ? 'ON' : 'OFF') + '</div>' +
+                            '</div>' +
+                            '<button type="button" class="setting-toggle' + (this.state.functionOn ? ' on' : '') + '" data-setting-key="function"></button>' +
+                        '</div>';
+                    document.getElementById('dockChatBtn').style.display = this.state.chatOn ? '' : 'none';
+                    document.getElementById('dockFunctionBtn').style.display = this.state.functionOn ? '' : 'none';
+                    if (!this.state.chatOn && window.setChatUnreadIndicator) {
+                        window.setChatUnreadIndicator(false);
+                    }
+                },
+                apply: function() {
+                    if (window.ChatComponent) {
+                        window.ChatComponent.applyMode(this.state.chatOn);
+                    }
+                    if (window.FunctionsComponent) {
+                        window.FunctionsComponent.applyMode(this.state.functionOn);
+                    }
+                    if (!this.state.chatOn) {
+                        this.closePanel('chat');
+                    }
+                    if (!this.state.functionOn) {
+                        this.closePanel('functions');
+                    }
+                },
+                closePanel: function(name) {
+                    const panel = document.getElementById(name + 'Panel');
+                    if (panel) {
+                        panel.classList.remove('open');
+                    }
+                    const buttonMap = {
+                        setting: 'dockSettingBtn',
+                        chat: 'dockChatBtn',
+                        functions: 'dockFunctionBtn'
+                    };
+                    const button = document.getElementById(buttonMap[name]);
+                    if (button) {
+                        button.classList.remove('active');
+                    }
+                },
+                togglePanel: function(name) {
+                    if (name === 'chat' && !this.state.chatOn) {
+                        return;
+                    }
+                    if (name === 'functions' && !this.state.functionOn) {
+                        return;
+                    }
+                    ['setting', 'chat', 'functions'].forEach(function(panelName) {
+                        if (panelName === name) {
+                            return;
+                        }
+                        window.SettingComponent.closePanel(panelName);
+                    });
+                    const panel = document.getElementById(name + 'Panel');
+                    const buttonMap = {
+                        setting: 'dockSettingBtn',
+                        chat: 'dockChatBtn',
+                        functions: 'dockFunctionBtn'
+                    };
+                    const button = document.getElementById(buttonMap[name]);
+                    if (!panel || !button) {
+                        return;
+                    }
+                    const opening = !panel.classList.contains('open');
+                    panel.classList.toggle('open');
+                    button.classList.toggle('active', opening);
+                    if (name === 'chat' && opening && window.setChatUnreadIndicator) {
+                        window.setChatUnreadIndicator(false);
+                    }
+                }
+            };
+        })();
+    </script>
+</th:block>
+</body>
+</html>

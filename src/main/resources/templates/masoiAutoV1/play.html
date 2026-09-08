@@ -274,46 +274,6 @@
         @media (max-width: 760px) {
             .grid-2, .meta-grid, .config-row { grid-template-columns: 1fr; }
         }
-        /* Chat: popup thông báo có message mới – hiện góc dưới phải, không block interaction */
-        .chat-notify {
-            position: fixed;
-            bottom: 24px;
-            right: 20px;
-            background: rgba(15,23,42,0.92);
-            border: 1px solid rgba(96,165,250,0.45);
-            border-radius: 12px;
-            padding: 10px 16px;
-            font-size: 0.84rem;
-            font-weight: 700;
-            color: #93c5fd;
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        }
-        .chat-notify.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .chat-section { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
-        .chat-box { border-radius: 14px; border: 1px solid var(--card-border); background: rgba(15,23,42,0.55); overflow: hidden; }
-        .chat-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; cursor: pointer; user-select: none; }
-        .chat-title { font-weight: 800; font-size: 0.92rem; }
-        .chat-toggle { font-size: 1.1rem; color: var(--text-muted); }
-        /* Chat: vùng message giới hạn ~5-6 dòng, có scrollbar dọc */
-        .chat-messages { height: 148px; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; scroll-behavior: smooth; border-top: 1px solid var(--card-border); }
-        .chat-msg { font-size: 0.82rem; color: var(--text-primary); line-height: 1.45; word-break: break-word; }
-        /* Chat: trạng thái thu nhỏ chỉ hiện 1 dòng message cuối */
-        .chat-preview { padding: 6px 14px; font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid var(--card-border); }
-        .chat-input-row { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--card-border); }
-        .chat-input { flex: 1; background: rgba(30,41,59,0.6); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 10px; color: var(--text-primary); font-size: 0.84rem; outline: none; }
-        .chat-input:focus { border-color: rgba(96,165,250,0.6); }
-        .chat-send-btn { padding: 8px 14px; border-radius: 8px; border: none; background: rgba(59,130,246,0.75); color: #fff; font-weight: 700; cursor: pointer; font-size: 0.84rem; }
-        .chat-send-btn:hover { background: rgba(59,130,246,1); }
-        .chat-input:disabled { opacity: 0.6; cursor: not-allowed; }
-        .chat-send-btn:disabled { opacity: 0.55; cursor: not-allowed; background: rgba(100,116,139,0.55); }
         .role-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; }
         .role-card-soi { border-left: 4px solid var(--danger); }
         .role-card-dan { border-left: 4px solid var(--success); }
@@ -487,22 +447,9 @@
 
         <div id="orderModalHost"></div>
 
-        <div class="card">
-            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
-            <div class="item-list">
-                <th:block th:each="item : ${showRoles}">
-                    <div th:classappend="${#lists.contains(idSoi, item.id)} ? 'role-card role-card-soi' : (${#lists.contains(idOutsider, item.id)} ? 'role-card role-card-other' : 'role-card role-card-dan')">
-                    <span class="role-title"
-                          th:classappend="${#lists.contains(idSoi, item.id)} ? '' : (${#lists.contains(idOutsider, item.id)} ? 'style=color:#fbbf24' : '')"
-                          th:text="${item.role + (item.id == '1' or item.id == '30' or item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
-                    </div>
-                </th:block>
-            </div>
-        </div>
-
-        <!-- Chat: container được render bằng JS sau khi load danh sách chat từ backend -->
-        <div id="chatSection" class="chat-section"></div>
+        <th:block th:replace="~{masoiAutoV1/chucnang :: html}"></th:block>
+        <th:block th:replace="~{masoiAutoV1/chat :: html}"></th:block>
+        <th:block th:replace="~{masoiAutoV1/setting :: html}"></th:block>
 
     </th:block>
 
@@ -549,6 +496,11 @@
     let wsSubscribed = false;
     let statePoller = null;
     let lastStateKey = '';
+    window.__msAutoCtx = {
+        initialState: initialState,
+        memberBox: memberBox,
+        currentIsDead: currentIsDead
+    };
 
     function startFallbackPolling() {
         if (statePoller) {
@@ -580,6 +532,9 @@
 
     function setWsStatus(text, kind) {
         const el = document.getElementById('wsStatus');
+        if (!el) {
+            return;
+        }
         el.textContent = text;
         el.className = 'status-pill ws-badge ' + kind;
     }
@@ -1112,6 +1067,9 @@
 
     function renderState(state) {
         appState = normalizeState(state);
+        if (window.settingsLoaded && appState.viewerSetting && window.SettingComponent) {
+            window.SettingComponent.applyServerSetting(appState.viewerSetting);
+        }
         currentNightRoleState = (appState.nightRoleState && typeof appState.nightRoleState === 'object')
             ? appState.nightRoleState
             : {};
@@ -1128,6 +1086,7 @@
         if (Array.isArray(appState.deadDeviceIds) && currentDeviceId) {
             currentIsDead = appState.deadDeviceIds.indexOf(currentDeviceId) >= 0;
         }
+        window.__msAutoCtx.currentIsDead = currentIsDead;
         if (window.MaSoiOrder) {
             window.MaSoiOrder.updateDeadFlags(appState.deadDeviceIds || []);
         }
@@ -1153,7 +1112,9 @@
             showNight: appState.showNightBoard,
             showVote: appState.showVoteBoard,
             toughGuy: appState.toughGuyRemainingSeconds,
-            dead: currentIsDead
+            dead: currentIsDead,
+            settingChat: appState.viewerSetting ? !!appState.viewerSetting.chatOn : null,
+            settingFunction: appState.viewerSetting ? !!appState.viewerSetting.functionOn : null
         });
         if (stateKey === lastStateKey) {
             return;
@@ -1183,7 +1144,9 @@
         if (appState.showNightBoard && !currentIsDead) { renderNightPanels(appState); }
         if (appState.showVoteBoard  && !currentIsDead) { renderVoteBoard(appState); }
         if (appState.showToughGuy   && !currentIsDead && currentRoleId == 35) { renderToughGuyBoard(appState); }
-        syncChatComposerState();
+        if (window.syncChatComposerState) {
+            window.syncChatComposerState();
+        }
     }
 
     function refreshState() {
@@ -1438,11 +1401,9 @@
             }
             wsSubscribed = true;
             sendStomp('SUBSCRIBE\nid:sub-auto-v1\ndestination:/ms/autoV1/state\n\n');
-            // Chat: sau khi CONNECTED, subscribe lại các topic chat đã đăng ký (trường hợp reconnect)
-            Object.keys(chatSubscribed).forEach(function(key) {
-                chatSubscribed[key] = false;
-                subscribeChatTopic(key);
-            });
+            if (window.reconnectChatSubscriptions) {
+                window.reconnectChatSubscriptions();
+            }
             setWsStatus('Đã kết nối', 'ok');
             return;
         }
@@ -1459,8 +1420,8 @@
                 return;
             }
             // Chat: nếu payload có field "key" thì đây là message chat, xử lý riêng
-            if (payload.key && chatState[payload.key]) {
-                handleChatMessage(payload);
+            if (payload.key && window.hasChatKey && window.hasChatKey(payload.key) && window.handleChatMessage) {
+                window.handleChatMessage(payload);
                 return;
             }
             if (payload.state) {
@@ -1508,196 +1469,12 @@
         };
     }
 
-    // ===================== CHAT =====================
-    // Chat: lưu trạng thái các chat box: key → { expanded, messages, lastMessage, title, color }
-    const chatState = {};
-    // Chat: lưu sub id WebSocket đã subscribe để tránh subscribe lại
-    const chatSubscribed = {};
-    // Chat: tên người gửi lấy từ data attribute của container
-    const currentMemberName = memberBox ? (memberBox.dataset.memberName || 'Ẩn danh') : 'Ẩn danh';
-
-    // Chat: tạo HTML cho 1 chat box theo key và trạng thái expanded/collapsed
-    function buildChatBoxHtml(key) {
-        const s = chatState[key];
-        if (!s) return '';
-        const expanded = s.expanded;
-        // Vấn đề 18: người chết vẫn xem chat, nhưng disable khung nhập và nút gửi.
-        const disabledInputAttr = currentIsDead ? ' disabled' : '';
-        const inputPlaceholder = currentIsDead ? 'Bạn đã bị loại nên không thể chat' : 'Nhập tin nhắn...';
-        const headerStyle = 'border-bottom: 2px solid ' + s.color + ';';
-        const titleStyle = 'color:' + s.color + ';';
-        // Chat: phần messages chỉ hiện khi expanded
-        const messagesHtml = expanded
-            ? '<div class="chat-messages" id="chatMsgs-' + key + '">' +
-              s.messages.map(function(m) { return '<div class="chat-msg">' + escapeHtml(m) + '</div>'; }).join('') +
-              '</div>' +
-              '<div class="chat-input-row">' +
-              '<input class="chat-input" id="chatInput-' + key + '" type="text" placeholder="' + escapeAttr(inputPlaceholder) + '" maxlength="200"' + disabledInputAttr + '>' +
-              '<button class="chat-send-btn" data-chat-send="' + key + '"' + disabledInputAttr + '>→</button>' +
-              '</div>'
-            // Chat: khi thu nhỏ chỉ hiện 1 dòng message cuối
-            : '<div class="chat-preview">' + escapeHtml(s.lastMessage || 'Chưa có tin nhắn') + '</div>';
-        return '<div class="chat-box" id="chatBox-' + key + '">' +
-            '<div class="chat-header" data-chat-toggle="' + key + '" style="' + headerStyle + '">' +
-                '<span class="chat-title" style="' + titleStyle + '">' + escapeHtml(s.title) + '</span>' +
-                '<span class="chat-toggle">' + (expanded ? '−' : '+') + '</span>' +
-            '</div>' +
-            messagesHtml +
-        '</div>';
-    }
-
-    // Chat: render lại 1 chat box cụ thể và scroll xuống cuối nếu đang expanded
-    function rerenderChatBox(key) {
-        const box = document.getElementById('chatBox-' + key);
-        if (!box) return;
-        const parent = box.parentNode;
-        const newBox = document.createElement('div');
-        newBox.innerHTML = buildChatBoxHtml(key);
-        parent.replaceChild(newBox.firstChild, box);
-        // Chat: tự động scroll xuống cuối khi có message mới
-        if (chatState[key].expanded) {
-            const msgs = document.getElementById('chatMsgs-' + key);
-            if (msgs) msgs.scrollTop = msgs.scrollHeight;
-        }
-    }
-
-    function syncChatComposerState() {
-        const disabled = !!currentIsDead;
-        const placeholder = disabled ? 'Bạn đã bị loại nên không thể chat' : 'Nhập tin nhắn...';
-        document.querySelectorAll('.chat-input').forEach(function(input) {
-            input.disabled = disabled;
-            input.placeholder = placeholder;
-        });
-        document.querySelectorAll('.chat-send-btn').forEach(function(button) {
-            button.disabled = disabled;
-        });
-    }
-
-    // Chat: load danh sách chat từ backend, tạo chat box cho từng key có quyền
-    function initChats() {
-        const section = document.getElementById('chatSection');
-        if (!section) return;
-        fetch('/msAutoV1/chat/list')
-            .then(handleJsonResponse)
-            .then(function(list) {
-                if (!list || !list.length) return;
-                list.forEach(function(chat) {
-                    const key = chat.key;
-                    // Chat: khởi tạo state cho từng chat box
-                    chatState[key] = {
-                        title: chat.title,
-                        color: chat.color,
-                        messages: chat.messages || [],
-                        lastMessage: chat.lastMessage || '',
-                        expanded: true
-                    };
-                    // Chat: tạo DOM cho chat box
-                    const wrapper = document.createElement('div');
-                    wrapper.innerHTML = buildChatBoxHtml(key);
-                    section.appendChild(wrapper.firstChild);
-                    // Chat: scroll xuống cuối sau khi render
-                    const msgs = document.getElementById('chatMsgs-' + key);
-                    if (msgs) msgs.scrollTop = msgs.scrollHeight;
-                    // Chat: subscribe WebSocket topic riêng cho từng key
-                    subscribeChatTopic(key);
-                });
-            })
-            .catch(function(err) { console.warn('Chat init error', err); });
-    }
-
-    // Chat: subscribe STOMP topic /topic/chat/{key} để nhận message realtime
-    function subscribeChatTopic(key) {
-        if (chatSubscribed[key]) return;
-        chatSubscribed[key] = true;
-        // Chat: gửi SUBSCRIBE frame qua WebSocket STOMP hiện tại
-        sendStomp('SUBSCRIBE\nid:sub-chat-' + key + '\ndestination:/topic/chat/' + key + '\n\n');
-    }
-
-    // Chat: biến timer để clear timeout popup trước khi hiện popup mới
-    let chatNotifyTimer = null;
-
-    // Chat: hiện popup thông báo có message mới, tự ẩn sau 3s
-    // Chỉ hiện cho role có quyền nhận message của key đó (tức là chatState[key] tồn tại)
-    function showChatNotify() {
-        const el = document.getElementById('chatNotify');
-        if (!el) return;
-        // Chat: nếu đang hiện rồi thì reset timer, không flash lại
-        if (chatNotifyTimer) {
-            clearTimeout(chatNotifyTimer);
-        } else {
-            el.classList.add('show');
-        }
-        // Chat: tự ẩn sau 3 giây
-        chatNotifyTimer = setTimeout(function() {
-            el.classList.remove('show');
-            chatNotifyTimer = null;
-        }, 3000);
-    }
-
-    // Chat: xử lý message nhận được từ WebSocket cho các topic chat
-    function handleChatMessage(payload) {
-        const key = payload.key;
-        if (!key || !chatState[key]) return;
-        const msg = payload.message || '';
-        if (!msg) return;
-        // Chat: thêm message mới vào state
-        chatState[key].messages.push(msg);
-        chatState[key].lastMessage = msg;
-        // Chat: re-render chat box – nếu thu nhỏ thì cập nhật preview, nếu mở thì thêm dòng mới
-        rerenderChatBox(key);
-        // Chat: hiện popup thông báo – chỉ role có quyền mới nhận được message nên popup chỉ hiện đúng người
-        showChatNotify();
-    }
-
-    // Chat: gửi message qua API POST /msAutoV1/chat/send
-    function sendChatMessage(key) {
-        if (currentIsDead) return;
-        const input = document.getElementById('chatInput-' + key);
-        if (!input) return;
-        if (input.disabled) return;
-        const text = input.value.trim();
-        if (!text) return;
-        input.value = '';
-        fetch('/msAutoV1/chat/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: key, senderName: currentMemberName, message: text })
-        }).catch(function(err) { console.warn('Chat send error', err); });
-    }
-
-    // Chat: xử lý click toggle và send trong khu vực chat
-    document.addEventListener('click', function(event) {
-        // Chat: toggle phóng to / thu nhỏ chat box
-        const toggleEl = event.target.closest('[data-chat-toggle]');
-        if (toggleEl) {
-            const key = toggleEl.dataset.chatToggle;
-            if (chatState[key]) {
-                chatState[key].expanded = !chatState[key].expanded;
-                rerenderChatBox(key);
-            }
-            return;
-        }
-        // Chat: click nút gửi message
-        const sendEl = event.target.closest('[data-chat-send]');
-        if (sendEl) {
-            sendChatMessage(sendEl.dataset.chatSend);
-            return;
-        }
-    });
-
-    // Chat: gửi message khi nhấn Enter trong input
-    document.addEventListener('keydown', function(event) {
-        if (event.key !== 'Enter') return;
-        const input = event.target;
-        if (!input.classList.contains('chat-input')) return;
-        const key = input.id.replace('chatInput-', '');
-        sendChatMessage(key);
-    });
-    // ===================== END CHAT =====================
-
     document.addEventListener('DOMContentLoaded', function() {
         if (!showGame) {
             return;
+        }
+        if (window.SettingComponent) {
+            window.SettingComponent.init();
         }
         renderState(initialState);
         if (window.MaSoiOrder) {
@@ -1716,7 +1493,9 @@
         startFallbackPolling();
         connectWs();
         // Chat: khởi tạo các chat box sau khi WS sẵn sàng
-        initChats();
+        if (window.initChats) {
+            window.initChats();
+        }
         document.querySelector('.container').addEventListener('click', handleBoardClick);
         document.getElementById('seerModal').addEventListener('click', function(event) {
             if (event.target === this) {
@@ -1728,6 +1507,9 @@
         }
     });
 </script>
+<th:block th:replace="~{masoiAutoV1/chucnang :: script}"></th:block>
+<th:block th:replace="~{masoiAutoV1/chat :: script}"></th:block>
+<th:block th:replace="~{masoiAutoV1/setting :: script}"></th:block>
 <script src="/js/masoiAuto-order.js"></script>
 <script>
     document.getElementById('showHistory').onclick = function() {
@@ -1749,8 +1531,6 @@
         if (event.target == modal) { modal.style.display = 'none'; }
     };
 </script>
-<!-- Chat: popup thông báo có message mới, hiện góc dưới phải -->
-<div id="chatNotify" class="chat-notify">💬 Có tin nhắn mới!</div>
 
 </body>
 </html>

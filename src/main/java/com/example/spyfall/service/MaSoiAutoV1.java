@@ -3,6 +3,7 @@ package com.example.spyfall.service;
 import com.example.spyfall.common.AutoSelectRequest;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.NightActionDto;
+import com.example.spyfall.common.SettingDto;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -84,6 +85,8 @@ public class MaSoiAutoV1 {
     private final Map<String, NightActionDto> nightSelections = new LinkedHashMap<>();
     // Map deviceId → "yes" hoặc "no" cho bảng vote
     private final Map<String, String> voteSelections = new LinkedHashMap<>();
+    // Setting theo từng thiết bị: deviceId -> setting riêng.
+    private final Map<String, SettingDto> settingsByDeviceId = new LinkedHashMap<>();
 
     private boolean dayTimeoutSent;
     private boolean nightTimeoutSent;
@@ -154,6 +157,26 @@ public class MaSoiAutoV1 {
     public Map<String, Object> getState(String viewerDeviceId) {
         synchronized (lock) {
             return buildState(viewerDeviceId);
+        }
+    }
+
+    public SettingDto getSetting(String deviceId) {
+        synchronized (lock) {
+            return cloneSetting(resolveViewerSetting(deviceId));
+        }
+    }
+
+    public SettingDto updateSetting(String deviceId, SettingDto settingDto) {
+        synchronized (lock) {
+            if (ObjectUtils.isEmpty(deviceId)) {
+                SettingDto fallback = settingDto == null ? defaultSetting() : settingDto;
+                fallback.normalize();
+                return cloneSetting(fallback);
+            }
+            SettingDto normalized = settingDto == null ? defaultSetting() : settingDto;
+            normalized.normalize();
+            settingsByDeviceId.put(deviceId, cloneSetting(normalized));
+            return cloneSetting(settingsByDeviceId.get(deviceId));
         }
     }
 
@@ -551,6 +574,9 @@ public class MaSoiAutoV1 {
         state.put("deadDeviceIds", deadIds);
         state.put("nightRoleState", buildNightRoleState(viewerDeviceId));
         state.put("autoHistories", buildAutoHistoriesView());
+        if (!ObjectUtils.isEmpty(viewerDeviceId)) {
+            state.put("viewerSetting", cloneSetting(resolveViewerSetting(viewerDeviceId)));
+        }
         // Vấn đề 11: gửi list roleId không được tự chọn bản thân để FE disable tile tương ứng.
         state.put("selfSelectDisabledRoleIds", SELF_SELECT_DISABLED_ROLE_IDS);
         // Vấn đề 12: gửi map deviceId → oldTargetId để FE biết ai không được chọn lại.
@@ -562,6 +588,24 @@ public class MaSoiAutoV1 {
         }
         state.put("playerOldTargets", playerOldTargets);
         return state;
+    }
+
+    private SettingDto resolveViewerSetting(String viewerDeviceId) {
+        if (ObjectUtils.isEmpty(viewerDeviceId)) {
+            return defaultSetting();
+        }
+        return settingsByDeviceId.computeIfAbsent(viewerDeviceId, key -> defaultSetting());
+    }
+
+    private SettingDto defaultSetting() {
+        return new SettingDto(false, false);
+    }
+
+    private SettingDto cloneSetting(SettingDto source) {
+        if (source == null) {
+            return defaultSetting();
+        }
+        return new SettingDto(source.isChatOn(), source.isFunctionOn());
     }
 
     private List<String> buildAutoHistoriesView() {

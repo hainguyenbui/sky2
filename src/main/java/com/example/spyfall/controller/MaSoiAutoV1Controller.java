@@ -3,6 +3,7 @@ package com.example.spyfall.controller;
 import com.example.spyfall.common.AutoSelectRequest;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.GameSetupRequest;
+import com.example.spyfall.common.SettingDto;
 import com.example.spyfall.service.MaSoiAutoV1;
 import com.example.spyfall.service.MaSoiChatService;
 import com.example.spyfall.service.MaSoiService;
@@ -92,6 +93,20 @@ public class MaSoiAutoV1Controller {
     Map<String, Object> state(HttpServletRequest request, HttpServletResponse response) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         return maSoiAutoV1.getState(deviceId);
+    }
+
+    @GetMapping("/settings")
+    @ResponseBody
+    SettingDto getSettings(HttpServletRequest request, HttpServletResponse response) {
+        String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
+        return maSoiAutoV1.getSetting(deviceId);
+    }
+
+    @PostMapping("/settings")
+    @ResponseBody
+    SettingDto updateSettings(@RequestBody SettingDto settingDto, HttpServletRequest request, HttpServletResponse response) {
+        String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
+        return maSoiAutoV1.updateSetting(deviceId, settingDto);
     }
 
     @PostMapping("/timers")

@@ -101,4 +101,40 @@ public class ImageController {
         headers.setContentLength(file.length());
         return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
     }
+
+    @GetMapping("/cute-setting.svg")
+    public ResponseEntity<Resource> getCuteSettingIcon() {
+        return getSvgResource("cute-setting.svg");
+    }
+
+    @GetMapping("/cute-chat.svg")
+    public ResponseEntity<Resource> getCuteChatIcon() {
+        return getSvgResource("cute-chat.svg");
+    }
+
+    @GetMapping("/cute-function.svg")
+    public ResponseEntity<Resource> getCuteFunctionIcon() {
+        return getSvgResource("cute-function.svg");
+    }
+
+    private ResponseEntity<Resource> getSvgResource(String fileName) {
+        File file = resolvePictureFile(fileName);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.valueOf("image/svg+xml"));
+        headers.setContentLength(file.length());
+        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    }
+
+    private File resolvePictureFile(String fileName) {
+        String baseDir = System.getProperty("user.dir");
+        File localResource = new File(baseDir + File.separator + "src" + File.separator + "main"
+                + File.separator + "resources" + File.separator + "picture" + File.separator + fileName);
+        if (localResource.exists()) {
+            return localResource;
+        }
+        if (System.getProperty("os.name").contains("Linux")) {
+            return new File("/home/ec2-user/masoi/" + fileName);
+        }
+        return new File("/sdcard/java/" + fileName);
+    }
 }

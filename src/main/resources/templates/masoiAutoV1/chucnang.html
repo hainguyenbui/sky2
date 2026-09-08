@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<body>
+<th:block th:fragment="html">
+    <div id="functionsInlineHost">
+        <div id="functionsCardWrapper" class="card">
+            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Các chức năng có trong ván</h3>
+            <div class="item-list">
+                <th:block th:each="item : ${showRoles}">
+                    <div th:classappend="${#lists.contains(idSoi, item.id)} ? 'role-card role-card-soi' : (${#lists.contains(idOutsider, item.id)} ? 'role-card role-card-other' : 'role-card role-card-dan')">
+                    <span class="role-title"
+                          th:classappend="${#lists.contains(idSoi, item.id)} ? '' : (${#lists.contains(idOutsider, item.id)} ? 'style=color:#fbbf24' : '')"
+                          th:text="${item.role + (item.id == '1' or item.id == '30' or item.total != '1' ? ' (x' + item.total + ')' : '')}"></span>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" th:text="${item.description}"></p>
+                    </div>
+                </th:block>
+            </div>
+        </div>
+    </div>
+
+    <div id="functionsPanel" class="feature-panel">
+        <div class="section-title">
+            <h3>Chức năng</h3>
+            <small>Danh sách vai trò trong ván</small>
+        </div>
+        <div id="functionsPanelHost"></div>
+    </div>
+</th:block>
+
+<th:block th:fragment="script">
+    <script>
+        (function() {
+            if (window.FunctionsComponent) {
+                return;
+            }
+            window.FunctionsComponent = {
+                applyMode: function(isOn) {
+                    const wrapper = document.getElementById('functionsCardWrapper');
+                    const inlineHost = document.getElementById('functionsInlineHost');
+                    const panelHost = document.getElementById('functionsPanelHost');
+                    const panel = document.getElementById('functionsPanel');
+                    if (!wrapper || !inlineHost || !panelHost || !panel) {
+                        return;
+                    }
+                    if (isOn) {
+                        if (wrapper.parentNode !== panelHost) {
+                            panelHost.appendChild(wrapper);
+                        }
+                        inlineHost.classList.add('inline-hidden');
+                        return;
+                    }
+                    if (wrapper.parentNode !== inlineHost) {
+                        inlineHost.appendChild(wrapper);
+                    }
+                    inlineHost.classList.remove('inline-hidden');
+                    panel.classList.remove('open');
+                    document.getElementById('dockFunctionBtn').classList.remove('active');
+                }
+            };
+        })();
+    </script>
+</th:block>
+</body>
+</html>
