@@ -199,6 +199,7 @@
                 callOnUpdated();
                 if (closeModal !== false) {
                     closeOrderModal();
+                    location.reload(); // Refresh trang sau khi lưu thứ tự
                 }
             })
             .catch(function(error) {
@@ -279,6 +280,10 @@
             if (item) {
                 item.classList.remove('dragging');
             }
+            // Clear all drag-over classes
+            Array.from(orderList.querySelectorAll('.order-item.drag-over')).forEach(function(el) {
+                el.classList.remove('drag-over');
+            });
             draggingOrderDeviceId = '';
         });
         orderList.addEventListener('dragover', function(event) {
@@ -286,16 +291,83 @@
             if (event.dataTransfer) {
                 event.dataTransfer.dropEffect = 'move';
             }
+            var item = event.target.closest('.order-item');
+            if (item && item !== touchStartItem) {
+                // Remove drag-over from all items
+                Array.from(orderList.querySelectorAll('.order-item.drag-over')).forEach(function(el) {
+                    if (el !== item) {
+                        el.classList.remove('drag-over');
+                    }
+                });
+                // Add drag-over to current item
+                item.classList.add('drag-over');
+            }
+        });
+        orderList.addEventListener('dragleave', function(event) {
+            var item = event.target.closest('.order-item');
+            if (item) {
+                item.classList.remove('drag-over');
+            }
         });
         orderList.addEventListener('drop', function(event) {
             event.preventDefault();
             var item = event.target.closest('.order-item');
+            // Clear all drag-over classes
+            Array.from(orderList.querySelectorAll('.order-item.drag-over')).forEach(function(el) {
+                el.classList.remove('drag-over');
+            });
             if (!item) {
                 return;
             }
             var dropDeviceId = item.dataset.orderDevice || '';
             moveDraftOrderItem(draggingOrderDeviceId, dropDeviceId);
         });
+
+        // Mobile touch support - simple implementation
+        var touchDragItem = null;
+        var touchOverItem = null;
+        
+        orderList.addEventListener('touchstart', function(event) {
+            var item = event.target.closest('.order-item');
+            if (!item) return;
+            touchDragItem = item;
+            draggingOrderDeviceId = item.dataset.orderDevice || '';
+            item.classList.add('dragging');
+        }, false);
+
+        orderList.addEventListener('touchmove', function(event) {
+            if (!touchDragItem) return;
+            event.preventDefault();
+            var touch = event.touches[0];
+            var el = document.elementFromPoint(touch.clientX, touch.clientY);
+            var targetItem = el ? el.closest('.order-item') : null;
+            
+            if (touchOverItem && touchOverItem !== targetItem) {
+                touchOverItem.classList.remove('touch-over');
+            }
+            if (targetItem && targetItem !== touchDragItem) {
+                targetItem.classList.add('touch-over');
+                touchOverItem = targetItem;
+            } else if (!targetItem && touchOverItem) {
+                touchOverItem.classList.remove('touch-over');
+                touchOverItem = null;
+            }
+        }, false);
+
+        orderList.addEventListener('touchend', function(event) {
+            if (!touchDragItem) return;
+            if (touchOverItem && touchOverItem !== touchDragItem) {
+                var dropDeviceId = touchOverItem.dataset.orderDevice || '';
+                moveDraftOrderItem(draggingOrderDeviceId, dropDeviceId);
+            }
+            if (touchOverItem) {
+                touchOverItem.classList.remove('touch-over');
+            }
+            touchDragItem.classList.remove('dragging');
+            touchDragItem = null;
+            touchOverItem = null;
+            draggingOrderDeviceId = '';
+        }, false);
     }
 
     function loadOrderModalTemplate() {
