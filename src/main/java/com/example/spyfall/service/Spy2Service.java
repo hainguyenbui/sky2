@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+import static com.example.spyfall.util.Constant.QR_SPY2;
+
 @Service
 public class Spy2Service {
 
@@ -18,7 +20,7 @@ public class Spy2Service {
     private List<Spy2> removed = new ArrayList<>();
     private List<Spy2> dataMainSpy2 = new ArrayList<>();
     @Getter
-    private final String image = "/spy2.png";
+    private final String image = QR_SPY2;
     @Getter
     private Integer countnumSpies = 0;
     @Getter

@@ -1,6 +1,7 @@
 package com.example.spyfall.service;
 
 import com.example.spyfall.common.DataMember;
+import com.example.spyfall.common.SettingDto;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
@@ -12,12 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class MaSoiAutoOrderService {
+public class MaSoiAutoService {
     private final MaSoiService maSoiService;
     private final Object lock = new Object();
     private final Map<String, Map<String, Integer>> deviceIdOrder = new HashMap<>();
+    private final Map<String, SettingDto> settingsByDeviceId = new LinkedHashMap<>();
 
-    public MaSoiAutoOrderService(MaSoiService maSoiService) {
+    public MaSoiAutoService(MaSoiService maSoiService) {
         this.maSoiService = maSoiService;
     }
 
@@ -51,6 +53,44 @@ public class MaSoiAutoOrderService {
             result.put("deviceOrder", new LinkedHashMap<>(viewerOrderMap(viewerDeviceId)));
             result.put("players", orderPlayersView());
             return result;
+        }
+    }
+
+    public SettingDto updateSetting(String deviceId, SettingDto settingDto) {
+        synchronized (lock) {
+            if (ObjectUtils.isEmpty(deviceId)) {
+                SettingDto fallback = settingDto == null ? defaultSetting() : settingDto;
+                fallback.normalize();
+                return cloneSetting(fallback);
+            }
+            SettingDto normalized = settingDto == null ? defaultSetting() : settingDto;
+            normalized.normalize();
+            settingsByDeviceId.put(deviceId, cloneSetting(normalized));
+            return cloneSetting(settingsByDeviceId.get(deviceId));
+        }
+    }
+
+    public SettingDto resolveViewerSetting(String viewerDeviceId) {
+        if (ObjectUtils.isEmpty(viewerDeviceId)) {
+            return defaultSetting();
+        }
+        return settingsByDeviceId.computeIfAbsent(viewerDeviceId, key -> defaultSetting());
+    }
+
+    private SettingDto defaultSetting() {
+        return new SettingDto(false, false);
+    }
+
+    public SettingDto cloneSetting(SettingDto source) {
+        if (source == null) {
+            return defaultSetting();
+        }
+        return new SettingDto(source.isChatOn(), source.isFunctionOn());
+    }
+
+    public SettingDto getSetting(String deviceId) {
+        synchronized (lock) {
+            return cloneSetting(resolveViewerSetting(deviceId));
         }
     }
 

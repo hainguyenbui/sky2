@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ma Sói Setup</title>
+    <th:block th:replace="~{fragments/styles :: css}"></th:block>
+    <style>
+        .role-card { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(30,41,59,0.4); border: 1px solid var(--card-border); border-radius: 12px; transition: all 0.2s; }
+        .role-title { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em; }
+        .role-card-soi { border-left: 4px solid var(--danger); }
+        .role-card-dan { border-left: 4px solid var(--success); }
+        .role-card-other { border-left: 4px solid var(--warning); }
+        .switch { position: relative; display: inline-block; width: 46px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(15,23,42,0.6); transition: .25s; border-radius: 24px; border: 1px solid var(--card-border); }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: #94a3b8; transition: .25s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); background-color: #ffffff; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-section">
+        <h1>Ma Sói Setup</h1>
+        <p class="desc">Thiết lập vai trò cho ván đấu mới</p>
+    </div>
+
+    <form id="dataForm">
+        <div class="card" style="margin-bottom: 16px;">
+            <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Thông tin phòng chơi</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 500;">Tổng người chơi:</span>
+                    <input type="number" min="0" value="0" id="total" name="total" class="input-text" style="width: 80px; padding: 8px; text-align: center;">
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--card-border); padding-top: 12px;">
+                    <span style="font-weight: 500;">Đã chọn:</span>
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <input type="text" id="sum" readonly value="0" style="width: 40px; background: transparent; border: none; color: #60a5fa; font-weight: 800; font-size: 1.5rem; text-align: right; outline: none;">
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">vai trò</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 16px;">
+            <h3 style="margin-bottom: 14px; font-size: 1.1rem;">Danh sách vai trò</h3>
+            <div class="item-list">
+                <th:block th:each="item : ${datas}">
+                    <div th:with="isSoi=${#lists.contains(idSoi, item.id)},isOutsider=${#lists.contains(idOutsider, item.id)},isNumberInput=${item.id == 30}"
+                         th:class="'role-card ' + (${isSoi} ? 'role-card-soi' : (${isOutsider} ? 'role-card-other' : 'role-card-dan'))">
+                        <div style="padding-right: 10px; text-align: left;">
+                            <span class="role-title"
+                                  th:style="${isSoi} ? 'color: #f87171;' : (${isOutsider} ? 'color: #fbbf24;' : 'color: #34d399;')"
+                                  th:text="${#strings.toUpperCase(item.role)}"></span>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;" th:text="${item.description}"></p>
+                        </div>
+                        <div th:if="${isNumberInput}">
+                            <input type="number" min="0" value="0" th:id="${item.id}" th:name="${item.id}"
+                                   class="input-text" style="width: 60px; padding: 8px; font-size: 0.9rem; text-align: center;" oninput="updateSum()">
+                        </div>
+                        <div th:unless="${isNumberInput}">
+                            <label class="switch">
+                                <input type="checkbox" th:id="${item.id}" th:name="${item.id}" value="1" onclick="updateSum()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </th:block>
+            </div>
+        </div>
+        <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Chạy Game</button>
+    </form>
+
+    <script>
+        var setupStorageKey = 'masoi.setup.v1';
+
+        function saveSetupState() {
+            var state = {};
+            var fields = document.querySelectorAll('#dataForm input[name]');
+            fields.forEach(function(field) {
+                if (field.type === 'checkbox') {
+                    state[field.name] = field.checked;
+                } else {
+                    state[field.name] = field.value;
+                }
+            });
+            sessionStorage.setItem(setupStorageKey, JSON.stringify(state));
+        }
+
+        function restoreSetupState() {
+            var rawState = sessionStorage.getItem(setupStorageKey);
+            if (!rawState) {
+                updateSum();
+                return;
+            }
+
+            try {
+                var state = JSON.parse(rawState);
+                Object.keys(state).forEach(function(name) {
+                    var field = document.querySelector('#dataForm input[name="' + name + '"]');
+                    if (!field) {
+                        return;
+                    }
+                    if (field.type === 'checkbox') {
+                        field.checked = state[name] === true;
+                    } else {
+                        field.value = state[name];
+                    }
+                });
+            } catch (error) {
+                console.error('Cannot restore setup state:', error);
+            }
+
+            updateSum();
+        }
+
+        function updateSum() {
+            var sumTotal = 0;
+            var inputs = document.querySelectorAll('input[type="number"]:not(#total)');
+            inputs.forEach(function(input) { sumTotal += parseFloat(input.value) || 0; });
+            // bỏ qua toggleDayBoard, toggleNightBoard, toggleVoteBoard khi đếm vai trò
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#toggleDayBoard):not(#toggleNightBoard):not(#toggleVoteBoard):checked');
+            checkboxes.forEach(function(checkbox) { sumTotal += parseInt(checkbox.value) || 0; });
+            document.getElementById('sum').value = sumTotal;
+            saveSetupState();
+        }
+
+<!--        // Đồng bộ trạng thái thanh gạt khi load trang – lấy từ state API-->
+<!--        function loadBoardToggles() {-->
+<!--            fetch('/msBlind/state')-->
+<!--                .then(function(res) { return res.json(); })-->
+<!--                .then(function(state) {-->
+<!--                    document.getElementById('toggleDayBoard').checked = !!state.showDayBoard;-->
+<!--                    document.getElementById('toggleNightBoard').checked = !!state.showNightBoard;-->
+<!--                    document.getElementById('toggleVoteBoard').checked = !!state.showVoteBoard;-->
+<!--                    // Đồng bộ thời gian vote từ state-->
+<!--                    if (state.voteDurationSeconds) {-->
+<!--                        document.getElementById('voteSecondsInput').value = state.voteDurationSeconds;-->
+<!--                    }-->
+<!--                })-->
+<!--                .catch(function(err) { console.warn('loadBoardToggles error', err); });-->
+<!--        }-->
+
+<!--        // Lưu thời gian vote riêng (chỉ cập nhật voteDuration)-->
+<!--        function saveVoteTimer() {-->
+<!--            var voteSeconds = parseInt(document.getElementById('voteSecondsInput').value, 10) || 60;-->
+<!--            // Gọi /timers với day/night giữ nguyên, chỉ cập nhật vote-->
+<!--            fetch('/msBlind/state')-->
+<!--                .then(function(res) { return res.json(); })-->
+<!--                .then(function(state) {-->
+<!--                    var daySeconds = state.dayDurationSeconds || 90;-->
+<!--                    var nightSeconds = state.nightDurationSeconds || 150;-->
+<!--                    return fetch('/msBlind/timers?daySeconds=' + daySeconds + '&nightSeconds=' + nightSeconds + '&voteSeconds=' + voteSeconds, { method: 'POST' });-->
+<!--                })-->
+<!--                .then(function(res) { return res.json(); })-->
+<!--                .then(function() { alert('Đã lưu thời gian vote: ' + voteSeconds + 's'); })-->
+<!--                .catch(function(err) { console.error('saveVoteTimer error', err); });-->
+<!--        }-->
+
+        function bindSetupStateListeners() {
+            var fields = document.querySelectorAll('#dataForm input[name]');
+            fields.forEach(function(field) {
+                field.addEventListener('change', saveSetupState);
+                field.addEventListener('input', saveSetupState);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            bindSetupStateListeners();
+            restoreSetupState();
+        });
+
+        document.getElementById('sendButton').onclick = function() {
+            saveSetupState();
+
+            var formData = new URLSearchParams();
+            var inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(function(input) { formData.append(input.name, input.value); });
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            checkboxes.forEach(function(checkbox) {
+                formData.append(checkbox.name, 1);
+            });
+            fetch('/msBlind/create?' + formData.toString(), { method: 'GET' })
+                .then(response => response.text())
+                .then(data => {
+                    if (data.includes('ERROR')) { alert(data); }
+                    else if (data.includes('ALERT')) {
+                        alert(data);
+                        window.location.href = '/msBlind/admin';
+                    }
+                    else { window.location.href = '/msBlind/admin'; }
+                })
+                .catch(error => console.error('Error:', error));
+        };
+    </script>
+
+</div>
+</body>
+</html>

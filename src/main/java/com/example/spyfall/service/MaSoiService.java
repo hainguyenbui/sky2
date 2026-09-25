@@ -13,14 +13,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.example.spyfall.util.Constant.QR_MS;
+
 @Service
 public class MaSoiService {
 
     public static final List<Integer> WOLF_ROLE_IDS = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
     public static final List<Integer> OUTSIDER_ROLE_IDS = List.of(21, 20, 22);
 
-    private static final String IMAGE_PATH = "/qrcode.png";
-    private static final List<String> DAY_DEATH_REASONS = List.of(
+    private static final String IMAGE_PATH = QR_MS;
+    public static final List<String> DAY_DEATH_REASONS = List.of(
             " bị thủ tiêu vì biết quá nhiều", " không muốn chơi nữa", " bị thù ghét", " nói quá nhiều");
     private static final List<String> LOVE_DEATH_REASONS = List.of(
             " dã đi là đi chung", " một bước cũng không lệch", " kè kè bên cạnh", " đi cùng cho vui", " khóc hết nước mắt", " ăn chơi xa đọa");
@@ -57,7 +59,7 @@ public class MaSoiService {
     private boolean invertedSeer = true;
     @Getter
     private boolean dayKillProcessed;
-    private int nightNumber = 1;
+    public int nightNumber = 1;
     @Getter
     private String nightDetails = "";
     @Getter
@@ -81,6 +83,11 @@ public class MaSoiService {
 
     public List<DataMember> getDatas() throws Exception {
         dataInputService.prepareDataMaSoi(roleCatalog);
+        return roleCatalog;
+    }
+
+    public List<DataMember> getDatasBlind() throws Exception {
+        dataInputService.prepareDataMaSoiBlind(roleCatalog);
         return roleCatalog;
     }
 
@@ -281,7 +288,7 @@ public class MaSoiService {
     }
 
     public String endGame() {
-        if (nightNumber > 1) {
+        if (!currentGameHistory.isEmpty()) {
             int gameNumber = completedGames.size() + 1;
             completedGames.put(gameNumber, new ArrayList<>(players));
             completedGameDetails.put(gameNumber, new LinkedHashMap<>(currentGameHistory));

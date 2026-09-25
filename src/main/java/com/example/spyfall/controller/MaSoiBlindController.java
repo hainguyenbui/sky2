@@ -3,7 +3,8 @@ package com.example.spyfall.controller;
 import com.example.spyfall.common.AutoSelectRequest;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.GameSetupRequest;
-import com.example.spyfall.service.MaSoiAutoV1;
+import com.example.spyfall.common.SettingDto;
+import com.example.spyfall.service.MaSoiBlindService;
 import com.example.spyfall.service.MaSoiChatService;
 import com.example.spyfall.service.MaSoiService;
 import com.example.spyfall.util.CookieUtil;
@@ -22,25 +23,28 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.Map;
 
+/**
+ * Ma Sói Mù (Blind Werewolf) - variant where everyone has the same night actions
+ * and cannot see other players' night selections (private/blind)
+ */
 @Controller
-@RequestMapping("/msAutoV1")
-public class MaSoiAutoV1Controller {
+@RequestMapping("/msBlind")
+public class MaSoiBlindController {
 
     private final MaSoiService maSoiService;
-    private final MaSoiAutoV1 maSoiAutoV1;
-    // Chat: inject chatService để khởi tạo nhóm chat khi game mới bắt đầu
+    private final MaSoiBlindService maSoiBlindService;
     private final MaSoiChatService chatService;
 
-    public MaSoiAutoV1Controller(MaSoiService maSoiService, MaSoiAutoV1 maSoiAutoV1, MaSoiChatService chatService) {
+    public MaSoiBlindController(MaSoiService maSoiService, MaSoiBlindService maSoiBlindService, MaSoiChatService chatService) {
         this.maSoiService = maSoiService;
-        this.maSoiAutoV1 = maSoiAutoV1;
+        this.maSoiBlindService = maSoiBlindService;
         this.chatService = chatService;
     }
 
     @GetMapping("/play")
     String playLobby(Model model) {
         addCommonAttributes(model);
-        return "masoiAutoV1/lobby";
+        return "masoiblind/lobby";
     }
 
     @GetMapping({"/play/", "/play/{name}"})
@@ -48,22 +52,22 @@ public class MaSoiAutoV1Controller {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         model.addAttribute("notSetup", false);
         model.addAttribute("fullSlot", false);
+        model.addAttribute("isBlindMode", true);
         try {
-            DataMember member = maSoiService.getOrAssignRole(deviceId, name);
+            DataMember member = maSoiBlindService.getOrAssignRole(deviceId, name);
             if (member == null) {
                 model.addAttribute("notSetup", true);
                 addCommonAttributes(model);
-                return "masoiAutoV1/play";
+                return "masoiblind/play";
             } else if (ObjectUtils.isEmpty(member.getRole())) {
                 model.addAttribute("fullSlot", true);
                 model.addAttribute("member", member);
                 addCommonAttributes(model);
-                return "masoiAutoV1/play";
+                return "masoiblind/play";
             }
-            // Truyền thẳng member để giao diện đọc toàn bộ trạng thái người chơi từ 1 nguồn.
             model.addAttribute("member", member);
-            model.addAttribute("pls", maSoiAutoV1.getMemers());
-            model.addAttribute("autoState", maSoiAutoV1.getState(deviceId));
+            model.addAttribute("pls", maSoiBlindService.getMemers());
+            model.addAttribute("autoState", maSoiBlindService.getState(deviceId));
             addCommonAttributes(model);
             model.addAttribute("gameNumber", maSoiService.getGameNumber());
             addRoleGroupAttributes(model);
@@ -75,23 +79,22 @@ public class MaSoiAutoV1Controller {
             }
             model.addAttribute("alivePlayer", maSoiService.getPls());
 
-            // voi role 42 thi truyen ten nguoi da chon qua
             if (member.getId() == 42 && member.getOldTargetId() != null) {
-                maSoiAutoV1.findPlayer(member.getOldTargetId()).ifPresent(target -> model.addAttribute("oldTargetName", target.getNameMember()));
+                maSoiBlindService.findPlayer(member.getOldTargetId()).ifPresent(target -> model.addAttribute("oldTargetName", target.getNameMember()));
             }
         } catch (Exception e) {
             model.addAttribute("notSetup", true);
             addCommonAttributes(model);
-            return "masoiAutoV1/play";
+            return "masoiblind/play";
         }
-        return "masoiAutoV1/play";
+        return "masoiblind/play";
     }
 
     @GetMapping("/state")
     @ResponseBody
     Map<String, Object> state(HttpServletRequest request, HttpServletResponse response) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
-        return maSoiAutoV1.getState(deviceId);
+        return maSoiBlindService.getState(deviceId);
     }
 
     @PostMapping("/timers")
@@ -101,90 +104,78 @@ public class MaSoiAutoV1Controller {
                                      @RequestParam int silentSeconds,
                                      HttpServletRequest request, HttpServletResponse response) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
-        return maSoiAutoV1.updateDurations(daySeconds, nightSeconds, voteSeconds, selectionSeconds, silentSeconds, deviceId);
+        return maSoiBlindService.updateDurations(daySeconds, nightSeconds, voteSeconds, selectionSeconds, silentSeconds, deviceId);
     }
 
     @PostMapping("/day/select")
     @ResponseBody
     Map<String, Object> selectDay(@RequestBody AutoSelectRequest request) {
-        return maSoiAutoV1.selectDayTarget(request);
+        return maSoiBlindService.selectDayTarget(request);
     }
 
-    @PostMapping("/toughGuy/select")
-    @ResponseBody
-    Map<String, Object> selectToughGuy(@RequestBody AutoSelectRequest request) {
-        return maSoiAutoV1.selectToughGuyTarget(request);
-    }
-
-    // Người chơi chọn bỏ qua vote ngày (không chọn ai)
     @PostMapping("/day/skip")
     @ResponseBody
     Map<String, Object> skipDay(HttpServletRequest request, HttpServletResponse response) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
-        return maSoiAutoV1.skipDaySelection(deviceId);
+        return maSoiBlindService.skipDaySelection(deviceId);
     }
 
     @PostMapping("/night/select")
     @ResponseBody
     Map<String, Object> selectNight(@RequestBody AutoSelectRequest request) {
-        return maSoiAutoV1.selectNightTarget(request);
+        return maSoiBlindService.selectNightTarget(request);
     }
 
     @PostMapping("/submitDay")
     @ResponseBody
     Map<String, Object> submitDay() {
-        return maSoiAutoV1.submitDayNow();
+        return maSoiBlindService.submitDayNow();
     }
 
     @PostMapping("/submitNight")
     @ResponseBody
     Map<String, Object> submitNight() {
-        return maSoiAutoV1.submitNightNow();
+        return maSoiBlindService.submitNightNow();
     }
 
-    // Admin bật/tắt bảng ngày – broadcast qua WebSocket tới tất cả người chơi
     @PostMapping("/board/day")
     @ResponseBody
     Map<String, Object> toggleDayBoard(@RequestParam boolean show) {
-        return maSoiAutoV1.setShowDayBoard(show);
+        return maSoiBlindService.setShowDayBoard(show);
     }
 
-    // Admin bật/tắt bảng đêm – broadcast qua WebSocket tới tất cả người chơi
     @PostMapping("/board/night")
     @ResponseBody
     Map<String, Object> toggleNightBoard(@RequestParam boolean show) {
-        return maSoiAutoV1.setShowNightBoard(show);
+        return maSoiBlindService.setShowNightBoard(show);
     }
 
-    // Admin bật/tắt bảng vote Yes/No – broadcast qua WebSocket tới tất cả người chơi
     @PostMapping("/board/vote")
     @ResponseBody
     void toggleVoteBoard(@RequestParam boolean show) {
-        maSoiAutoV1.setNeedVote(show);//TODO clear return
+        maSoiBlindService.setNeedVote(show);
     }
 
-    // Người chơi gửi vote Yes/No
     @PostMapping("/vote/select")
     @ResponseBody
     Map<String, Object> selectVote(@RequestParam String answer, HttpServletRequest request, HttpServletResponse response) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
-        return maSoiAutoV1.submitVoteSelection(deviceId, answer);
+        return maSoiBlindService.submitVoteSelection(deviceId, answer);
     }
 
     @GetMapping("/run")
     String run(Model model) throws Exception {
-        model.addAttribute("datas", maSoiService.getDatas());
+        model.addAttribute("datas", maSoiService.getDatasBlind());
         addRoleGroupAttributes(model);
-        return "masoiAutoV1/run";
+        return "masoiblind/run";
     }
 
     @GetMapping("/create")
     @ResponseBody
     String create(@RequestParam Map<String, String> params) throws Exception {
         String result = maSoiService.loadGame(GameSetupRequest.fromQueryParams(params));
-        // Chat: khởi tạo các nhóm chat mới khi game được tạo thành công
         if (result.startsWith("OK")) {
-            chatService.initChatGroups();
+            chatService.initChatGroupsBlindMode();
         }
         return result;
     }
@@ -192,28 +183,20 @@ public class MaSoiAutoV1Controller {
     @GetMapping("/admin")
     String admin(Model model) {
         if (maSoiService.isGameEnded()) {
-            return "redirect:/msAutoV1/run";
+            return "redirect:/msBlind/run";
         }
-        model.addAttribute("dayDurationSeconds", maSoiAutoV1.getDayDurationSeconds());
-        model.addAttribute("nightDurationSeconds", maSoiAutoV1.getNightDurationSeconds());
-        model.addAttribute("voteDurationSeconds", maSoiAutoV1.getVoteDurationSeconds());
-        model.addAttribute("showDayBoard", maSoiAutoV1.isShowDayBoard());
-        model.addAttribute("showNightBoard", maSoiAutoV1.isShowNightBoard());
-        model.addAttribute("isNeedVote", maSoiAutoV1.isNeedVote());
-        model.addAttribute("selectionSeconds", maSoiAutoV1.getSelectionSeconds());
-        model.addAttribute("silentSeconds", maSoiAutoV1.getSilentSeconds());
+        model.addAttribute("dayDurationSeconds", maSoiBlindService.getDayDurationSeconds());
+        model.addAttribute("nightDurationSeconds", maSoiBlindService.getNightDurationSeconds());
+        model.addAttribute("voteDurationSeconds", maSoiBlindService.getVoteDurationSeconds());
+        model.addAttribute("showDayBoard", maSoiBlindService.isShowDayBoard());
+        model.addAttribute("showNightBoard", maSoiBlindService.isShowNightBoard());
+        model.addAttribute("isNeedVote", maSoiBlindService.isNeedVote());
         addCommonAttributes(model);
-
-        return "masoiAutoV1/admin";
-    }
-
-    @PostMapping("/showOrderEditor")
-    String showOrderEditor() {
-        return "masoiAutoV1/orderEditor";
+        return "masoiblind/admin";
     }
 
     private void addCommonAttributes(Model model) {
-        model.addAttribute("image", maSoiAutoV1.getImage());
+        model.addAttribute("image", maSoiBlindService.getImage());
     }
 
     private void addRoleGroupAttributes(Model model) {

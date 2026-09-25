@@ -50,6 +50,16 @@ public class MaSoiChatService {
         chatGroups.put("all", new ChatGroup("Tất cả 💬", "#60a5fa", allRoles));
     }
 
+    public void initChatGroupsBlindMode() {
+        chatGroups.clear();
+
+        // Chat: nhóm toàn bộ – tất cả roleId đều được phép (dùng Set rỗng = không giới hạn, xử lý riêng)
+        // Dùng Set chứa tất cả id từ 1-99 để đơn giản
+        Set<Integer> allRoles = new LinkedHashSet<>();
+        for (int i = 1; i <= 99; i++) allRoles.add(i);
+        chatGroups.put("all", new ChatGroup("Tất cả 💬", "#60a5fa", allRoles));
+    }
+
     /**
      * Chat: trả về danh sách các nhóm chat mà roleId được phép xem.
      * Mỗi entry gồm key, title, color, messages, lastMessage.

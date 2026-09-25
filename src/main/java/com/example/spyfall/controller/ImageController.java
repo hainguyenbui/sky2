@@ -1,5 +1,7 @@
 package com.example.spyfall.controller;
 
+import com.example.spyfall.service.ImageService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -12,129 +14,55 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.File;
 import java.io.IOException;
 
+import static com.example.spyfall.util.Constant.*;
+
 @RestController
 public class ImageController {
+    @Autowired
+    private ImageService imageService;
 
-    @GetMapping("/qrcode.png")
+    @GetMapping(QR_MS)
     public ResponseEntity<Resource> getQRCode() {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/qrcode.png");
-
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/qrcode.png");
-        } else {
-            file = new File("/sdcard/java/qrcode.png");
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+        return imageService.getQRlink(QR_MS, false);
     }
 
-    @GetMapping("/msAutoV1.png")
+    @GetMapping(QR_MS_AUTO_V1)
     public ResponseEntity<Resource> getMSAutoV1() {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file = new File(System.getProperty("user.dir") + "/src/main/resources/picture/msAutoV1.png");
-
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/msAutoV1.png");
-        } else {
-            file = new File("/sdcard/java/msAutoV1.png");
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+        return imageService.getQRlink(QR_MS_AUTO_V1, false);
     }
 
-    @GetMapping("/spy.png")
-    public ResponseEntity<Resource> getQRCode2() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy.png");
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/spy.png");
-
-        } else {
-            file = new File("/sdcard/java/spy.png");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    @GetMapping(QR_MS_BLIND)
+    public ResponseEntity<Resource> getMSBlind() {
+        return imageService.getQRlink(QR_MS_BLIND, false);
     }
 
-    @GetMapping("/gDuck.png")
-    public ResponseEntity<Resource> getGDuck() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/gDuck.png");
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/gDuck.png");
-
-        } else {
-            file = new File("/sdcard/java/gDuck.png");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    @GetMapping(QR_SPY)
+    public ResponseEntity<Resource> getQRCode2() {
+        return imageService.getQRlink(QR_SPY, false);
     }
 
-    @GetMapping("/spy2.png")
-    public ResponseEntity<Resource> getSpy2() throws IOException {
-        File file;
-        if (System.getProperty("os.name").contains("Win")) {
-            file  = new File(System.getProperty("user.dir") + "/src/main/resources/picture/spy2.png");
-        } else if (System.getProperty("os.name").contains("Linux")) {
-            file = new File("/home/ec2-user/masoi/spy2.png");
-
-        } else {
-            file = new File("/sdcard/java/spy2.png");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_PNG);
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
+    @GetMapping(QR_SPY2)
+    public ResponseEntity<Resource> getQRCode3() {
+        return imageService.getQRlink(QR_SPY2, false);
     }
 
-    @GetMapping("/cute-setting.svg")
-    public ResponseEntity<Resource> getCuteSettingIcon() {
-        return getSvgResource("cute-setting.svg");
+    @GetMapping(QR_GO_DUCK)
+    public ResponseEntity<Resource> getGDuck() {
+        return imageService.getQRlink(QR_GO_DUCK, false);
     }
 
-    @GetMapping("/cute-chat.svg")
-    public ResponseEntity<Resource> getCuteChatIcon() {
-        return getSvgResource("cute-chat.svg");
+    @GetMapping(QR_SETTING)
+    public ResponseEntity<Resource> getSettingIcon() {
+        return imageService.getQRlink(QR_SETTING, true);
     }
 
-    @GetMapping("/cute-function.svg")
-    public ResponseEntity<Resource> getCuteFunctionIcon() {
-        return getSvgResource("cute-function.svg");
+    @GetMapping(QR_FUNCTION)
+    public ResponseEntity<Resource> getFunctionIcon() {
+        return imageService.getQRlink(QR_FUNCTION, true);
     }
 
-    private ResponseEntity<Resource> getSvgResource(String fileName) {
-        File file = resolvePictureFile(fileName);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.valueOf("image/svg+xml"));
-        headers.setContentLength(file.length());
-        return new ResponseEntity<>(new FileSystemResource(file), headers, HttpStatus.OK);
-    }
-
-    private File resolvePictureFile(String fileName) {
-        String baseDir = System.getProperty("user.dir");
-        File localResource = new File(baseDir + File.separator + "src" + File.separator + "main"
-                + File.separator + "resources" + File.separator + "picture" + File.separator + fileName);
-        if (localResource.exists()) {
-            return localResource;
-        }
-        if (System.getProperty("os.name").contains("Linux")) {
-            return new File("/home/ec2-user/masoi/" + fileName);
-        }
-        return new File("/sdcard/java/" + fileName);
+    @GetMapping(QR_CHAT)
+    public ResponseEntity<Resource> getChatIcon() {
+        return imageService.getQRlink(QR_CHAT, true);
     }
 }

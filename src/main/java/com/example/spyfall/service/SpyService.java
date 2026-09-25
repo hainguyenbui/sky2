@@ -8,6 +8,8 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 
+import static com.example.spyfall.util.Constant.QR_SPY;
+
 @Service
 public class SpyService {
 
@@ -20,7 +22,7 @@ public class SpyService {
     @Getter
     private List<Spy2> removed = new ArrayList<>();
     @Getter
-    private final String image = "/spy.png";
+    private final String image = QR_SPY;
     @Getter
     private int numberGamePlay = 0;
 

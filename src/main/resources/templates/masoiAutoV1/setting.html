@@ -159,7 +159,7 @@
                     this.render();
                     this.bind();
                     this.apply();
-                    return fetch('/msAutoV1/settings')
+                    return fetch('/msAuto/settings')
                         .then(handleJsonResponse)
                         .then(function(serverSetting) {
                             window.SettingComponent.applyServerSetting(serverSetting);
@@ -211,7 +211,7 @@
                     });
                 },
                 save: function() {
-                    return fetch('/msAutoV1/settings', {
+                    return fetch('/msAuto/settings', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

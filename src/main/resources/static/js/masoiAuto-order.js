@@ -5,7 +5,7 @@
     var orderDraftDeviceIds = [];
     var draggingOrderDeviceId = '';
     var cfg = {
-        orderApiBase: '/msAuto/order',
+        orderApiBase: '/msAuto',
         templateUrl: '/msAutoV1/showOrderEditor',
         onOrderUpdated: null,
         handleJsonResponse: null

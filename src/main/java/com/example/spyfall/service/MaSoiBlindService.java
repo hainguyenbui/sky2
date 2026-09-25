@@ -3,7 +3,6 @@ package com.example.spyfall.service;
 import com.example.spyfall.common.AutoSelectRequest;
 import com.example.spyfall.common.DataMember;
 import com.example.spyfall.common.NightActionDto;
-import com.example.spyfall.common.SettingDto;
 import lombok.Getter;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -20,31 +19,21 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.example.spyfall.common.NightActionType.KILL;
-import static com.example.spyfall.common.NightActionType.RECRUIT;
-import static com.example.spyfall.common.NightActionType.SOI;
-import static com.example.spyfall.util.Constant.QR_MS_AUTO_V1;
+import static com.example.spyfall.service.MaSoiAutoV1.*;
+import static com.example.spyfall.service.MaSoiService.DAY_DEATH_REASONS;
+import static com.example.spyfall.util.Constant.QR_MS_BLIND;
 
 @Service
-public class MaSoiAutoV1 {
-    private static final Logger log = LoggerFactory.getLogger(MaSoiAutoV1.class);
+public class MaSoiBlindService {
+    private static final Logger log = LoggerFactory.getLogger(MaSoiBlindService.class);
 
-    private static final String STATE_DESTINATION = "/ms/autoV1/state";
-//    private static final Set<Integer> HIDDEN_CONNECT_SKILLS = Set.of(5);
-    private static final Set<Integer> HIDDEN_ID = Set.of(37, 40, 41);
-    public static final Set<Integer> ACTION_COUNTDOWN_ROLE_IDS = Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20); // lien quan den check endgame
-
-    // Vấn đề 7: tách list countdown riêng cho role Silent (38).
-    private static final Set<Integer> SILENT_COUNTDOWN_ROLE_IDS = Set.of(38);
-    // Vấn đề 11: các role trong list này không được chọn chính bản thân mình trong bảng đêm.
-    private static final Set<Integer> SELF_SELECT_DISABLED_ROLE_IDS = Set.of(32, 34, 38, 42, 43, 45);
+    private static final String STATE_DESTINATION = "/ms/blind/state";
+    private static final String BLIND_SELECT_CODE = "blind-select";
     // Giá trị đặc biệt để đánh dấu người chơi chọn bỏ qua thay vì chọn ai
-    public static final String SKIP_TARGET = "__SKIP__";
-    public static final List<String> reasonKills = List.of(" bị úp mặt vào tường", " bị đuổi ra khỏi làng", " bị nhốt trong nhà vệ sinh");
     private String reasonKill;
 
     private final MaSoiService maSoiService;
@@ -67,27 +56,13 @@ public class MaSoiAutoV1 {
     private int dayRemainingSeconds = 60;
     @Getter
     private int nightRemainingSeconds = 120;
-    private int nightRemainingSecondRandom = 1000;
     @Getter
     private int voteRemainingSeconds = 45;
-    @Getter
-    private int selectionCountdownSeconds = 60;
-    @Getter
-    private int selectionSeconds = 40;
-    private int selectionCountdownSecondRandom = 1000;
-    @Getter
-    private int silentCountdownSeconds = 60;
-    @Getter
-    private int silentSeconds = 40;
-    private int silentCountdownSecondRandom = 1000;
-
-    private int toughGuyRemainingSeconds = 60;
 
     private final Map<String, String> daySelections = new LinkedHashMap<>();
     private final Map<String, NightActionDto> nightSelections = new LinkedHashMap<>();
     // Map deviceId → "yes" hoặc "no" cho bảng vote
     private final Map<String, String> voteSelections = new LinkedHashMap<>();
-    // Setting theo từng thiết bị: deviceId -> setting riêng.
 
     private boolean dayTimeoutSent;
     private boolean nightTimeoutSent;
@@ -103,24 +78,17 @@ public class MaSoiAutoV1 {
     private boolean showNightBoard = false;
     @Getter
     private boolean showVoteBoard = false;
-    @Getter
-    private boolean showToughGuy = false;
+
     private String killDayDevice = null;
 
-    private Integer randomVictim = null;
-
-    private boolean nextDayBlockHandle = false;
-
-    private static final String IMAGE_PATH = QR_MS_AUTO_V1;
+    private static final String IMAGE_PATH = QR_MS_BLIND;
 
     public String getImage() {
         return IMAGE_PATH;
     }
 
-    String toughGuySelection = "";
-
     @Autowired
-    public MaSoiAutoV1(MaSoiService maSoiService, MaSoiAutoService maSoiAutoService, SimpMessagingTemplate messagingTemplate) {
+    public MaSoiBlindService(MaSoiService maSoiService, MaSoiAutoService maSoiAutoService, SimpMessagingTemplate messagingTemplate) {
         this.maSoiService = maSoiService;
         this.maSoiAutoService = maSoiAutoService;
         this.messagingTemplate = messagingTemplate;
@@ -167,13 +135,9 @@ public class MaSoiAutoV1 {
             dayDurationSeconds = Math.max(1, daySeconds);
             nightDurationSeconds = Math.max(1, nightSeconds);
             voteDurationSeconds = Math.max(1, voteSeconds);
-            this.selectionSeconds = Math.max(1, selectionSeconds);
-            this.silentSeconds = Math.max(1, silentSeconds);
             dayRemainingSeconds = dayDurationSeconds;
             nightRemainingSeconds = nightDurationSeconds;
             voteRemainingSeconds = voteDurationSeconds;
-            selectionCountdownSeconds = selectionSeconds;
-            silentCountdownSeconds = silentSeconds;
             dayTimeoutSent = false;
             nightTimeoutSent = false;
             voteTimeoutSent = false;
@@ -192,6 +156,9 @@ public class MaSoiAutoV1 {
                 dayTimeoutSent = false;
             }
             broadcastStateLocked();
+            if (show) {
+                broadcastRefreshUiLocked("day-board-enabled");
+            }
             return buildState(null);
         }
     }
@@ -202,13 +169,7 @@ public class MaSoiAutoV1 {
             showNightBoard = show;
             if (show) {
                 // Reset đồng hồ về mặc định khi bật lại để đếm ngược từ đầu
-                randomVictim = null;
                 nightRemainingSeconds = nightDurationSeconds;
-                selectionCountdownSeconds = selectionSeconds;
-                silentCountdownSeconds = silentSeconds;
-                silentCountdownSecondRandom = 1000;
-                nightRemainingSecondRandom = 1000;
-                selectionCountdownSecondRandom = 1000;
                 nightTimeoutSent = false;
                 maSoiService.NOT_SHOW_DAY.clear();
             }
@@ -279,27 +240,6 @@ public class MaSoiAutoV1 {
         }
     }
 
-    public Map<String, Object> selectToughGuyTarget(AutoSelectRequest request) {
-        synchronized (lock) {
-            DataMember actor = findPlayer(request.getActorDeviceId()).orElse(null);
-            DataMember target = findPlayer(request.getTargetDeviceId()).orElse(null);
-            if (actor == null || target == null || actor.isDead() || target.isDead()) {
-                return errorState("Target không hợp lệ");
-            }
-            if (Objects.equals(toughGuySelection, target.getIpData())) {
-                toughGuySelection = "";
-                broadcastStateLocked();
-                return buildState(actor.getIpData());
-            }
-            toughGuySelection = target.getIpData();
-            if (toughGuyRemainingSeconds > 10) {
-                toughGuyRemainingSeconds = 10;
-            }
-            broadcastStateLocked();
-            return buildState(actor.getIpData());
-        }
-    }
-
     // Người chơi chọn "bỏ qua" thay vì vote ai đó; nếu đã skip thì toggle về chưa chọn
     public Map<String, Object> skipDaySelection(String actorDeviceId) {
         synchronized (lock) {
@@ -331,32 +271,21 @@ public class MaSoiAutoV1 {
             if (actor == null || actor.isDead() || (!isSkip && (target == null || target.isDead()))) {
                 return errorState("Target không hợp lệ");
             }
-            if (!hasNightAction(actor)) {
-                return errorState("Nhân vật này không có chức năng đêm");
+            if (isSkip) {
+                return errorState("Blind mode không có bỏ qua");
+            }
+            if (!ObjectUtils.isEmpty(actor.getOldTargetId()) && Objects.equals(actor.getOldTargetId(), targetDeviceId)) {
+                return errorState("Không thể chọn lại người ở vòng trước");
             }
 
             NightActionDto action = new NightActionDto();
             action.setDeviceId(actor.getIpData());
             action.setRoleId(actor.getId());
             action.setRoleName(removeHtml(actor.getRole()));
-            action.setColType(normalizeActionType(request.getColType()));
-            if (RECRUIT.code.equals(action.getColType())
-                    && (!isWolfNightActor(actor.getId()) || !maSoiService.isShowSoiNguyen())) {
-                return errorState("Sói hiện không thể nguyền");
-            }
-            action.setConnValue(request.getConnValue());
-            if (isSkip) {
-                // Cho phép mọi chức năng ban đêm chọn bỏ qua.
-                action.setTargetDeviceId(SKIP_TARGET);
-                action.setTargetName("Bỏ qua");
-                action.setTargetRoleId(0);
-                action.setTargetRoleName("");
-            } else {
-                action.setTargetDeviceId(target.getIpData());
-                action.setTargetName(target.getNameMember() != null ? target.getNameMember() : "Ẩn danh");
-                action.setTargetRoleId(target.getId());
-                action.setTargetRoleName(removeHtml(target.getRole()));
-            }
+            action.setTargetDeviceId(target.getIpData());
+            action.setTargetName(target.getNameMember() != null ? target.getNameMember() : "Ẩn danh");
+            action.setTargetRoleId(target.getId());
+            action.setTargetRoleName(removeHtml(target.getRole()));
 
             String key = actionKey(action);
             NightActionDto selected = nightSelections.get(key);
@@ -364,11 +293,6 @@ public class MaSoiAutoV1 {
                 nightSelections.remove(key);
                 broadcastStateLocked();
                 return buildState(actor.getIpData());
-            }
-            // Vấn đề 16: bảng cắn và bảng nguyền của Sói dùng chung 1 lượt chọn nên phải bỏ chọn bảng còn lại.
-            String exclusiveWolfKey = exclusiveWolfActionKey(action);
-            if (!ObjectUtils.isEmpty(exclusiveWolfKey)) {
-                nightSelections.remove(exclusiveWolfKey);
             }
             nightSelections.put(key, action);
             if (allNightSelected() && nightRemainingSeconds > 5) {
@@ -401,6 +325,19 @@ public class MaSoiAutoV1 {
         }
     }
 
+    public DataMember getOrAssignRole(String deviceId, String playerName) {
+        DataMember member = maSoiService.getOrAssignRole(deviceId, playerName);
+        return DataMember.builder()
+                .description("Bạn không biết mình là ai và phải tìm ra con Sói")
+                .role("Ẩn vai")
+                .idPlayGame(member.getIdPlayGame())
+                .ipData(member.getIpData())
+                .isDead(member.isDead())
+                .oldTargetId(member.getOldTargetId())
+                .nameMember(member.getNameMember())
+                .build();
+    }
+
     private void tick() {
         synchronized (lock) {
             boolean changed = false;
@@ -414,7 +351,7 @@ public class MaSoiAutoV1 {
                     killDay();
                 }
             }
-            // Đồng hồ đêm chỉ chạy khi admin bật bảng đêm
+            // Đồng hồ đêm chỉ chạy chung cho toàn bộ role trong blind mode.
             if (showNightBoard && nightRemainingSeconds > 0) {
                 nightRemainingSeconds--;
                 changed = true;
@@ -423,20 +360,6 @@ public class MaSoiAutoV1 {
                     submitNightLocked();
                     killNight();
                     showNightBoard = false;
-                }
-            }
-            if (showNightBoard && selectionCountdownSeconds > 0) {
-                selectionCountdownSeconds--;
-                changed = true;
-                if (selectionCountdownSeconds > 5 && wolfAssassinSelected()) {
-                    selectionCountdownSeconds = 5;
-                }
-            }
-            if (showNightBoard && silentCountdownSeconds > 0) {
-                silentCountdownSeconds--;
-                changed = true;
-                if (silentCountdownSeconds > 5 && silentSelected()) {
-                    silentCountdownSeconds = 5;
                 }
             }
             // Đồng hồ vote chỉ chạy khi admin bật bảng vote
@@ -461,13 +384,6 @@ public class MaSoiAutoV1 {
             if (showVoteBoard && allVoteSelected() && voteRemainingSeconds > 5) {
                 voteRemainingSeconds = 5;
                 changed = true;
-            }
-            if(showToughGuy && toughGuyRemainingSeconds > 0) {
-                toughGuyRemainingSeconds--;
-                changed = true;
-                if (toughGuyRemainingSeconds == 0) {
-                    toughGuyProcess();
-                }
             }
             if (changed) {
                 broadcastStateLocked();
@@ -514,28 +430,21 @@ public class MaSoiAutoV1 {
 
     private Map<String, Object> buildState(String viewerDeviceId) {
         Map<String, Object> state = new LinkedHashMap<>();
+        // Blind mode chỉ có 1 countdown đêm cho tất cả role.
         state.put("dayRemainingSeconds", dayRemainingSeconds);
         state.put("nightRemainingSeconds", nightRemainingSeconds);
         state.put("voteRemainingSeconds", voteRemainingSeconds);
-        // Vấn đề 2: thêm biến đếm ngược chung trong state.
-        state.put("selectionCountdownSeconds", selectionCountdownSeconds);
-        state.put("selectionCountdownRoleIds", ACTION_COUNTDOWN_ROLE_IDS);
-        // Vấn đề 7: countdown riêng của Silent, xử lý role-based tương tự vấn đề 2.
-        state.put("silentCountdownSeconds", silentCountdownSeconds);
-        state.put("silentCountdownRoleIds", SILENT_COUNTDOWN_ROLE_IDS);
         state.put("daySelections", buildDaySelectionsView());
         state.put("voteSelections", buildVoteSelectionsView());
-        // Vấn đề 1: action đêm được build từ service và gửi xuống state theo từng device.
         state.put("viewerActionsByDevice", buildViewerActionsByDevice());
         state.put("showDayBoard", showDayBoard);
         state.put("showNightBoard", showNightBoard);
         state.put("showVoteBoard", showVoteBoard);
-        state.put("showToughGuy", showToughGuy);
-        state.put("toughGuyRemainingSeconds", toughGuyRemainingSeconds);
-        state.put("toughGuySelection", toughGuySelection);
+        state.put("deadDeviceIds", maSoiService.getDeadPls());
+
         state.put("notShowDay", maSoiService.NOT_SHOW_DAY);
         // Khi bất kỳ bảng nào đang hiện, gửi danh sách người chơi mới nhất
-        if (showDayBoard || showNightBoard || showVoteBoard || showToughGuy) {
+        if (showDayBoard || showNightBoard || showVoteBoard) {
             Map<String, String> players = new LinkedHashMap<>();
             for (DataMember p : alivePlayersRaw()) {
                 if (!ObjectUtils.isEmpty(p.getIpData()) && !maSoiService.NOT_SHOW_DAY.contains(p.getIpData())) {
@@ -548,20 +457,10 @@ public class MaSoiAutoV1 {
                 state.put("votedPlayer", votedPlayer.getNameMember() + reasonKill);
             }
         }
-        // Luôn gửi danh sách deviceId của người đã chết để FE ẩn bảng đúng mid-game
-        List<String> deadIds = maSoiService.getPls().stream()
-                .filter(p -> p.isDead() && !ObjectUtils.isEmpty(p.getIpData()))
-                .map(DataMember::getIpData)
-                .toList();
-        state.put("deadDeviceIds", deadIds);
-        state.put("nightRoleState", buildNightRoleState(viewerDeviceId));
         state.put("autoHistories", buildAutoHistoriesView());
         if (!ObjectUtils.isEmpty(viewerDeviceId)) {
             state.put("viewerSetting", maSoiAutoService.cloneSetting(maSoiAutoService.resolveViewerSetting(viewerDeviceId)));
         }
-        // Vấn đề 11: gửi list roleId không được tự chọn bản thân để FE disable tile tương ứng.
-        state.put("selfSelectDisabledRoleIds", SELF_SELECT_DISABLED_ROLE_IDS);
-        // Vấn đề 12: gửi map deviceId → oldTargetId để FE biết ai không được chọn lại.
         Map<String, String> playerOldTargets = new LinkedHashMap<>();
         for (DataMember p : maSoiService.getPls()) {
             if (!ObjectUtils.isEmpty(p.getIpData()) && !ObjectUtils.isEmpty(p.getOldTargetId())) {
@@ -578,78 +477,6 @@ public class MaSoiAutoV1 {
             result.add(entry.getKey() + ": " + entry.getValue());
         }
         return result;
-    }
-
-    // Ví dụ tạm: trả về state riêng theo role của người đang xem bảng đêm.
-    private Map<String, Object> buildNightRoleState(String viewerDeviceId) {
-        Map<String, Object> nightRoleState = new LinkedHashMap<>();
-        List<Map<String, Object>> wolfSelected = new ArrayList<>();
-        List<Map<String, Object>> wolfRecruitSelected = new ArrayList<>();
-        String seerResult = "";
-        Set<DataMember> killedPlayer = new HashSet<>();
-        for (Map.Entry<String, NightActionDto> entry : nightSelections.entrySet()) {
-            NightActionDto value = entry.getValue();
-            DataMember actor = findPlayer(value.getDeviceId()).orElse(new DataMember());
-            DataMember target = findPlayer(value.getTargetDeviceId()).orElse(new DataMember());
-            if (isWolfNightActor(value.getRoleId())) {
-                Map<String, Object> item = new LinkedHashMap<>();
-                item.put("actorDeviceId", actor.getIpData());
-                if (ObjectUtils.isEmpty(target.getIpData())) {
-                    item.put("targetDeviceId", SKIP_TARGET);
-                    item.put("targetName", SKIP_TARGET);
-                    item.put("isSkip", false);
-                } else {
-                    item.put("targetDeviceId", target.getIpData());
-                    item.put("targetName", target.getNameMember() != null ? target.getNameMember() : "Ẩn danh");
-                    item.put("isSkip", false);
-                }
-                item.put("actorName", actor.getNameMember() != null ? actor.getNameMember() : "Ẩn danh");
-                item.put("colType", normalizeActionType(value.getColType()));
-                if (RECRUIT.code.equals(item.get("colType"))) {
-                    wolfRecruitSelected.add(item);
-                } else {
-                    wolfSelected.add(item);
-                }
-            }
-            if (actor.getId() == 20 && selectionCountdownSeconds == 0 && !maSoiService.nextDayBlocks.containsKey(20)) {
-                killedPlayer.add(target);
-            }
-            if (value.getRoleId() == 32) {
-                MaSoiService.NightResolution resolution = new MaSoiService.NightResolution();
-                for (Map.Entry<String, NightActionDto> entrySilent : nightSelections.entrySet()) {
-                    if (entrySilent.getValue().getRoleId() == 38 && entrySilent.getValue().getTargetRoleId() == 32) {
-                        resolution.disabledRoles.put(entrySilent.getValue().getTargetDeviceId(), " bị câm lặng");
-                    }
-                }
-                List<NightActionDto> actions = List.of(value);
-                Map<String, DataMember> playersByDevice = maSoiService.playersByDevice();
-                seerResult = "Người được chọn là: " + maSoiService.applyConnectionForSeer(actions, playersByDevice, resolution);
-            }
-        }
-        if (selectionCountdownSeconds == 0) {
-            List<NightActionDto> actions = new ArrayList<>(nightSelections.values().stream()
-                    .filter(action -> !SKIP_TARGET.equals(action.getTargetDeviceId()))
-                    .toList());
-            NightActionDto wolfAction = wolfAction(actions);
-            if (!ObjectUtils.isEmpty(wolfAction.getRoleName()) && (wolfAction.actionType() == SOI || wolfAction.actionType() == RECRUIT)) {
-                killedPlayer.add(findPlayer(wolfAction.getTargetDeviceId()).orElse(new DataMember()));
-            }
-        }
-
-        DataMember viewer = findPlayer(viewerDeviceId).orElse(new DataMember());
-        if (viewerDeviceId == null || viewer.getId() == 32) {
-            nightRoleState.put("seerResult", seerResult); // TIEN TRI
-        }
-        if (viewerDeviceId == null || (maSoiService.WOLF_ROLE_IDS.contains(viewer.getId()) && viewer.getId() != 15)) {
-            nightRoleState.put("wolfSelected", wolfSelected); // SOI
-            // Vấn đề 16: bảng Nguyền dùng state riêng để FE hiển thị độc lập với bảng cắn.
-            nightRoleState.put("wolfRecruitSelected", wolfRecruitSelected); // SOI NGUYEN
-        }
-
-        if (viewerDeviceId == null || viewer.getId() == 31) {
-            nightRoleState.put("killedPlayer", killedPlayer); // PHU THuy
-        }
-        return nightRoleState;
     }
 
     // Tạo view danh sách vote để gửi xuống FE
@@ -723,36 +550,6 @@ public class MaSoiAutoV1 {
                 .findFirst();
     }
 
-    private boolean hasNightAction(DataMember player) {
-        return player.getKillSkill() > 0
-                || player.getProtectedSkill() > 0
-                || player.isSuperProtectedSkill()
-                || (player.getConnectSkill() > 0 && !HIDDEN_ID.contains(player.getId()));
-    }
-
-    private int nightActionSlots(List<DataMember> players) {
-        int count = 0;
-        for (DataMember player : players) {
-            if (player.getKillSkill() > 0) {
-                count++;
-            }
-            if (player.getProtectedSkill() > 0) {
-                count++;
-            }
-            if (player.getConnectSkill() > 0 && !HIDDEN_ID.contains(player.getId())) {
-                if (player.getId() != 42) {
-                    count++;
-                } else if (ObjectUtils.isEmpty(player.getOldTargetId())) {
-                    count++;
-                }
-            }
-            if (player.isSuperProtectedSkill()) {
-                count++;
-            }
-        }
-        return count;
-    }
-
     private boolean allVoteSelected() {
         return alivePlayersRaw().size() > 0 && voteSelections.size() >= alivePlayersRaw().size();
     }
@@ -761,116 +558,13 @@ public class MaSoiAutoV1 {
         return alivePlayersRaw().size() > 0 && daySelections.size() >= alivePlayersRaw().size();
     }
 
-    private boolean silentSelected() {
-        Optional<DataMember> silentPlayer = findPlayer(38);
-        if (silentPlayer.isPresent()) {
-            if (silentPlayer.get().isDead()) {
-                if (500 < silentCountdownSecondRandom) {
-                    silentCountdownSecondRandom = new Random().nextInt(6) + 7;;
-                }
-                silentCountdownSecondRandom--;
-                if (silentCountdownSecondRandom <= 0) {
-                    silentCountdownSeconds = 5;
-                }
-                return false;
-            } else {
-                // neu con song thi kiem tra xem action da chon hay chua
-                return nightSelections.values().stream()
-                        .anyMatch(value -> value.getRoleId() == 38);
-            }
-        } else {
-            silentCountdownSeconds = 1;
-            return false;
-        }
-    }
-
-    private boolean wolfAssassinSelected() {
-        Optional<DataMember> assassinPlayer = findPlayer(20);
-
-        long aliveWolves = maSoiService.getPls().stream()
-                .filter(player ->
-                        MaSoiService.WOLF_ROLE_IDS.contains(player.getId())
-                                && !player.isDead()
-                                && player.getId() != 15)
-                .count();
-        long assassinActions = nightSelections.values().stream()
-                .filter(value -> Objects.equals(value.getRoleId(), 20))
-                .count();
-        List<NightActionDto> wolfActions = nightSelections.values().stream()
-                .filter(value ->
-                        MaSoiService.WOLF_ROLE_IDS.contains(value.getRoleId())
-                                && value.getRoleId() != 15)
-                .toList();
-
-        boolean assassinSelected =
-                (assassinPlayer.isPresent() && assassinPlayer.get().isDead())
-                        || assassinActions == 1;
-        boolean wolfSelected =
-                aliveWolves == 0
-                        || (aliveWolves == wolfActions.size()
-                        && wolfActions.stream()
-                        .map(NightActionDto::getTargetDeviceId)
-                        .collect(Collectors.toSet())
-                        .size() == 1
-                        && wolfActions.stream()
-                        .map(action -> normalizeActionType(action.getColType()))
-                        .collect(Collectors.toSet())
-                        .size() == 1);
-
-        boolean actionCheck = (assassinPlayer.isEmpty() || assassinSelected) && wolfSelected;
-
-        if (assassinPlayer.map(DataMember::isDead).orElse(false) || aliveWolves == 0) {
-            if (500 < selectionCountdownSecondRandom) {
-                selectionCountdownSecondRandom = new Random().nextInt(6) + 9;
-            }
-            selectionCountdownSecondRandom--;
-            return selectionCountdownSecondRandom <= 0 && actionCheck;
-        }
-        return actionCheck;
-    }
-
     private boolean allNightSelected() {
-        boolean isDead = Objects.equals(nightActionSlots(alivePlayersRaw()), nightActionSlots(maSoiService.getPls()));
-        if (isDead) {
-            if (nightRemainingSecondRandom > 500) {
-                nightRemainingSecondRandom = new Random().nextInt(6) + 10;
-            }
-            nightRemainingSecondRandom--;
-        } else {
-            nightRemainingSecondRandom = 0;
-        }
-        if (selectionCountdownSeconds <= 0 && silentCountdownSeconds <= 0) {
-            List<NightActionDto> actions = new ArrayList<>(nightSelections.values().stream()
-                    .filter(action -> !ACTION_COUNTDOWN_ROLE_IDS.contains(action.getRoleId()) || action.getRoleId() == 38) // list ko chua soi, sat thu, silent vi da het gio roi
-                    .toList());
-            return nightRemainingSecondRandom <= 0 && actions.size() >= nightActionSlots(alivePlayersRaw().stream()
-                    .filter(action -> !ACTION_COUNTDOWN_ROLE_IDS.contains(action.getId()) || action.getId() == 38) // list ko chua soi, sat thu, silent vi da het gio roi
-                    .toList());
-        } else {
-            return nightActionSlots(alivePlayersRaw()) > 0 && nightSelections.size() >= nightActionSlots(alivePlayersRaw());
-        }
+        List<DataMember> alivePlayers = alivePlayersRaw();
+        return !alivePlayers.isEmpty() && nightSelections.size() >= alivePlayers.size();
     }
 
     private String actionKey(NightActionDto action) {
         return action.getDeviceId() + "|" + normalizeActionType(action.getColType());
-    }
-
-    private String exclusiveWolfActionKey(NightActionDto action) {
-        if (action == null || !isWolfNightActor(action.getRoleId())) {
-            return null;
-        }
-        String actionType = normalizeActionType(action.getColType());
-        if (KILL.code.equals(actionType)) {
-            return action.getDeviceId() + "|" + RECRUIT.code;
-        }
-        if (RECRUIT.code.equals(actionType)) {
-            return action.getDeviceId() + "|" + KILL.code;
-        }
-        return null;
-    }
-
-    private boolean isWolfNightActor(int roleId) {
-        return MaSoiService.WOLF_ROLE_IDS.contains(roleId) && roleId != 15;
     }
 
     private String normalizeActionType(String colType) {
@@ -909,27 +603,7 @@ public class MaSoiAutoV1 {
         if (viewer == null || viewer.isDead()) {
             return List.of();
         }
-        List<Map<String, Object>> actions = new ArrayList<>();
-        if (viewer.getKillSkill() > 0) {
-            actions.add(buildAction("kill", "⚔️ Giết", "", false));
-        }
-        // Vấn đề 16: khi còn nguyền, Sói roleId <= 14 có thêm bảng Nguyền nhưng vẫn chỉ chọn 1 trong 2 bảng.
-        if (isWolfNightActor(viewer.getId()) && maSoiService.isShowSoiNguyen()) {
-            actions.add(buildAction(RECRUIT.code, "🪄 Nguyền", "", false));
-        }
-        if (viewer.getProtectedSkill() > 0) {
-            actions.add(buildAction("prot", "🛡️ Bảo vệ", "", false));
-        }
-        int connectSkill = viewer.getConnectSkill();
-        if (connectSkill > 0 && !HIDDEN_ID.contains(viewer.getId())) {
-            actions.add(buildAction(
-                    "conn",
-                    connectSkill == 8 ? "🔮 Tiên tri" : "🔗 Kết nối",
-                    String.valueOf(connectSkill),
-                    viewer.getId() == 32
-            ));
-        }
-        return actions;
+        return List.of(buildAction(BLIND_SELECT_CODE, "Chọn 1 người chơi", "", false));
     }
 
     private Map<String, Object> buildAction(String colType, String label, String connValue, boolean needsConfirm) {
@@ -984,167 +658,99 @@ public class MaSoiAutoV1 {
     }
 
     private void killNight() {
-        // toList() tạo immutable list, wolfAction có remove/add nên phải dùng ArrayList để tránh UnsupportedOperationException làm ticker dừng.
         List<NightActionDto> actions = new ArrayList<>(nightSelections.values().stream()
                 .filter(action -> !SKIP_TARGET.equals(action.getTargetDeviceId()))
                 .toList());
-
-        wolfAction(actions);
-        if (maSoiService.nextDayBlocks.containsKey(20)) {
-            nextDayBlockHandle = true;
-            actions.removeIf(action -> action.getRoleId() == 20);
-        }
-        if (nextDayBlockHandle) {
-            nextDayBlockHandle = false;
-            maSoiService.nextDayBlocks.clear();
-        }
-        maSoiService.processNight(actions);
-        // neu skip thi clear het target
-        nightSelections.values().stream().filter(value -> SKIP_TARGET.equals(value.getTargetDeviceId()))
-            .forEach(value -> {
-                findPlayer(value.getDeviceId()).ifPresent(player -> player.setOldTargetId(null));
-            });
+        processNight(actions);
         nightSelections.clear();
-        checkEndGame(false, null);
+        checkEndGame();
     }
 
-    private NightActionDto wolfAction(List<NightActionDto> actions) {
-        List<NightActionDto> wolfActions = actions.stream()
-                .filter(action -> MaSoiService.WOLF_ROLE_IDS.contains(action.getRoleId()) && action.getRoleId() != 15)
-                .toList();
-        NightActionDto nightActionDto = new NightActionDto();
-        actions.removeAll(wolfActions);
-        if (maSoiService.nextDayBlocks.containsKey(1)) {
-            nextDayBlockHandle = true;
-            return nightActionDto;
+    private void daySelection(String device) {
+        maSoiService.processDay(List.of(device));
+        killDayDevice = null;
+        checkEndGame();
+    }
+
+    private void processNight(List<NightActionDto> actions) {
+        String silentTarget = actions.stream().filter(action -> action.getRoleId() == 38).findFirst().orElse(new NightActionDto()).getTargetDeviceId();
+        NightActionDto woflKill = actions.stream().min(Comparator.comparing(NightActionDto::getRoleId)).orElse(new NightActionDto());
+        NightActionDto protectMember = actions.stream().filter(action -> action.getRoleId() == 33 && !Objects.equals(action.getDeviceId(), silentTarget)).findFirst().orElse(null);
+        StringBuilder nightDetails = new StringBuilder();
+
+        if (Objects.equals(silentTarget, woflKill.getDeviceId())) {
+            nightDetails.append("Sói đã cắn hụt ").append(woflKill.getTargetName()).append(": ").append(woflKill.getTargetRoleName()).append(" <br>");
+            woflKill = null;
+        } else {
+            nightDetails.append("Sói đã cắn ").append(woflKill.getTargetName()).append(": ").append(woflKill.getTargetRoleName()).append(" <br>");
         }
-        if (wolfActions.size() == 1) {
-            nightActionDto = wolfActions.get(0);
-        } else if (wolfActions.size() > 1) {
-            if (Objects.isNull(randomVictim)) {
-                randomVictim = new Random().nextInt(wolfActions.size());
+
+        if (!ObjectUtils.isEmpty(protectMember)) {
+            nightDetails.append(protectMember.getTargetName()).append(": ").append(protectMember.getTargetRoleName()).append(" đã được ").append(protectMember.getRoleName()).append(" bảo vệ <br>");
+            if (!ObjectUtils.isEmpty(woflKill) && Objects.equals(woflKill.getTargetDeviceId(), protectMember.getTargetDeviceId())) {
+                woflKill = null; // neu soi cắn nguoi duoc bao ve thi bo di
             }
-            nightActionDto = wolfActions.stream()
-                    .filter(action -> action.getRoleId() == 2 || action.getRoleId() == 4)
-                    .findFirst()
-                    .orElse(wolfActions.get(randomVictim));
-
         }
-        if (!ObjectUtils.isEmpty(nightActionDto.getRoleName())) {
-            String selectedWolfAction = normalizeActionType(nightActionDto.getColType());
-            nightActionDto.setRoleName(SOI.code);
-            nightActionDto.setColType(RECRUIT.code.equals(selectedWolfAction) ? RECRUIT.code : SOI.code);
-            actions.add(nightActionDto);
-        }
-        return nightActionDto;
-    }
 
-    private void checkEndGame(boolean isDay, String target) {
-        AtomicBoolean endGame = new AtomicBoolean(false);
-        if (isDay) {
-            findPlayer(target).ifPresent(dataMember -> {
-               if (dataMember.getId() == 21) {
-                    endGame("Chán đời chiến thắng");
-                    endGame.set(true);
+        for (NightActionDto action : actions) {
+            // gan old target cho actor
+            DataMember actor = findPlayer(action.getDeviceId()).orElse(new DataMember());
+            actor.setOldTargetId(action.getTargetDeviceId());
+            if (action.getRoleId() == 34) {
+                nightDetails.append(actor.getNameMember()).append(" đã ghim ").append(action.getTargetName()).append(" <br>");
+                if (!Objects.equals(silentTarget, action.getDeviceId()) && !ObjectUtils.isEmpty(woflKill) && Objects.equals(woflKill.getTargetDeviceId(), action.getDeviceId())) {
+                    // nếu tho san bi loai thi keo theo nguoi di theo
+                    nightDetails.append(action.getTargetName()).append(": ").append(action.getTargetRoleName()).append(" đã bị loại").append(" <br>");
+                    findPlayer(action.getTargetDeviceId()).ifPresent(target -> {
+                        maSoiService.getDeadPls().add(target);
+                        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(target.getNameMember(), DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size()))));
+                    });
+                }
+            } else if (action.getRoleId() == 32) {
+                nightDetails.append(actor.getNameMember()).append(" đã buộc ").append(action.getTargetName()).append(" nói thật <br>");
+                if (!Objects.equals(silentTarget, action.getDeviceId())) {
+                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(action.getTargetName(), " phải nói thật <br>"));
+                }
+            } else if (action.getRoleId() == 46) {
+                nightDetails.append(actor.getNameMember()).append(" đã câm lặng ").append(action.getTargetName()).append(" <br>");
+                if (!Objects.equals(silentTarget, action.getDeviceId())) {
+                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(action.getTargetName(), " không được nói chuyện <br>"));
+                }
+            } else if (action.getRoleId() == 38) {
+                nightDetails.append(actor.getNameMember()).append(" đã cấm sài phép ").append(action.getTargetName()).append(" <br>");
+            } else if (action.getRoleId() == 45) {
+                nightDetails.append(actor.getNameMember()).append(" đã đuổi ").append(action.getTargetName()).append(" ra khỏi làng <br>");
+                if (!Objects.equals(silentTarget, action.getDeviceId())) {
+                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(action.getTargetName(), " đã bị đuổi ra khỏi làng TỐI TRỜ VỀ <br>"));
+                    maSoiService.NOT_SHOW_DAY.add(action.getTargetDeviceId());
+                }
+            }
+        }
+        if (!ObjectUtils.isEmpty(woflKill)) {
+            findPlayer(woflKill.getTargetDeviceId()).ifPresent(target -> {
+                if (target.getId() == 40) {
+                    // neu bi nguyen thi thanh soi
+                    target.setId(4);
+                } else {
+                    maSoiService.getDeadPls().add(target);
+                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(target.getNameMember(), DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size()))));
                 }
             });
         }
-        if (!endGame.get()) {
-            endGameProcess();
-        }
+        maSoiService.getCurrentGameHistory().put("Đêm " + maSoiService.nightNumber++, nightDetails.toString());
     }
-
-    private void endGameProcess() {
+    
+    private void checkEndGame() {
         List<DataMember> alivePlayers = maSoiService.getPls().stream()
                 .filter(player -> !player.isDead() && !ObjectUtils.isEmpty(player.getIpData()))
                 .toList();
-
-        boolean hasWolf = alivePlayers.stream()
-                .anyMatch(p -> p.getId() <= 14);
-
-        boolean hasAssassin = alivePlayers.stream()
-                .anyMatch(p -> p.getId() == 20);
-
-        boolean allVillager = alivePlayers.stream()
-                .noneMatch(p -> ACTION_COUNTDOWN_ROLE_IDS.contains(p.getId()));
-
         if (alivePlayers.isEmpty()) {
             endGame("Thế giới sụp đổ");
-            return;
         }
-        // Dân thắng
-        if (allVillager) {
-            endGame("Người dân chiến thắng");
-            return;
-        }
-
-        // Chỉ còn Sói
-        boolean isWolfWin = hasWolf && !hasAssassin;
-
-        // Chỉ còn Sát thủ
-        boolean isAssassinWin = !hasWolf && hasAssassin;
-
-        if (isWolfWin) {
-            checkWolfEndGame(alivePlayers);
-        } else if (isAssassinWin) {
-            checkAssassinEndGame(alivePlayers);
-        }
-    }
-
-    private void checkWolfEndGame(List<DataMember> alivePlayers) {
-        List<DataMember> wolves = alivePlayers.stream()
-                .filter(p -> p.getId() <= 14)
-                .toList();
-
-        List<DataMember> villagers = alivePlayers.stream()
-                .filter(p -> p.getId() >= 30)
-                .toList();
-
-        boolean isOneVillagerNoDamage = villagers.size() == 1
-                && villagers.get(0).getKillSkill() == 0 && villagers.get(0).getId() != 35; // neu thanh nien cứng thì khác
-
-        if (alivePlayers.stream().anyMatch(p -> p.getId() == 21)
-                && !villagers.isEmpty()) {
-            // neu con chan doi va dan game tiep tuc
-            return;
-        }
-
-        if (wolves.size() == 1 && villagers.size() == 1) {
-            int villagerId = villagers.get(0).getId();
-
-            if (villagerId == 38) {
-                endGame("Vòng lặp vô tận, sói chán quá bỏ đi");
-            } else if (villagerId == 34) {
-                endGame("Thế giới sụp đổ");
-            }
-        } else if (villagers.isEmpty() || isOneVillagerNoDamage) {
+        if (alivePlayers.stream().noneMatch(p -> p.getId() > 10)) {
             endGame("Sói chiến thắng");
-        }
-    }
-
-    private void checkAssassinEndGame(List<DataMember> alivePlayers) {
-        List<DataMember> villagers = alivePlayers.stream()
-                .filter(p -> p.getId() >= 30)
-                .toList();
-
-        if (alivePlayers.stream().anyMatch(p -> p.getId() == 21)
-                && !villagers.isEmpty()) {
-            // neu con chan doi va dan game tiep tuc
-            return;
-        }
-
-        if (villagers.size() == 1) {
-            int villagerId = villagers.get(0).getId();
-
-            if (villagerId == 38) {
-                endGame("Vòng lặp vô tận, sát thủ chán quá bỏ đi");
-            } else if (villagerId == 34) {
-                endGame("Thế giới sụp đổ");
-            } else if (villagers.get(0).getKillSkill() == 0) {
-                endGame("Sát thủ chiến thắng");
-            }
-        } else if (villagers.isEmpty()) {
-            endGame("Sát thủ chiến thắng");
+        } else if (alivePlayers.stream().noneMatch(p -> p.getId() <= 10)) {
+            endGame("Dân chiến thắng");
         }
     }
 
@@ -1152,30 +758,5 @@ public class MaSoiAutoV1 {
         maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("End Game", " " + message));
         maSoiService.getCurrentGameHistory().put("End Game", " " + message);
         maSoiService.endGame();
-    }
-
-    private void toughGuyProcess() {
-        if (!ObjectUtils.isEmpty(toughGuySelection)) {
-            maSoiService.processDay(List.of(toughGuySelection));
-            checkEndGame(false, null);
-        } else {
-            maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Không ai bị lôi ra chuồng gà", ""));
-        }
-        showToughGuy = false;
-        toughGuySelection = "";
-    }
-
-    private void daySelection(String device) {
-        Optional<DataMember> target = findPlayer(device);
-        if (target.isPresent() && target.get().getId() == 35 && ObjectUtils.isEmpty(target.get().getOldTargetId())) {
-            toughGuyRemainingSeconds = dayDurationSeconds;
-            showToughGuy = true;
-            maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Thanh niên cứng", target.get().getNameMember() + " có " + toughGuyRemainingSeconds + "s để lôi 1 người ra chuồng gà"));
-            target.get().setOldTargetId("toughGay"); // ke ca ko vote thi thanh nien cung cung mat luot giet
-        } else {
-            maSoiService.processDay(List.of(device));
-            checkEndGame(true, device);
-            killDayDevice = null;
-        }
     }
 }

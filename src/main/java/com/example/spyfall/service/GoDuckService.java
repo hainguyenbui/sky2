@@ -8,6 +8,8 @@ import org.springframework.util.ObjectUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.example.spyfall.util.Constant.QR_GO_DUCK;
+
 @Service
 public class GoDuckService {
 
@@ -18,7 +20,7 @@ public class GoDuckService {
     @Getter
     private Integer spyTotalPlay = 0;
     @Getter
-    private final String image = "/gDuck.png";
+    private final String image = QR_GO_DUCK;
     @Getter
     private int countGame = 0;
     List<Integer> spyPlayers = new ArrayList<>();

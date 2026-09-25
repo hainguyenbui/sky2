@@ -13,29 +13,6 @@
         .board-card { border-left-width: 4px; }
         .board-card.day-board { border-left-color: rgba(59,130,246,0.85); background: linear-gradient(180deg, rgba(59,130,246,0.10), rgba(30,41,59,0.35)); }
         .board-card.night-board { border-left-color: rgba(168,85,247,0.85); background: linear-gradient(180deg, rgba(168,85,247,0.10), rgba(30,41,59,0.35)); }
-        .reveal-box {
-            background: rgba(30,41,59,0.40);
-            border: 2px dashed rgba(255,255,255,0.15);
-            border-radius: 16px;
-            padding: 22px 18px;
-            text-align: center;
-            cursor: pointer;
-            overflow: hidden;
-            min-height: 120px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            transition: all 0.25s ease;
-        }
-        .reveal-box.blurred .reveal-content { filter: blur(20px); opacity: 0.08; pointer-events: none; user-select: none; display: none;}
-        .reveal-box.blurred .reveal-placeholder { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-muted); font-weight: 700; }
-        .reveal-box.blurred .reveal-placeholder::before { content: '👁️'; }
-        .reveal-box:not(.blurred) { border-style: solid; border-color: rgba(59,130,246,0.35); background: rgba(59,130,246,0.08); }
-        .reveal-box:not(.blurred) .reveal-placeholder { display: none; }
-        .reveal-box.blurred {
-            min-height: 0;
-            height: 95px;
-        }
         .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .meta-box { padding: 12px; background: rgba(30,41,59,0.35); border: 1px solid var(--card-border); border-radius: 12px; }
         .meta-label { display:block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
@@ -283,13 +260,11 @@
 <body>
 <div class="container"
      th:data-member-device="${member != null ? member.ipData : ''}"
-     th:data-member-id="${member != null ? member.id : 0}"
      th:data-member-name="${member != null ? member.nameMember : ''}"
      th:data-member-kill="${member != null ? member.killSkill : 0}"
      th:data-member-prot="${member != null ? member.protectedSkill : 0}"
      th:data-member-conn="${member != null ? member.connectSkill : 0}"
-     th:data-member-dead="${member != null ? member.dead : false}"
-     th:data-member-super-prot="${member != null ? member.superProtectedSkill : false}">
+     th:data-member-dead="${member != null ? member.dead : false}">
     <div class="header-section">
         <h1>Ma Sói Auto V1</h1>
         <p class="desc">Admin: Haigacon, Design: Longdaica</p>
@@ -312,15 +287,8 @@
 
     <th:block th:if="${notSetup != true and fullSlot != true and member != null}">
         <div class="card" style="text-align: center;">
-            <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">CHỨC NĂNG CỦA BẠN:</h3>
-            <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
-                <div class="reveal-placeholder">Nhấp để ẩn/hiện chức năng</div>
-                <div class="reveal-content">
-                    <h2 id="location" th:style="'font-size: 2rem; color: #f87171; ' + (${isDead} ? 'text-decoration: line-through;' : '')" th:utext="${member.role}"></h2>
-                    <p class="desc" style="margin-top: 10px; font-size: 0.9rem;" th:text="${member.description}"></p>
-                    <p class="desc" style="margin-top: 10px; font-size: 1.3rem; color:red;" th:text="${member.roleShow}"></p>
-                </div>
-            </div>
+            <h2 id="location" th:style="'font-size: 2rem; color: #f87171; ' + (${isDead} ? 'text-decoration: line-through;' : '')" th:utext="${member.role}"></h2>
+            <p class="desc" style="margin-top: 10px; font-size: 0.9rem;" th:text="${member.description}"></p>
         </div>
 
         <div class="grid-2"  th:if="${!isDead}">
@@ -389,21 +357,6 @@
                 </div>
             </div>
 
-            <!-- id dùng để JS ẩn/hiện theo state.showToughGuy từ WebSocket -->
-            <div id="toughGuyCard" class="card day-board" style="display:none;">
-                <div class="card timer-card">
-                    <div class="section-title">
-                        <h3>Thời gian ngày</h3>
-                        <small>Vote đi các bé</small>
-                    </div>
-                    <div id="toughGuyTimer" class="timer-value"></div>
-                    <div class="timer-sub" id="toughGuyTimerSub"></div>
-                </div>
-                <div class="section-title">
-                    <h3>Bảng ngày</h3>
-                </div>
-                <div id="toughGuyBody" class="player-grid"></div>
-            </div>
         </div>
 
         <div>
@@ -461,31 +414,14 @@
     </div>
 </div>
 
-<div id="seerModal" class="modal-mask">
-    <div class="modal-card">
-        <h3 style="margin-bottom:8px;">Xác nhận Tiên tri</h3>
-        <p id="seerModalText" class="desc"></p>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-danger" onclick="closeSeerModal()">Hủy</button>
-            <button type="button" class="btn btn-primary" onclick="confirmSeerAction()">Xác nhận</button>
-        </div>
-    </div>
-</div>
-
 <script th:inline="javascript">
-    const initialState = /*[[${autoState}]]*/ {};
-    const initialPlayers = /*[[${pls}]]*/ {};
-    const memberBox = document.querySelector('.container');
-    const showGame = /*[[${notSetup != true and fullSlot != true and member != null}]]*/ false;
-    const currentDeviceId = memberBox ? (memberBox.dataset.memberDevice || '') : '';
-    const currentRoleId = memberBox ? parseInt(memberBox.dataset.memberId || '0', 10) : 0;
-    // Vấn đề 15: đọc superProtectedSkill của role 44 từ data attribute (được truyền qua model.addAttribute("member", member)).
-    const currentSuperProtectedSkill = memberBox ? memberBox.dataset.memberSuperProt === 'true' : false;
-    let currentIsDead = /*[[${isDead}]]*/ false;
-    const currentIsWolf = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].indexOf(currentRoleId) >= 0;
-    const canSeeNightSignals = currentIsWolf || currentRoleId === 31;
-    let appState = initialState;
-    let currentNightRoleState = {};
+const initialState = /*[[${autoState}]]*/ {};
+const initialPlayers = /*[[${pls}]]*/ {};
+const memberBox = document.querySelector('.container');
+const showGame = /*[[${notSetup != true and fullSlot != true and member != null}]]*/ false;
+const currentDeviceId = memberBox ? (memberBox.dataset.memberDevice || '') : '';
+let currentIsDead = /*[[${isDead}]]*/ false;
+let appState = initialState;
     // currentPlayers là map deviceId->name hiển thị ở bảng ngày/đêm (thường là người còn sống)
     let currentPlayers = Object.assign({}, initialPlayers || {});
     let selectedNightTargets = {};
@@ -542,15 +478,7 @@
     function renderTimers(state) {
         const day = parseInt(state.dayRemainingSeconds || 0, 10);
         const night = parseInt(state.nightRemainingSeconds || 0, 10);
-        const selectionCountdown = parseInt(state.selectionCountdownSeconds || 0, 10);
-        const silentCountdown = parseInt(state.silentCountdownSeconds || 0, 10);
-        const toughGuyRemainingSeconds = parseInt(state.toughGuyRemainingSeconds || 0, 10);
-        // Vấn đề 2: role 50/51 (hoặc role được backend cấu hình) luôn dùng countdown riêng của role đó.
-        const isRoleUsingSelectionCountdown = isRoleBoundToSelectionCountdown(state);
-        const isRoleUsingSilentCountdown = isRoleBoundToSilentCountdown(state);
-        const displayNight = isRoleUsingSilentCountdown
-            ? silentCountdown
-            : (isRoleUsingSelectionCountdown ? selectionCountdown : night);
+        const displayNight = night;
         const aliveCount = visiblePlayers().filter(function(player) {
             return !player.isDead;
         }).length;
@@ -564,12 +492,10 @@
         const dayTimer = document.getElementById('dayTimer');
         const nightTimer = document.getElementById('nightTimer');
         const nightTimerInline = document.getElementById('nightTimerInline');
-        const toughGuyTimer = document.getElementById('toughGuyTimer');
         // Vấn đề 21: người chết refresh trang không có board timer DOM, cần guard để không vỡ JS và vẫn init chat.
         if (dayTimer) { dayTimer.textContent = fmtSeconds(day); }
         if (nightTimer) { nightTimer.textContent = fmtSeconds(displayNight); }
         if (nightTimerInline) { nightTimerInline.textContent = fmtSeconds(night); }
-        if (toughGuyTimer) { toughGuyTimer.textContent = fmtSeconds(toughGuyRemainingSeconds); }
         const votedPlayer = document.getElementById('votedPlayer');
         if (votedPlayer) { votedPlayer.textContent = state.votedPlayer; }
         if (dayTimer) { dayTimer.className = 'timer-value' + (day <= 5 ? ' danger' : (day <= 15 ? ' warn' : '')); }
@@ -577,7 +503,7 @@
         const dayTimerSub = document.getElementById('dayTimerSub');
         const nightTimerSub = document.getElementById('nightTimerSub');
         if (dayTimerSub) { dayTimerSub.textContent = 'Đã chọn ' + dayCount + '/' + aliveCount; }
-        if (nightTimerSub) { nightTimerSub.textContent = 'Đã chọn ' + nightCount + '/' + actionCount + (isNightSelectionDisabled(state) ? ' • Đã tắt chọn đêm' : ''); }
+        if (nightTimerSub) { nightTimerSub.textContent = 'Đã chọn ' + nightCount + '/' + actionCount; }
         const container = document.getElementById("autoHistories");
         if (!container) {
             return;
@@ -618,13 +544,8 @@
 
     function normalizeWolfSelections(state, roleStateKey, fallbackKey) {
         const sourceState = state || {};
-        const roleState = (sourceState.nightRoleState && typeof sourceState.nightRoleState === 'object')
-            ? sourceState.nightRoleState
-            : {};
-        const raw = Array.isArray(roleState[roleStateKey]) ? roleState[roleStateKey]
-            : (fallbackKey && Array.isArray(roleState[fallbackKey]) ? roleState[fallbackKey]
-                : (Array.isArray(sourceState[roleStateKey]) ? sourceState[roleStateKey]
-                    : (fallbackKey && Array.isArray(sourceState[fallbackKey]) ? sourceState[fallbackKey] : [])));
+        const raw = Array.isArray(sourceState[roleStateKey]) ? sourceState[roleStateKey]
+            : (fallbackKey && Array.isArray(sourceState[fallbackKey]) ? sourceState[fallbackKey] : []);
         return raw.filter(function(item) {
             return item && typeof item === 'object' && item.targetDeviceId && !item.isSkip;
         }).map(function(item) {
@@ -697,7 +618,7 @@
         if (!currentDeviceId) {
             return;
         }
-        fetch('/msAutoV1/vote/select?answer=' + encodeURIComponent(answer), { method: 'POST' })
+        fetch('/msBlind/vote/select?answer=' + encodeURIComponent(answer), { method: 'POST' })
             .then(handleJsonResponse)
             .then(renderState)
             .catch(function(error) {
@@ -746,334 +667,50 @@
         body.innerHTML = playerTiles + skipTile;
     }
 
-    function renderToughGuyBoard(state) {
-        const body = document.getElementById('toughGuyBody');
-        const rows = visiblePlayers();
-        if (!rows.length) {
-            body.innerHTML = '';
-            return;
-        }
-        const playerTiles = rows.map(function(player) {
-            const isActive = state.toughGuySelection == player.deviceId;
-            if (player.deviceId == currentDeviceId) return;
-            return '<div class="player-tile select-row' + (isActive ? ' active' : '') + (player.isDead ? ' dead' : '') + '" data-phase="toughGuy" data-target="' + escapeAttr(player.deviceId) + '">' +
-                '<div class="player-name">' + escapeHtml(player.name) + '</div>' +
-            '</div>';
-        }).join('');
-        body.innerHTML = playerTiles;
-    }
+     function viewerActionsFromState(state) {
+         return [{
+             colType: 'blind-select',
+             title: 'Chọn người chơi'
+         }];
+     }
 
-    function actionMeta(action) {
-        // Mỗi loại hành động có màu và icon riêng để người chơi nhìn nhanh hơn
-        if (action.colType === 'kill') {
-            return { icon: '⚔️', title: 'Tấn công', signal: 'kill', tone: 'kill' };
-        }
-        if (action.colType === 'recruit') {
-            return { icon: '🪄', title: 'Nguyền', signal: 'recruit', tone: 'recruit' };
-        }
-        if (action.colType === 'prot') {
-            return { icon: '🛡️', title: 'Bảo vệ', signal: 'prot', tone: 'prot' };
-        }
-        if (action.colType === 'conn') {
-            if (currentRoleId === 32) {
-                return { icon: '🔮', title: 'Tiên tri', signal: 'seer', tone: 'seer' };
-            }
-            return { icon: '🔗', title: action.label || 'Kết nối', signal: 'conn', tone: 'conn' };
-        }
-        return { icon: '✦', title: action.label || action.colType, signal: action.colType, tone: action.colType };
-    }
+     function renderNightPanels(state) {
+         const wrap = document.getElementById('nightPanels');
+         const empty = document.getElementById('nightEmpty');
+         const actions = viewerActionsFromState(state);
 
-    function viewerActionsFromState(state) {
-        // Vấn đề 1: đọc action từ state backend, không tự build trong play.html.
-        const sourceState = state || appState || {};
-        const map = (sourceState.viewerActionsByDevice && typeof sourceState.viewerActionsByDevice === 'object')
-            ? sourceState.viewerActionsByDevice
-            : {};
-        return Array.isArray(map[currentDeviceId]) ? map[currentDeviceId] : [];
-    }
-
-    function isNightSelectionDisabled(state) {
-        // Disable chọn đêm theo countdown role-based (selection/silent).
-        const sourceState = state || appState || {};
-        // Role 32 (Tiên tri theo rule hiện tại): khóa tới khi silent countdown về 0.
-        if (currentRoleId === 32) {
-            return parseInt(sourceState.silentCountdownSeconds || 0, 10) > 0;
-        }
-        if (isRoleBoundToSilentCountdown(sourceState)) {
-            return parseInt(sourceState.silentCountdownSeconds || 0, 10) <= 0;
-        }
-        if (isRoleBoundToSelectionCountdown(sourceState)) {
-            return parseInt(sourceState.selectionCountdownSeconds || 0, 10) <= 0;
-        }
-        return false;
-    }
-
-    function isRoleBoundToSelectionCountdown(state) {
-        const sourceState = state || appState || {};
-        const roleCountdownIds = (sourceState.selectionCountdownRoleIds || []).map(function(item) {
-            return parseInt(item, 10) || 0;
-        });
-        return roleCountdownIds.indexOf(currentRoleId) >= 0;
-    }
-
-    function isRoleBoundToSilentCountdown(state) {
-        // Vấn đề 7: role trong silentCountdownRoleIds dùng countdown riêng tương tự vấn đề 2.
-        const sourceState = state || appState || {};
-        const roleCountdownIds = (sourceState.silentCountdownRoleIds || []).map(function(item) {
-            return parseInt(item, 10) || 0;
-        });
-        return roleCountdownIds.indexOf(currentRoleId) >= 0;
-    }
-
-    function seerResultForCurrentRole(state) {
-        // Vấn đề 4: role 32 đọc nightRoleState.seerResult từ state, không tự tính ở FE.
-        if (currentRoleId !== 32) {
-            return null;
-        }
-        const sourceState = state || appState || {};
-        const roleState = (sourceState.nightRoleState && typeof sourceState.nightRoleState === 'object')
-            ? sourceState.nightRoleState
-            : {};
-        const seerResult = roleState.seerResult;
-        if (seerResult == null || seerResult === '') {
-            return null;
-        }
-        if (typeof seerResult === 'string') {
-            return { text: seerResult };
-        }
-        if (Array.isArray(seerResult)) {
-            if (!seerResult.length) {
-                return null;
-            }
-            return { text: seerResult.map(function(item) { return String(item); }).join(', ') };
-        }
-        if (typeof seerResult === 'object') {
-            // Hỗ trợ cả 2 dạng:
-            // 1) seerResult là object kết quả trực tiếp
-            // 2) seerResult là map theo deviceId
-            const byDevice = seerResult[currentDeviceId];
-            const result = (byDevice != null && byDevice !== '') ? byDevice : seerResult;
-            if (typeof result === 'string') {
-                return { text: result };
-            }
-            if (result && typeof result === 'object') {
-                const text = result.message || result.text
-                    || ((result.targetName && result.isWolfOrAssassin != null)
-                        ? (result.targetName + (result.isWolfOrAssassin ? ' là Sói/Sát thủ' : ' không phải Sói/Sát thủ'))
-                        : '');
-                if (text) {
-                    return { text: text };
-                }
-            }
-        }
-        return null;
-    }
-
-    function witchKilledPlayers(state) {
-        // Vấn đề 5: role 31 chỉ đọc danh sách nightRoleState.killedPlayer từ state.
-        if (currentRoleId !== 31) {
-            return [];
-        }
-        const sourceState = state || appState || {};
-        const roleState = (sourceState.nightRoleState && typeof sourceState.nightRoleState === 'object')
-            ? sourceState.nightRoleState
-            : {};
-        const raw = roleState.killedPlayer;
-        const mapById = {};
-
-        function pushPlayer(deviceId, name) {
-            if (!deviceId || mapById[deviceId]) {
-                return;
-            }
-            mapById[deviceId] = {
-                deviceId: deviceId,
-                name: name || currentPlayers[deviceId] || 'Ẩn danh',
-                isDead: false
-            };
-        }
-
-        if (Array.isArray(raw)) {
-            raw.forEach(function(item) {
-                if (typeof item === 'string') {
-                    pushPlayer(item, currentPlayers[item]);
-                    return;
-                }
-                if (item && typeof item === 'object') {
-                    const deviceId = item.deviceId || item.targetDeviceId || item.ipData || '';
-                    const name = item.name || item.targetName || currentPlayers[deviceId] || '';
-                    pushPlayer(deviceId, name);
-                }
-            });
-        } else if (raw && typeof raw === 'object') {
-            Object.keys(raw).forEach(function(key) {
-                const value = raw[key];
-                if (typeof value === 'string') {
-                    pushPlayer(key, value);
-                    return;
-                }
-                if (value && typeof value === 'object') {
-                    const deviceId = value.deviceId || value.targetDeviceId || value.ipData || key;
-                    const name = value.name || value.targetName || currentPlayers[deviceId] || '';
-                    pushPlayer(deviceId, name);
-                }
-            });
-        }
-        return Object.keys(mapById).map(function(deviceId) { return mapById[deviceId]; });
-    }
-
-    function renderNightPanels(state) {
-        const wrap = document.getElementById('nightPanels');
-        const empty = document.getElementById('nightEmpty');
-        const actions = viewerActionsFromState(state);
-        const wolfSelections = wolfSelectionsByTarget(state, 'wolfSelected', 'wolfSelections');
-        // Vấn đề 16: bảng Nguyền của Sói đọc state riêng để hiển thị độc lập với bảng cắn.
-        const wolfRecruitSelections = wolfSelectionsByTarget(state, 'wolfRecruitSelected', 'wolfRecruitSelections');
-        const seerResult = seerResultForCurrentRole(state);
-        const killedPlayers = witchKilledPlayers(state);
-        const silentCountdown = parseInt(state.silentCountdownSeconds || 0, 10);
-
-        // Vấn đề 15: role 44 – thay toàn bộ bảng đêm bằng panel Yes/No hoặc thông báo hết skill.
-        if (currentRoleId === 44) {
-            empty.style.display = 'none';
-            if (!currentSuperProtectedSkill) {
-                // superProtectedSkill = false: không còn skill, không có action gì.
-                wrap.innerHTML = '<div class="empty-state">Bạn đã dùng skill bảo vệ rồi.</div>';
-            } else {
-                // superProtectedSkill = true: hiện panel Yes/No với câu hỏi bảo vệ tất cả.
-                const superProtSelected = selectedNightTargets['superProt'] === '__ALL__';
-                wrap.innerHTML =
-                    '<section class="panel-card prot">' +
-                        '<div class="panel-head">' +
-                            '<div class="panel-title"><span class="panel-icon prot">🛡️</span><span>Bảo vệ tất cả</span></div>' +
-                        '</div>' +
-                        '<p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:12px;">Bạn có muốn bảo vệ tất cả mọi người không?</p>' +
-                        '<div class="vote-grid">' +
-                            '<div class="vote-tile vote-yes' + (superProtSelected ? ' active' : '') + '" data-phase="night-super-prot" data-answer="yes">' +
-                                '<div class="vote-label">✅ YES</div>' +
-                            '</div>' +
-                            '<div class="vote-tile vote-no' + (!superProtSelected && selectedNightTargets['superProt'] ? ' active' : '') + '" data-phase="night-super-prot" data-answer="no">' +
-                                '<div class="vote-label">❌ NO</div>' +
-                            '</div>' +
-                        '</div>' +
-                    '</section>';
-            }
-            return;
-        }
-
-        if (!actions.length || currentIsDead) {
-            wrap.innerHTML = '';
-            empty.style.display = 'block';
-            return;
-        }
-        empty.style.display = 'none';
-        // Vấn đề 11: lấy list roleId không được tự chọn bản thân từ state.
-        const selfSelectDisabledRoleIds = (state.selfSelectDisabledRoleIds || []).map(function(id) { return parseInt(id, 10); });
-        const isSelfSelectDisabled = selfSelectDisabledRoleIds.indexOf(currentRoleId) >= 0;
-        // Vấn đề 12: lấy oldTargetId của người chơi hiện tại từ state.
-        const playerOldTargets = state.playerOldTargets || {};
-        const myOldTargetId = playerOldTargets[currentDeviceId] || null;
-        // Vấn đề 14: role 42 có oldTargetId → block toàn bộ bảng đêm, không cho chọn ai nữa.
-        if (currentRoleId === 42 && myOldTargetId) {
-            wrap.innerHTML = '<div class="empty-state">Bạn đã copy người chơi: [[${oldTargetName}]] .</div>';
-            return;
-        }
-        const isBoom = currentRoleId === 46;
-        const hasWitchProtectAction = actions.some(function(action) {
-            return action && action.colType === 'prot';
-        });
-        const panelsHtml = actions.map(function(action) {
-            const meta = actionMeta(action);
-            const isSeerAction = currentRoleId === 32 && action.colType === 'conn';
-            const hasSeerResult = !!seerResult;
-            const lockSeerAction = isSeerAction && hasSeerResult;
-            const players = (currentRoleId === 31 && action.colType === 'prot')
-                ? killedPlayers
-                : visiblePlayers();
-            const wolfSelectionSource = action.colType === 'recruit' ? wolfRecruitSelections : wolfSelections;
-            const rows = players.map(function(player) {
-                const selected = selectedNightTargets[action.colType] === player.deviceId;
-                const actorTags = currentRoleId >= 1 && currentRoleId <= 14
-                    ? (wolfSelectionSource[player.deviceId] || []).map(function(item) {
-                        return '<span class="tag blue">' + escapeHtml(item.actorName) + '</span>';
-                    }).join('')
-                    : '';
-                // Vấn đề 11: disable tile nếu role trong SELF_SELECT_DISABLED_ROLE_IDS và tile đó là chính bản thân.
-                const isSelfTile = isSelfSelectDisabled && player.deviceId === currentDeviceId;
-                // Vấn đề 12: xác định trạng thái oldTarget cho role Boom (46) và các role khác.
-                const isOldTarget = myOldTargetId && player.deviceId === myOldTargetId;
-                // Role khác (không phải Boom): disable tile có deviceId trùng oldTargetId.
-                const isDisabledByOldTarget = !isBoom && isOldTarget;
-                // Boom: tô màu vàng nhạt nếu chưa chọn, đỏ nếu đang chọn lại oldTarget, cam nếu chọn ô khác.
-                const boomOldTargetClass = (isBoom && isOldTarget) ? ' boom-old-target' : '';
-                const boomOtherClass = (isBoom && myOldTargetId && !isOldTarget && selected) ? ' boom-other-selected' : '';
-                const isDisabled = player.isDead || isSelfTile || isDisabledByOldTarget;
-                return '<div class="player-tile select-row action-' + escapeAttr(meta.tone) + (selected ? ' active' : '') + (isDisabled ? ' dead' : '') + (lockSeerAction ? ' locked' : '') + boomOldTargetClass + boomOtherClass + '" data-phase="night" data-target="' + escapeAttr(player.deviceId) + '" data-action="' + escapeAttr(action.colType) + '" data-confirm="' + (action.needsConfirm ? '1' : '0') + '" data-conn="' + escapeAttr(action.connValue || '') + '" data-locked="' + (lockSeerAction ? '1' : '0') + '">' +
-                    '<div class="player-name">' + escapeHtml(player.name) + '</div>' +
-                    (actorTags ? '<div class="player-note"><div class="tag-wrap">' + actorTags + '</div></div>' : '') +
-                '</div>';
-            }).join('');
-            const skipSelected = selectedNightTargets[action.colType] === '__SKIP__';
-            const skipActorTags = currentRoleId >= 1 && currentRoleId <= 14
-                ? (wolfSelectionSource['__SKIP__'] || []).map(function(item) {
-                    return '<span class="tag blue">' + escapeHtml(item.actorName) + '</span>';
-                }).join('')
-                : '';
-            const skipRow = '<div class="player-tile skip-tile select-row' + (skipSelected ? ' active' : '') + '" data-phase="night" data-target="__SKIP__" data-action="' + escapeAttr(action.colType) + '" data-confirm="0" data-conn="' + escapeAttr(action.connValue || '') + '" data-locked="' + (lockSeerAction ? '1' : '0') + '">' +
-                '<div class="player-name">⏭ Bỏ qua</div>' +
-                (skipActorTags ? '<div class="player-note"><div class="tag-wrap">' + skipActorTags + '</div></div>' : '') +
-            '</div>';
-            const seerResultHtml = lockSeerAction
-                ? '<div class="seer-result-box">🔮 ' + escapeHtml(seerResult.text || '') + '</div>'
-                : '';
-            const witchProtectCountdownHtml = (currentRoleId === 31 && action.colType === 'prot' && parseInt(state.selectionCountdownSeconds || 0, 10) > 0)
-                // Vấn đề 6: role Phù thủy chỉ hiển thị đếm ngược selectionCountdownSeconds ở bảng bảo vệ.
-                ? '<div class="seer-result-box">⏳ Người cần bảo vệ xuất hiện sau: ' + escapeHtml(fmtSeconds(parseInt(state.selectionCountdownSeconds || 0, 10))) + '</div>'
-                : '';
-            const gridContent = '<div class="player-grid">' + rows + skipRow + '</div>';
-            const emptyInfo = !rows
-                ? '<div class="empty-state">' + (currentRoleId === 31 && action.colType === 'prot'
-                    ? 'Không có ai bị loại.'
-                    : 'Không có ai bị loại.') + '</div>'
-                : '';
-            return '<section class="panel-card ' + meta.tone + '">' +
-                '<div class="panel-head">' +
-                    '<div class="panel-title"><span class="panel-icon ' + action.colType + '">' + meta.icon + '</span><span>' + escapeHtml(meta.title) + '</span></div>' +
-                    '<span class="signal-pill">' + (lockSeerAction ? 'Đã soi xong' : (action.colType === 'conn' && currentRoleId === 32 ? 'Tiên tri' : meta.title)) + '</span>' +
-                '</div>' +
-                seerResultHtml +
-                witchProtectCountdownHtml +
-                gridContent +
-                emptyInfo +
-            '</section>';
-        }).join('');
-        // Đảm bảo role 31 luôn thấy panel bảo vệ + countdown, kể cả khi backend chưa trả action "prot".
-        const fallbackWitchPanel = (currentRoleId === 31 && !hasWitchProtectAction)
-            ? ('<section class="panel-card prot">' +
-                '<div class="panel-head">' +
-                    '<div class="panel-title"><span class="panel-icon prot">🛡️</span><span>Bảo vệ</span></div>' +
-                    '<span class="signal-pill">Bảo vệ</span>' +
-                '</div>' +
-                ((parseInt(state.selectionCountdownSeconds || 0, 10) > 0)
-                    ? '<div class="seer-result-box">⏳ Người cần bảo vệ xuất hiện sau: ' + escapeHtml(fmtSeconds(parseInt(state.selectionCountdownSeconds || 0, 10))) + '</div>'
-                    : '') +
-                '<div class="empty-state">Bạn đã mất phép cứu.</div>' +
-              '</section>')
-            : '';
-        const silentNoticeHtml = (currentRoleId === 32 && silentCountdown > 0)
-            ? '<div class="seer-result-box">Tiên tri có thể soi sau: ' + escapeHtml(fmtSeconds(silentCountdown)) + '</div>'
-            : '';
-        wrap.innerHTML = silentNoticeHtml + panelsHtml + fallbackWitchPanel;
-    }
+         if (!actions.length || currentIsDead) {
+             wrap.innerHTML = '';
+             empty.style.display = 'block';
+             return;
+         }
+         empty.style.display = 'none';
+         const action = actions[0];
+         const players = visiblePlayers();
+         const playerOldTargets = state.playerOldTargets || {};
+         const myOldTargetId = playerOldTargets[currentDeviceId] || null;
+         const rows = players.map(function(player) {
+             const selected = selectedNightTargets[action.colType] === player.deviceId;
+             const isOldTarget = myOldTargetId && player.deviceId === myOldTargetId;
+             const isDisabled = player.isDead || isOldTarget;
+             return '<div class="player-tile select-row action-blind-select' + (selected ? ' active' : '') + (isDisabled ? ' locked dead' : '') + '" data-phase="night" data-target="' + escapeAttr(player.deviceId) + '" data-action="' + escapeAttr(action.colType) + '" data-confirm="0" data-conn="' + escapeAttr(action.connValue || '') + '" data-locked="' + (isDisabled ? '1' : '0') + '">' +
+                 '<div class="player-name">' + escapeHtml(player.name) + '</div>' +
+             '</div>';
+         }).join('');
+         wrap.innerHTML = '<section class="panel-card blind-select">' +
+             '<div class="panel-head">' +
+                 '<div class="panel-title"><span class="panel-icon blind-select">✦</span><span>Chọn người chơi</span></div>' +
+                 '<span class="signal-pill">Chọn người chơi</span>' +
+             '</div>' +
+             '<div class="player-grid">' + rows + '</div>' +
+         '</section>';
+     }
 
     function renderState(state) {
         appState = normalizeState(state);
         if (window.settingsLoaded && appState.viewerSetting && window.SettingComponent) {
             window.SettingComponent.applyServerSetting(appState.viewerSetting);
         }
-        currentNightRoleState = (appState.nightRoleState && typeof appState.nightRoleState === 'object')
-            ? appState.nightRoleState
-            : {};
-
         // Cập nhật danh sách người chơi khi server gửi kèm (xảy ra khi bảng được bật)
         if (appState.players && typeof appState.players === 'object') {
             currentPlayers = appState.players;
@@ -1095,23 +732,15 @@
             day: appState.dayRemainingSeconds,
             night: appState.nightRemainingSeconds,
             vote: appState.voteRemainingSeconds,
-            lock: appState.selectionCountdownSeconds,
-            lockRoles: appState.selectionCountdownRoleIds || [],
-            silentLock: appState.silentCountdownSeconds,
-            silentRoles: appState.silentCountdownRoleIds || [],
-            roleState: appState.nightRoleState || {},
             daySel: appState.daySelections,
             voteSel: appState.voteSelections,
             nightSel: selectedNightTargets,
-            wolfSel: normalizeWolfSelections(appState, 'wolfSelected', 'wolfSelections'),
-            wolfRecruitSel: normalizeWolfSelections(appState, 'wolfRecruitSelected', 'wolfRecruitSelections'),
             viewerOrder: window.MaSoiOrder ? window.MaSoiOrder.getOrderState() : {},
             viewerActions: viewerActionsFromState(appState),
             players: currentPlayers,
             showDay: appState.showDayBoard,
             showNight: appState.showNightBoard,
             showVote: appState.showVoteBoard,
-            toughGuy: appState.toughGuyRemainingSeconds,
             dead: currentIsDead,
             settingChat: appState.viewerSetting ? !!appState.viewerSetting.chatOn : null,
             settingFunction: appState.viewerSetting ? !!appState.viewerSetting.functionOn : null
@@ -1125,7 +754,6 @@
         var dayCard   = document.getElementById('dayBoardCard');
         var nightCard = document.getElementById('nightBoardCard');
         var voteCard  = document.getElementById('voteBoardCard');
-        var toughGuyCard  = document.getElementById('toughGuyCard');
 
     // Lấy notShowDay từ initialState (backend đã truyền trong state.put("notShowDay", NOT_SHOW_DAY))
         const notShowDaySet = new Set((appState.notShowDay || []).map(item => String(item)));
@@ -1134,23 +762,18 @@
         if (dayCard)   { dayCard.style.display   = (appState.showDayBoard   && !currentIsDead && !isNotShowDay) ? '' : 'none'; }
         if (nightCard) { nightCard.style.display = (appState.showNightBoard && !currentIsDead) ? '' : 'none'; }
         if (voteCard)  { voteCard.style.display  = (appState.showVoteBoard  && !currentIsDead && !isNotShowDay) ? '' : 'none'; }
-        if (toughGuyCard)  { toughGuyCard.style.display  = (appState.showToughGuy && !currentIsDead && currentRoleId == 35) ? '' : 'none'; }
-        if (nightCard) {
-            nightCard.classList.toggle('night-locked', isNightSelectionDisabled(appState));
-        }
 
         renderTimers(appState);
         if (appState.showDayBoard   && !currentIsDead) { renderDayBoard(appState); }
         if (appState.showNightBoard && !currentIsDead) { renderNightPanels(appState); }
         if (appState.showVoteBoard  && !currentIsDead) { renderVoteBoard(appState); }
-        if (appState.showToughGuy   && !currentIsDead && currentRoleId == 35) { renderToughGuyBoard(appState); }
         if (window.syncChatComposerState) {
             window.syncChatComposerState();
         }
     }
 
     function refreshState() {
-        return fetch('/msAutoV1/state')
+        return fetch('/msBlind/state')
             .then(handleJsonResponse)
             .then(function(state) {
                 renderState(state);
@@ -1176,32 +799,11 @@
         return response.json();
     }
 
-    function openSeerModal(target) {
-        pendingNightTarget = target;
-        const modal = document.getElementById('seerModal');
-        document.getElementById('seerModalText').textContent = 'Xác nhận kiểm tra: ' + target.name + ' ?';
-        modal.style.display = 'flex';
-    }
-
-    function closeSeerModal() {
-        pendingNightTarget = null;
-        pendingNightAction = null;
-        document.getElementById('seerModal').style.display = 'none';
-    }
-
-    function confirmSeerAction() {
-        if (!pendingNightTarget || !pendingNightAction) {
-            closeSeerModal();
-            return;
-        }
-        submitNightSelection(pendingNightTarget, pendingNightAction);
-    }
-
     function submitDaySelection(target) {
         if (!currentDeviceId) {
             return;
         }
-        postJson('/msAutoV1/day/select', {
+        postJson('/msBlind/day/select', {
             actorDeviceId: currentDeviceId,
             targetDeviceId: target.deviceId,
             colType: 'day',
@@ -1213,27 +815,11 @@
         });
     }
 
-    function submitToughGuySelection(target) {
-        if (!currentDeviceId) {
-            return;
-        }
-        postJson('/msAutoV1/toughGuy/select', {
-            actorDeviceId: currentDeviceId,
-            targetDeviceId: target.deviceId,
-            colType: 'toughGuy',
-            connValue: ''
-        }).then(function(state) {
-            renderState(state);
-        }).catch(function(error) {
-            alert(error.message || 'Không lưu được lựa chọn toughGuy');
-        });
-    }
-
     function submitNightSelection(target, action) {
         if (!currentDeviceId || !action) {
             return;
         }
-        postJson('/msAutoV1/night/select', {
+        postJson('/msBlind/night/select', {
             actorDeviceId: currentDeviceId,
             targetDeviceId: target.deviceId,
             colType: action.colType,
@@ -1250,10 +836,8 @@
             } else {
                 selectedNightTargets[action.colType] = target.deviceId;
             }
-            closeSeerModal();
             renderState(state);
         }).catch(function(error) {
-            closeSeerModal();
             alert(error.message || 'Không lưu được lựa chọn đêm');
         });
     }
@@ -1262,7 +846,7 @@
         if (!currentDeviceId) {
             return;
         }
-        fetch('/msAutoV1/day/skip', { method: 'POST' })
+        fetch('/msBlind/day/skip', { method: 'POST' })
             .then(handleJsonResponse)
             .then(renderState)
             .catch(function(error) {
@@ -1276,35 +860,6 @@
         if (voteTarget) {
             // Click vào nút Yes hoặc No trong bảng vote
             submitVoteAnswer(voteTarget.dataset.voteAnswer);
-            return;
-        }
-        // Vấn đề 15: xử lý click Yes/No của panel bảo vệ tất cả riêng cho role 44.
-        const superProtTarget = event.target.closest('[data-phase="night-super-prot"]');
-        if (superProtTarget) {
-            if (superProtTarget.dataset.answer === 'yes') {
-                // Chọn YES: gửi action với colType=superProt và connValue=ON.
-                selectedNightTargets['superProt'] = '__ALL__';
-                postJson('/msAutoV1/night/select', {
-                    actorDeviceId: currentDeviceId,
-                    targetDeviceId: currentDeviceId,
-                    colType: 'superProt',
-                    connValue: 'ON'
-                }).then(renderState).catch(function(err) {
-                    alert(err.message || 'Không lưu được');
-                });
-            } else {
-                // Chọn NO: xóa lựa chọn, không gửi action.
-                selectedNightTargets['superProt'] = '__NO__';
-                postJson('/msAutoV1/night/select', {
-                    actorDeviceId: currentDeviceId,
-                    targetDeviceId: currentDeviceId,
-                    colType: 'superProt',
-                    connValue: 'OFF'
-                }).then(renderState).catch(function(err) {
-                    alert(err.message || 'Không lưu được');
-                });
-                renderNightPanels(appState);
-            }
             return;
         }
         const row = event.target.closest('.select-row');
@@ -1330,20 +885,6 @@
             return;
         }
 
-        if (row.dataset.phase === 'toughGuy') {
-            const player = visiblePlayers().find(function(item) {
-                return item.deviceId === row.dataset.target;
-            });
-            if (!player) {
-                return;
-            }
-            submitToughGuySelection(player);
-            return;
-        }
-
-        if (row.dataset.phase === 'night' && isNightSelectionDisabled(appState)) {
-            return;
-        }
         if (row.dataset.phase === 'night' && row.dataset.locked === '1') {
             return;
         }
@@ -1400,7 +941,7 @@
                 return;
             }
             wsSubscribed = true;
-            sendStomp('SUBSCRIBE\nid:sub-auto-v1\ndestination:/ms/autoV1/state\n\n');
+            sendStomp('SUBSCRIBE\nid:sub-blind\ndestination:/ms/blind/state\n\n');
             if (window.reconnectChatSubscriptions) {
                 window.reconnectChatSubscriptions();
             }
@@ -1497,39 +1038,32 @@
             window.initChats();
         }
         document.querySelector('.container').addEventListener('click', handleBoardClick);
-        document.getElementById('seerModal').addEventListener('click', function(event) {
-            if (event.target === this) {
-                closeSeerModal();
-            }
-        });
-        if (currentRoleId) {
-            document.getElementById('wsStatus').textContent = currentIsWolf ? 'Đang theo dõi Sói' : 'Đang kết nối';
-        }
-    });
+    const wsStatus = document.getElementById('wsStatus');
+    if (wsStatus) {
+        wsStatus.textContent = 'Đang kết nối';
+    }
+});
 </script>
-<th:block th:replace="~{masoiAutoV1/chucnang :: script}"></th:block>
-<th:block th:replace="~{masoiAutoV1/chat :: script}"></th:block>
-<th:block th:replace="~{masoiAutoV1/setting :: script}"></th:block>
 <script src="/js/masoiAuto-order.js"></script>
 <script>
-    document.getElementById('showHistory').onclick = function() {
-        const popupModal = document.getElementById('popupModal');
-        const popupContent = document.getElementById('popupContent');
-        fetch('/ms/showHistory', { method: 'POST' })
-            .then(response => response.text())
-            .then(responseData => {
-                popupContent.innerHTML = responseData;
-                popupModal.style.display = 'flex';
-            })
-            .catch(error => console.error('Error:', error));
-    };
-    document.getElementById('closePopup').onclick = function() {
-        document.getElementById('popupModal').style.display = 'none';
-    };
-    window.onclick = function(event) {
-        const modal = document.getElementById('popupModal');
-        if (event.target == modal) { modal.style.display = 'none'; }
-    };
+document.getElementById('showHistory').onclick = function() {
+    const popupModal = document.getElementById('popupModal');
+    const popupContent = document.getElementById('popupContent');
+    fetch('/ms/showHistory', { method: 'POST' })
+        .then(response => response.text())
+        .then(responseData => {
+            popupContent.innerHTML = responseData;
+            popupModal.style.display = 'flex';
+        })
+        .catch(error => console.error('Error:', error));
+};
+document.getElementById('closePopup').onclick = function() {
+    document.getElementById('popupModal').style.display = 'none';
+};
+window.onclick = function(event) {
+    const modal = document.getElementById('popupModal');
+    if (event.target == modal) { modal.style.display = 'none'; }
+};
 </script>
 
 </body>

@@ -1009,4 +1009,20 @@ public class DataInputService {
 
         return builder.build();
     }
+
+    public void prepareDataMaSoiBlind(List<DataMember> datas) throws Exception {
+        if (datas.isEmpty()) {
+            datas.add(createDM(3, "Sói", "Sói đó, sói nè, sói chính hiệu 9999", null, 10));
+            datas.add(createDM(2, "Sói đầu đàn", "Sói có quyền quyết định cắn ai", null, 10));
+
+            datas.add(createDM(30, "Dân", "Dân giàu nước mạnh", null, 30));
+            datas.add(createDM(32, "Nói Thật", "Yêu cầu 1 người nói thật về đêm trước đó đã tương tác ai", null, 32));
+            datas.add(createDM(33, "Bảo vệ", "Mỗi đêm bảo vệ 1 người, ko bảo vệ 1 người 2 đêm liên tiếp", null, 33));
+            datas.add(createDM(34, "Thợ săn", "Ghim 1 người, chỉ trong đêm nếu bạn chết người đó chết theo", null, 34));
+            datas.add(createDM(38, "Cấm phép", "Chọn 1 người và cấm phép người đó.", null, 38));
+            datas.add(createDM(40, "Bị nguyền", "Bạn theo phe dân, nếu bị sói cắn sẽ thành sói", null, 40));
+            datas.add(createDM(45, "Phù thủy già", "Mỗi ngày đuổi 1 người ra khỏi làng", null, 45));
+            datas.add(createDM(46, "Câm lặng", "Chọn 1 người và ngày hôm sau người đó không được nói chuyện", null, 46));
+        }
+    }
 }

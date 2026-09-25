@@ -122,6 +122,7 @@ public class MaSoiController {
 //
     @PostMapping("/showHistory")
     String showHistory(Model model) {
+        // dung chung cho auto va blind
         model.addAllAttributes(maSoiService.getGameHistoryData());
         return "masoi/history";
     }
