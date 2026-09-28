@@ -662,16 +662,18 @@ public class MaSoiBlindService {
     private void processNight(List<NightActionDto> actions) {
         alivePlayersRaw().forEach(dataMember -> dataMember.setOldTargetId(null));
         String silentTarget = actions.stream().filter(action -> action.getRoleId() == 38).findFirst().orElse(new NightActionDto()).getTargetDeviceId();
-        NightActionDto woflKill = actions.stream().min(Comparator.comparing(NightActionDto::getRoleId)).orElse(new NightActionDto());
+        NightActionDto woflKill = actions.stream().filter(action -> action.getRoleId() <= 10).min(Comparator.comparing(NightActionDto::getRoleId)).orElse(new NightActionDto());
         NightActionDto protectMember = actions.stream().filter(action -> action.getRoleId() == 33 && !Objects.equals(action.getDeviceId(), silentTarget)).findFirst().orElse(null);
         StringBuilder nightDetails = new StringBuilder();
         StringBuilder autoHistories = new StringBuilder();
 
-        if (Objects.equals(silentTarget, woflKill.getDeviceId())) {
+        if (!ObjectUtils.isEmpty(silentTarget) && Objects.equals(silentTarget, woflKill.getDeviceId())) {
             nightDetails.append("Sói đã cắn hụt ").append(woflKill.getTargetName()).append(": ").append(woflKill.getTargetRoleName()).append(" <br>");
             woflKill = null;
-        } else {
+        } else if (!ObjectUtils.isEmpty(woflKill.getTargetDeviceId())) {
             nightDetails.append("Sói đã cắn ").append(woflKill.getTargetName()).append(": ").append(woflKill.getTargetRoleName()).append(" <br>");
+        } else {
+            woflKill = null;
         }
 
         if (!ObjectUtils.isEmpty(protectMember)) {
@@ -728,7 +730,7 @@ public class MaSoiBlindService {
                 }
             });
         }
-        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Đêm " + maSoiService.nightNumber, autoHistories.toString()));
+        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Đêm " + maSoiService.nightNumber, autoHistories.isEmpty() ? "Không ai bị sao hết" : autoHistories.toString()));
         maSoiService.getCurrentGameHistory().put("Đêm " + maSoiService.nightNumber++, nightDetails.toString());
     }
     
@@ -736,6 +738,7 @@ public class MaSoiBlindService {
         List<DataMember> alivePlayers = maSoiService.getPls().stream()
                 .filter(player -> !player.isDead() && !ObjectUtils.isEmpty(player.getIpData()))
                 .toList();
+        if (maSoiService.isGameEnded()) return;
         if (alivePlayers.isEmpty()) {
             endGame("Thế giới sụp đổ");
         }
