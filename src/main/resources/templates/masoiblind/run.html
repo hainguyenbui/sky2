@@ -127,38 +127,6 @@
             saveSetupState();
         }
 
-<!--        // Đồng bộ trạng thái thanh gạt khi load trang – lấy từ state API-->
-<!--        function loadBoardToggles() {-->
-<!--            fetch('/msBlind/state')-->
-<!--                .then(function(res) { return res.json(); })-->
-<!--                .then(function(state) {-->
-<!--                    document.getElementById('toggleDayBoard').checked = !!state.showDayBoard;-->
-<!--                    document.getElementById('toggleNightBoard').checked = !!state.showNightBoard;-->
-<!--                    document.getElementById('toggleVoteBoard').checked = !!state.showVoteBoard;-->
-<!--                    // Đồng bộ thời gian vote từ state-->
-<!--                    if (state.voteDurationSeconds) {-->
-<!--                        document.getElementById('voteSecondsInput').value = state.voteDurationSeconds;-->
-<!--                    }-->
-<!--                })-->
-<!--                .catch(function(err) { console.warn('loadBoardToggles error', err); });-->
-<!--        }-->
-
-<!--        // Lưu thời gian vote riêng (chỉ cập nhật voteDuration)-->
-<!--        function saveVoteTimer() {-->
-<!--            var voteSeconds = parseInt(document.getElementById('voteSecondsInput').value, 10) || 60;-->
-<!--            // Gọi /timers với day/night giữ nguyên, chỉ cập nhật vote-->
-<!--            fetch('/msBlind/state')-->
-<!--                .then(function(res) { return res.json(); })-->
-<!--                .then(function(state) {-->
-<!--                    var daySeconds = state.dayDurationSeconds || 90;-->
-<!--                    var nightSeconds = state.nightDurationSeconds || 150;-->
-<!--                    return fetch('/msBlind/timers?daySeconds=' + daySeconds + '&nightSeconds=' + nightSeconds + '&voteSeconds=' + voteSeconds, { method: 'POST' });-->
-<!--                })-->
-<!--                .then(function(res) { return res.json(); })-->
-<!--                .then(function() { alert('Đã lưu thời gian vote: ' + voteSeconds + 's'); })-->
-<!--                .catch(function(err) { console.error('saveVoteTimer error', err); });-->
-<!--        }-->
-
         function bindSetupStateListeners() {
             var fields = document.querySelectorAll('#dataForm input[name]');
             fields.forEach(function(field) {

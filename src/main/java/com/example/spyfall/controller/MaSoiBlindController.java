@@ -71,7 +71,7 @@ public class MaSoiBlindController {
             addCommonAttributes(model);
             model.addAttribute("gameNumber", maSoiService.getGameNumber());
             addRoleGroupAttributes(model);
-            model.addAttribute("isDead", maSoiService.getDeadPls().contains(member));
+            model.addAttribute("isDead", member.isDead());
             model.addAttribute("showRoles", maSoiService.getListShowForMember());
             if (maSoiService.getDeadPls().contains(member)) {
                 model.addAttribute("historyGame", maSoiService.getCurrentGameHistory());
@@ -79,9 +79,6 @@ public class MaSoiBlindController {
             }
             model.addAttribute("alivePlayer", maSoiService.getPls());
 
-            if (member.getId() == 42 && member.getOldTargetId() != null) {
-                maSoiBlindService.findPlayer(member.getOldTargetId()).ifPresent(target -> model.addAttribute("oldTargetName", target.getNameMember()));
-            }
         } catch (Exception e) {
             model.addAttribute("notSetup", true);
             addCommonAttributes(model);
@@ -100,11 +97,10 @@ public class MaSoiBlindController {
     @PostMapping("/timers")
     @ResponseBody
     Map<String, Object> updateTimers(@RequestParam int daySeconds, @RequestParam int nightSeconds,
-                                     @RequestParam int voteSeconds, @RequestParam int selectionSeconds,
-                                     @RequestParam int silentSeconds,
+                                     @RequestParam int voteSeconds,
                                      HttpServletRequest request, HttpServletResponse response) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
-        return maSoiBlindService.updateDurations(daySeconds, nightSeconds, voteSeconds, selectionSeconds, silentSeconds, deviceId);
+        return maSoiBlindService.updateDurations(daySeconds, nightSeconds, voteSeconds, deviceId);
     }
 
     @PostMapping("/day/select")

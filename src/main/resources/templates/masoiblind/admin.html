@@ -139,11 +139,8 @@
         const daySeconds = parseInt(document.getElementById('daySeconds').value, 10) || 90;
         const nightSeconds = parseInt(document.getElementById('nightSeconds').value, 10) || 120;
         const voteSeconds = parseInt(document.getElementById('voteSeconds').value, 10) || 60;
-        const selectionSeconds = parseInt(document.getElementById('selectionSeconds').value, 10) || 40;
-        const silentSeconds = parseInt(document.getElementById('silentSeconds').value, 10) || 40;
         fetch('/msBlind/timers?daySeconds=' + encodeURIComponent(daySeconds) + '&nightSeconds=' + encodeURIComponent(nightSeconds) +
-        '&voteSeconds=' + encodeURIComponent(voteSeconds) + '&selectionSeconds=' + encodeURIComponent(selectionSeconds) +
-        '&silentSeconds=' + encodeURIComponent(silentSeconds), {
+        '&voteSeconds=' + encodeURIComponent(voteSeconds), {
             method: 'POST'
         })
         .then(handleJsonResponse)

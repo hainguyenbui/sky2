@@ -19,7 +19,6 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -130,7 +129,7 @@ public class MaSoiBlindService {
         }
     }
 
-    public Map<String, Object> updateDurations(int daySeconds, int nightSeconds, int voteSeconds, int selectionSeconds, int silentSeconds, String viewerDeviceId) {
+    public Map<String, Object> updateDurations(int daySeconds, int nightSeconds, int voteSeconds, String viewerDeviceId) {
         synchronized (lock) {
             dayDurationSeconds = Math.max(1, daySeconds);
             nightDurationSeconds = Math.max(1, nightSeconds);
@@ -461,13 +460,6 @@ public class MaSoiBlindService {
         if (!ObjectUtils.isEmpty(viewerDeviceId)) {
             state.put("viewerSetting", maSoiAutoService.cloneSetting(maSoiAutoService.resolveViewerSetting(viewerDeviceId)));
         }
-        Map<String, String> playerOldTargets = new LinkedHashMap<>();
-        for (DataMember p : maSoiService.getPls()) {
-            if (!ObjectUtils.isEmpty(p.getIpData()) && !ObjectUtils.isEmpty(p.getOldTargetId())) {
-                playerOldTargets.put(p.getIpData(), p.getOldTargetId());
-            }
-        }
-        state.put("playerOldTargets", playerOldTargets);
         return state;
     }
 
@@ -541,12 +533,6 @@ public class MaSoiBlindService {
         }
         return maSoiService.getPls().stream()
                 .filter(player -> Objects.equals(player.getIpData(), deviceId))
-                .findFirst();
-    }
-
-    private Optional<DataMember> findPlayer(int roleId) {
-        return maSoiService.getPls().stream()
-                .filter(player -> Objects.equals(player.getId(), roleId))
                 .findFirst();
     }
 
@@ -638,6 +624,7 @@ public class MaSoiBlindService {
                 }
             } else if (!Objects.equals(target, SKIP_TARGET) && votes * 2 > alivePlayersRaw().size()) {
                 daySelection(target);
+                findPlayer(killDayDevice).ifPresent(dataMember -> maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Ngày " + maSoiService.nightNumber, dataMember.getNameMember() + ": " + reasonKill)));
             }
         } finally {
             daySelections.clear();
@@ -673,10 +660,12 @@ public class MaSoiBlindService {
     }
 
     private void processNight(List<NightActionDto> actions) {
+        alivePlayersRaw().forEach(dataMember -> dataMember.setOldTargetId(null));
         String silentTarget = actions.stream().filter(action -> action.getRoleId() == 38).findFirst().orElse(new NightActionDto()).getTargetDeviceId();
         NightActionDto woflKill = actions.stream().min(Comparator.comparing(NightActionDto::getRoleId)).orElse(new NightActionDto());
         NightActionDto protectMember = actions.stream().filter(action -> action.getRoleId() == 33 && !Objects.equals(action.getDeviceId(), silentTarget)).findFirst().orElse(null);
         StringBuilder nightDetails = new StringBuilder();
+        StringBuilder autoHistories = new StringBuilder();
 
         if (Objects.equals(silentTarget, woflKill.getDeviceId())) {
             nightDetails.append("Sói đã cắn hụt ").append(woflKill.getTargetName()).append(": ").append(woflKill.getTargetRoleName()).append(" <br>");
@@ -703,25 +692,26 @@ public class MaSoiBlindService {
                     nightDetails.append(action.getTargetName()).append(": ").append(action.getTargetRoleName()).append(" đã bị loại").append(" <br>");
                     findPlayer(action.getTargetDeviceId()).ifPresent(target -> {
                         maSoiService.getDeadPls().add(target);
-                        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(target.getNameMember(), DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size()))));
+                        target.setDead(true);
+                        autoHistories.append(target.getNameMember()).append(" bị loại vì ").append(DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size()))).append(" <br>");
                     });
                 }
             } else if (action.getRoleId() == 32) {
                 nightDetails.append(actor.getNameMember()).append(" đã buộc ").append(action.getTargetName()).append(" nói thật <br>");
                 if (!Objects.equals(silentTarget, action.getDeviceId())) {
-                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(action.getTargetName(), " phải nói thật <br>"));
+                    autoHistories.append(action.getTargetName()).append(" phải nói thật <br>");
                 }
             } else if (action.getRoleId() == 46) {
                 nightDetails.append(actor.getNameMember()).append(" đã câm lặng ").append(action.getTargetName()).append(" <br>");
                 if (!Objects.equals(silentTarget, action.getDeviceId())) {
-                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(action.getTargetName(), " không được nói chuyện <br>"));
+                    autoHistories.append(action.getTargetName()).append(" không được nói chuyện <br>");
                 }
             } else if (action.getRoleId() == 38) {
                 nightDetails.append(actor.getNameMember()).append(" đã cấm sài phép ").append(action.getTargetName()).append(" <br>");
             } else if (action.getRoleId() == 45) {
                 nightDetails.append(actor.getNameMember()).append(" đã đuổi ").append(action.getTargetName()).append(" ra khỏi làng <br>");
                 if (!Objects.equals(silentTarget, action.getDeviceId())) {
-                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(action.getTargetName(), " đã bị đuổi ra khỏi làng TỐI TRỜ VỀ <br>"));
+                    autoHistories.append(action.getTargetName()).append(" đã bị đuổi ra khỏi làng TỐI TRỜ VỀ <br>");
                     maSoiService.NOT_SHOW_DAY.add(action.getTargetDeviceId());
                 }
             }
@@ -732,11 +722,13 @@ public class MaSoiBlindService {
                     // neu bi nguyen thi thanh soi
                     target.setId(4);
                 } else {
+                    target.setDead(true);
                     maSoiService.getDeadPls().add(target);
-                    maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>(target.getNameMember(), DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size()))));
+                    autoHistories.append(target.getNameMember()).append(" bị loại vì ").append(DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size()))).append(" <br>");
                 }
             });
         }
+        maSoiService.getAutoHistories().addFirst(new AbstractMap.SimpleEntry<>("Đêm " + maSoiService.nightNumber, autoHistories.toString()));
         maSoiService.getCurrentGameHistory().put("Đêm " + maSoiService.nightNumber++, nightDetails.toString());
     }
     
@@ -752,6 +744,7 @@ public class MaSoiBlindService {
         } else if (alivePlayers.stream().noneMatch(p -> p.getId() <= 10)) {
             endGame("Dân chiến thắng");
         }
+        broadcastRefreshUiLocked("refresh");
     }
 
     private void endGame(String message) {

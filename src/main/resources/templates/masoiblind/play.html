@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ma Sói Auto V1</title>
+    <title>Ma Sói Mù</title>
     <th:block th:replace="~{fragments/styles :: css}"></th:block>
     <link rel="stylesheet" href="/css/masoiAuto-order.css">
     <style>
@@ -266,7 +266,7 @@
      th:data-member-conn="${member != null ? member.connectSkill : 0}"
      th:data-member-dead="${member != null ? member.dead : false}">
     <div class="header-section">
-        <h1>Ma Sói Auto V1</h1>
+        <h1>Ma Sói Mù</h1>
         <p class="desc">Admin: Haigacon, Design: Longdaica</p>
     </div>
 
@@ -687,8 +687,8 @@ let appState = initialState;
          empty.style.display = 'none';
          const action = actions[0];
          const players = visiblePlayers();
-         const playerOldTargets = state.playerOldTargets || {};
-         const myOldTargetId = playerOldTargets[currentDeviceId] || null;
+         const member = /*[[${member}]]*/ [];
+         const myOldTargetId = member.oldTargetId;
          const rows = players.map(function(player) {
              const selected = selectedNightTargets[action.colType] === player.deviceId;
              const isOldTarget = myOldTargetId && player.deviceId === myOldTargetId;
@@ -717,15 +717,6 @@ let appState = initialState;
             if (window.MaSoiOrder) {
                 window.MaSoiOrder.mergeKnownPlayers(appState.players);
             }
-        }
-
-        // Cập nhật isDead mid-game từ danh sách deadDeviceIds server gửi về
-        if (Array.isArray(appState.deadDeviceIds) && currentDeviceId) {
-            currentIsDead = appState.deadDeviceIds.indexOf(currentDeviceId) >= 0;
-        }
-        window.__msAutoCtx.currentIsDead = currentIsDead;
-        if (window.MaSoiOrder) {
-            window.MaSoiOrder.updateDeadFlags(appState.deadDeviceIds || []);
         }
 
         const stateKey = JSON.stringify({
@@ -758,6 +749,7 @@ let appState = initialState;
     // Lấy notShowDay từ initialState (backend đã truyền trong state.put("notShowDay", NOT_SHOW_DAY))
         const notShowDaySet = new Set((appState.notShowDay || []).map(item => String(item)));
         const isNotShowDay = notShowDaySet.has(currentDeviceId);
+        console.log('isNotShowDay:', isNotShowDay, 'notShowDaySet:', notShowDaySet, 'currentIsDead:', currentIsDead);
 
         if (dayCard)   { dayCard.style.display   = (appState.showDayBoard   && !currentIsDead && !isNotShowDay) ? '' : 'none'; }
         if (nightCard) { nightCard.style.display = (appState.showNightBoard && !currentIsDead) ? '' : 'none'; }

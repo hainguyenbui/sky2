@@ -23,7 +23,7 @@ public class MaSoiService {
 
     private static final String IMAGE_PATH = QR_MS;
     public static final List<String> DAY_DEATH_REASONS = List.of(
-            " bị thủ tiêu vì biết quá nhiều", " không muốn chơi nữa", " bị thù ghét", " nói quá nhiều");
+            " biết quá nhiều", " không muốn chơi nữa", " bị thù ghét", " nói quá nhiều");
     private static final List<String> LOVE_DEATH_REASONS = List.of(
             " dã đi là đi chung", " một bước cũng không lệch", " kè kè bên cạnh", " đi cùng cho vui", " khóc hết nước mắt", " ăn chơi xa đọa");
 

@@ -969,9 +969,8 @@
         // Vấn đề 11: lấy list roleId không được tự chọn bản thân từ state.
         const selfSelectDisabledRoleIds = (state.selfSelectDisabledRoleIds || []).map(function(id) { return parseInt(id, 10); });
         const isSelfSelectDisabled = selfSelectDisabledRoleIds.indexOf(currentRoleId) >= 0;
-        // Vấn đề 12: lấy oldTargetId của người chơi hiện tại từ state.
-        const playerOldTargets = state.playerOldTargets || {};
-        const myOldTargetId = playerOldTargets[currentDeviceId] || null;
+        const member = /*[[${member}]]*/ [];
+        const myOldTargetId = member.oldTargetId
         // Vấn đề 14: role 42 có oldTargetId → block toàn bộ bảng đêm, không cho chọn ai nữa.
         if (currentRoleId === 42 && myOldTargetId) {
             wrap.innerHTML = '<div class="empty-state">Bạn đã copy người chơi: [[${oldTargetName}]] .</div>';

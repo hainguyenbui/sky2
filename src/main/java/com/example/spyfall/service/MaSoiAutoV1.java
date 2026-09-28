@@ -67,6 +67,7 @@ public class MaSoiAutoV1 {
     private int dayRemainingSeconds = 60;
     @Getter
     private int nightRemainingSeconds = 120;
+
     private int nightRemainingSecondRandom = 1000;
     @Getter
     private int voteRemainingSeconds = 45;
@@ -561,14 +562,6 @@ public class MaSoiAutoV1 {
         }
         // Vấn đề 11: gửi list roleId không được tự chọn bản thân để FE disable tile tương ứng.
         state.put("selfSelectDisabledRoleIds", SELF_SELECT_DISABLED_ROLE_IDS);
-        // Vấn đề 12: gửi map deviceId → oldTargetId để FE biết ai không được chọn lại.
-        Map<String, String> playerOldTargets = new LinkedHashMap<>();
-        for (DataMember p : maSoiService.getPls()) {
-            if (!ObjectUtils.isEmpty(p.getIpData()) && !ObjectUtils.isEmpty(p.getOldTargetId())) {
-                playerOldTargets.put(p.getIpData(), p.getOldTargetId());
-            }
-        }
-        state.put("playerOldTargets", playerOldTargets);
         return state;
     }
 
