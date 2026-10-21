@@ -29,6 +29,9 @@ public class Spy2Controller {
     @GetMapping("/play/{name}")
     String play(HttpServletRequest request, HttpServletResponse response, @PathVariable String name, Model model) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
+        model.addAttribute("gameKey", "spy2");
+        model.addAttribute("deviceId", deviceId);
+        model.addAttribute("playerName", name);
         try {
             String keyword = spy2Service.getOrAssignKeyword(deviceId, name);
             model.addAttribute("image", spy2Service.getImage());
@@ -90,4 +93,3 @@ public class Spy2Controller {
         return "spy2/list";
     }
 }
-

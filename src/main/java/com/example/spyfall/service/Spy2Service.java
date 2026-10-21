@@ -30,6 +30,8 @@ public class Spy2Service {
 
     @Autowired
     private DataInputService dataInputService;
+    @Autowired
+    private SpyCommService spyCommService;
 
     public int getActivePlayerCount() {
         return dataPlayer.size() - removed.size();
@@ -44,6 +46,7 @@ public class Spy2Service {
                 if (dataMember.getIpConfig().equals(deviceId)) {
                     if (!Objects.equals(dataMember.getUserName(), name)) {
                         dataMember.setUserName(name);
+                        spyCommService.upsertPlayer(SpyCommService.GAME_SPY2, dataMember);
                     }
                     return dataMember.getKeyword();
                 }
@@ -61,6 +64,7 @@ public class Spy2Service {
         yourLocation.setIpConfig(deviceId);
         dataPlayer.add(yourLocation);
         dataWillPlay.remove(0);
+        spyCommService.upsertPlayer(SpyCommService.GAME_SPY2, yourLocation);
         return yourLocation.getKeyword();
     }
 
@@ -71,6 +75,7 @@ public class Spy2Service {
         dataPlayer.clear();
         removed.clear();
         numberGamePlay++;
+        spyCommService.resetGame(SpyCommService.GAME_SPY2);
 
         countWhite = numWhite;
         countnumSpies = numSpies;
@@ -109,6 +114,7 @@ public class Spy2Service {
                 if (!removed.contains(player)) {
                     removed.add(player);
                 }
+                spyCommService.markRemoved(SpyCommService.GAME_SPY2, id);
                 return player;
             }
         }
@@ -134,4 +140,3 @@ public class Spy2Service {
         }
     }
 }
-

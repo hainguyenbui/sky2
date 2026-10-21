@@ -59,8 +59,12 @@
                 <img th:src="${image}" alt="QR Code" class="qr-image">
             </div>
         </div>
+
+        <div id="spy-comm-root"
+             th:attr="data-game=${gameKey},data-device-id=${deviceId},data-player-name=${playerName}">
+        </div>
     </th:block>
 </div>
+<script src="/js/spy-comm.js"></script>
 </body>
 </html>
-

@@ -19,6 +19,9 @@
         <div class="qr-container">
             <img th:src="${image}" alt="QR Code" class="qr-image">
         </div>
+        <div th:if="${setupError}" class="item-row" style="margin-bottom:10px;background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.35);">
+            <span style="color:#fca5a5;font-size:0.84rem;" th:text="${setupError}"></span>
+        </div>
         <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
             <div class="item-row">
                 <span>Tổng người chơi:</span>
@@ -39,6 +42,23 @@
         <button type="button" id="sendButton" class="btn btn-primary" style="margin-top: 10px;">Khởi Tạo Game</button>
         <a href="/sp" target="_blank" class="btn btn-primary" style="margin-top: 20px;">Vào Phòng Chơi</a>
         <a href="/sp/removeList"  class="btn btn-primary" style="margin-top: 20px;">Sang trang quản lý</a>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 12px; text-align: center; font-size: 1.1rem;">Địa điểm dùng cho ván Spy</h3>
+        <p class="desc" style="margin-bottom: 10px; font-size: 0.82rem;">
+            Địa điểm được tích sẽ đưa vào random. Mặc định bỏ chọn: 7, 16, 23, 24, 27, 29, 30, 32.
+        </p>
+        <div style="max-height: 260px; overflow: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.82rem;">
+            <label th:each="item : ${locationOptions}"
+                   style="padding: 8px 10px; background: rgba(15,23,42,0.45); border-radius: 8px; border: 1px solid var(--card-border); display:flex; align-items:center; gap:8px;">
+                <input type="checkbox"
+                       class="location-checkbox"
+                       th:data-id="${item.id}"
+                       th:checked="${item.selected}" />
+                <span th:text="${item.id + '. ' + item.name}"></span>
+            </label>
+        </div>
     </div>
 
     <div class="card">
@@ -75,8 +95,11 @@
         var total = document.getElementById('total').value;
         var spy = document.getElementById('spy').value;
         var whiteHat = document.getElementById('whiteHat').value;
+        var selectedIds = Array.from(document.querySelectorAll('.location-checkbox:checked'))
+            .map(function (input) { return input.dataset.id; })
+            .join(',');
 <!--        window.location.href = '/sp/setup/' + total + '/' + spy + '/' + whiteHat;-->
-        fetch('/sp/setup/' + total + '/' + spy + '/' + whiteHat)
+        fetch('/sp/setup/' + total + '/' + spy + '/' + whiteHat + '?locationIds=' + encodeURIComponent(selectedIds))
             .then(response => response.text())
             .then(html => {
                 document.open();
@@ -107,4 +130,3 @@
 </script>
 </body>
 </html>
-

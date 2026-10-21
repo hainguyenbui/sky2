@@ -51,7 +51,40 @@
         <a href="/spy2/setup"  class="btn btn-primary" style="margin-top: 20px;">Về trang setup</a>
     </div>
 
+    <div class="card">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Giới hạn người bị loại</h3>
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-size:0.86rem;">Bật tách kênh chat/voice cho người bị loại</span>
+            <span class="switch">
+                <input type="checkbox" id="restrictToggle" checked />
+                <span class="switch-slider"></span>
+            </span>
+        </label>
+        <div id="restrictStatus" style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);"></div>
+    </div>
+
     <script>
+        function refreshRestrictionState() {
+            fetch("/comm/spy2/admin/state")
+                .then(response => response.json())
+                .then(data => {
+                    const enabled = !!data.restrictEliminated;
+                    const toggle = document.getElementById("restrictToggle");
+                    const status = document.getElementById("restrictStatus");
+                    toggle.checked = enabled;
+                    status.textContent = enabled
+                        ? "Đang bật: người bị loại chỉ chat/voice kênh riêng."
+                        : "Đang tắt: người bị loại chat/voice chung như người còn sống.";
+                });
+        }
+
+        document.getElementById("restrictToggle").addEventListener("change", function() {
+            const enabled = this.checked;
+            fetch("/comm/spy2/admin/restriction?enabled=" + encodeURIComponent(enabled), {
+                method: "POST"
+            }).then(refreshRestrictionState);
+        });
+
         document.getElementById("okButton").addEventListener("click", function() {
             var number = document.getElementById("numberInput").value;
             if(number === "") { alert("Vui lòng nhập ID người chơi!"); return; }
@@ -62,8 +95,9 @@
                 })
                 .catch(error => { alert("Gửi yêu cầu thất bại: " + error); });
         });
+
+        refreshRestrictionState();
     </script>
 </div>
 </body>
 </html>
-

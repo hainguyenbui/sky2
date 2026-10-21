@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -12,6 +13,10 @@ import static com.example.spyfall.util.Constant.QR_SPY;
 
 @Service
 public class SpyService {
+
+    private static final Set<Integer> DEFAULT_UNCHECKED_LOCATION_IDS = new LinkedHashSet<>(
+            Arrays.asList(7, 16, 23, 24, 27, 29, 30, 32)
+    );
 
     @Getter
     private List<Spy2> keywords = new ArrayList<>();
@@ -25,9 +30,12 @@ public class SpyService {
     private final String image = QR_SPY;
     @Getter
     private int numberGamePlay = 0;
+    private final Set<Integer> selectedKeywordIds = new LinkedHashSet<>();
 
     @Autowired
     DataInputService dataInputService;
+    @Autowired
+    SpyCommService spyCommService;
 
     /**
      * Get or assign a member role for the given IP.
@@ -38,6 +46,10 @@ public class SpyService {
         if (!dataPlayer.isEmpty()) {
             for (Spy2 dataMember : dataPlayer) {
                 if (dataMember.getIpConfig().equals(deviceId)) {
+                    if (StringUtils.hasText(name) && !Objects.equals(dataMember.getUserName(), name)) {
+                        dataMember.setUserName(name);
+                        spyCommService.upsertPlayer(SpyCommService.GAME_SPY, dataMember);
+                    }
                     return dataMember.getKeyword();
                 }
             }
@@ -54,6 +66,7 @@ public class SpyService {
         yourLocation.setUserName(name);
         dataPlayer.add(yourLocation);
         dataWillPlay.remove(0);
+        spyCommService.upsertPlayer(SpyCommService.GAME_SPY, yourLocation);
         return yourLocation.getKeyword();
     }
 
@@ -67,23 +80,15 @@ public class SpyService {
         listItemOfSpy.clear();
         removed.clear();
         numberGamePlay++;
+        spyCommService.resetGame(SpyCommService.GAME_SPY);
 
-        String[] datas = dataInputService.valueDataSpy().split(",");
-        //clear keywords after
-        if (ObjectUtils.isEmpty(keywords)) {
-            for (String dataItem : datas) {
-                String trimmed = dataItem.trim();
-                boolean exist = keywords.stream().anyMatch(item -> item.getKeyword().equals(trimmed));
-                if (!exist) {
-                    int newId = keywords.size() + 1;
-                    keywords.add(createDM(newId, trimmed, null));
-                }
-            }
-        }
+        ensureKeywordsLoaded();
 
         Random random = new Random();
-
-        listItemOfSpy = new ArrayList<>(keywords);
+        listItemOfSpy = getActiveKeywords();
+        if (listItemOfSpy.size() < 2) {
+            throw new IllegalStateException("Cần chọn ít nhất 2 địa điểm để tạo ván.");
+        }
         int indexMember = random.nextInt(listItemOfSpy.size());
         Spy2 dataNotSpy = listItemOfSpy.get(indexMember);
         listItemOfSpy.remove(indexMember);
@@ -102,6 +107,77 @@ public class SpyService {
         for (int i = 0; i < whiteHat; i++) {
             dataWillPlay.add(createDM(cnt++, "Spy đó nhìn nhìn cái gì", "Mũ Trắng"));
         }
+    }
+
+    public synchronized List<Map<String, Object>> getLocationOptions() {
+        ensureKeywordsLoaded();
+        List<Map<String, Object>> options = new ArrayList<>();
+        for (Spy2 keyword : keywords) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", keyword.getId());
+            item.put("name", keyword.getKeyword());
+            item.put("selected", selectedKeywordIds.contains(keyword.getId()));
+            options.add(item);
+        }
+        return options;
+    }
+
+    public synchronized void updateSelectedLocationsFromCsv(String selectedIdsCsv) {
+        ensureKeywordsLoaded();
+        if (!StringUtils.hasText(selectedIdsCsv)) {
+            selectedKeywordIds.clear();
+            return;
+        }
+        Set<Integer> next = new LinkedHashSet<>();
+        String[] chunks = selectedIdsCsv.split(",");
+        for (String chunk : chunks) {
+            String value = chunk.trim();
+            if (!StringUtils.hasText(value)) {
+                continue;
+            }
+            try {
+                next.add(Integer.parseInt(value));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        selectedKeywordIds.clear();
+        Set<Integer> validIds = keywords.stream().map(Spy2::getId).collect(LinkedHashSet::new, Set::add, Set::addAll);
+        next.stream().filter(validIds::contains).forEach(selectedKeywordIds::add);
+    }
+
+    private synchronized void ensureKeywordsLoaded() {
+        if (!ObjectUtils.isEmpty(keywords)) {
+            ensureDefaultSelectionInitialized();
+            return;
+        }
+        String[] datas = dataInputService.valueDataSpy().split(",");
+        for (String dataItem : datas) {
+            String trimmed = dataItem.trim();
+            boolean exist = keywords.stream().anyMatch(item -> item.getKeyword().equals(trimmed));
+            if (!exist) {
+                int newId = keywords.size() + 1;
+                keywords.add(createDM(newId, trimmed, null));
+            }
+        }
+        ensureDefaultSelectionInitialized();
+    }
+
+    private void ensureDefaultSelectionInitialized() {
+        if (!selectedKeywordIds.isEmpty()) {
+            return;
+        }
+        for (Spy2 keyword : keywords) {
+            if (!DEFAULT_UNCHECKED_LOCATION_IDS.contains(keyword.getId())) {
+                selectedKeywordIds.add(keyword.getId());
+            }
+        }
+    }
+
+    private List<Spy2> getActiveKeywords() {
+        return keywords.stream()
+                .filter(item -> selectedKeywordIds.contains(item.getId()))
+                .map(item -> createDM(item.getId(), item.getKeyword(), item.getRole()))
+                .collect(ArrayList::new, List::add, List::addAll);
     }
 
     public boolean deleteItem(int id) {
@@ -128,6 +204,7 @@ public class SpyService {
                 if (!removed.contains(player)) {
                     removed.add(player);
                 }
+                spyCommService.markRemoved(SpyCommService.GAME_SPY, id);
                 return player;
             }
         }
@@ -139,4 +216,3 @@ public class SpyService {
     }
 
 }
-

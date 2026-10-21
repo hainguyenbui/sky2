@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -29,6 +30,9 @@ public class SpyController {
     @GetMapping("/play/{name}")
     String play(HttpServletRequest request, HttpServletResponse response, @PathVariable String name, Model model) {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
+        model.addAttribute("gameKey", "spy");
+        model.addAttribute("deviceId", deviceId);
+        model.addAttribute("playerName", name);
         try {
             String keyword = spyService.getOrAssignMember(deviceId, name);
             model.addAttribute("image", spyService.getImage());
@@ -52,8 +56,17 @@ public class SpyController {
 
     @GetMapping("/setup/{totalPlayers}/{numSpies}/{numWhite}")
     String setup(@PathVariable int totalPlayers, @PathVariable int numSpies,
-                 @PathVariable int numWhite, Model model) {
-        spyService.setupGame(totalPlayers, numSpies, numWhite);
+                 @PathVariable int numWhite,
+                 @RequestParam(value = "locationIds", required = false) String locationIds,
+                 Model model) {
+        if (locationIds != null) {
+            spyService.updateSelectedLocationsFromCsv(locationIds);
+        }
+        try {
+            spyService.setupGame(totalPlayers, numSpies, numWhite);
+        } catch (IllegalStateException ex) {
+            model.addAttribute("setupError", ex.getMessage());
+        }
         model.addAttribute("totalPlayers", totalPlayers);
         model.addAttribute("numSpies", numSpies);
         model.addAttribute("numWhite", numWhite);
@@ -61,6 +74,7 @@ public class SpyController {
         model.addAttribute("number", spyService.getNumberGamePlay());
         model.addAttribute("image", spyService.getImage());
         model.addAttribute("player", spyService.getDataPlayer());
+        model.addAttribute("locationOptions", spyService.getLocationOptions());
         return "spy/setup";
     }
 
@@ -72,6 +86,7 @@ public class SpyController {
             model.addAttribute("player", spyService.getDataPlayer());
         }
         model.addAttribute("image", spyService.getImage());
+        model.addAttribute("locationOptions", spyService.getLocationOptions());
         return "spy/setup";
     }
 
