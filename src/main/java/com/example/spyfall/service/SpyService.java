@@ -65,6 +65,7 @@ public class SpyService {
         dataPlayer.clear();
         dataWillPlay.clear();
         listItemOfSpy.clear();
+        removed.clear();
         numberGamePlay++;
 
         String[] datas = dataInputService.valueDataSpy().split(",");

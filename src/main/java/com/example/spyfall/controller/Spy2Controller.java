@@ -31,12 +31,12 @@ public class Spy2Controller {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
             String keyword = spy2Service.getOrAssignKeyword(deviceId, name);
+            model.addAttribute("image", spy2Service.getImage());
             if (keyword == null) {
                 model.addAttribute("notSetup", true);
             } else if (keyword.isEmpty()) {
                 model.addAttribute("notSetup", false);
                 model.addAttribute("fullSlot", true);
-                model.addAttribute("image", spy2Service.getImage());
             } else {
                 model.addAttribute("notSetup", false);
                 model.addAttribute("keyword", keyword);
@@ -44,7 +44,6 @@ public class Spy2Controller {
                 model.addAttribute("countWhite", spy2Service.getCountWhite());
                 model.addAttribute("playerCount", spy2Service.getActivePlayerCount());
                 model.addAttribute("removed", spy2Service.getRemoved());
-                model.addAttribute("image", spy2Service.getImage());
             }
         } catch (Exception e) {
             model.addAttribute("notSetup", true);

@@ -31,18 +31,17 @@ public class SpyController {
         String deviceId = CookieUtil.setCookie(request.getCookies(), response).getValue();
         try {
             String keyword = spyService.getOrAssignMember(deviceId, name);
+            model.addAttribute("image", spyService.getImage());
             if (keyword == null) {
                 model.addAttribute("notSetup", true);
             } else if (keyword.isEmpty()) {
                 model.addAttribute("notSetup", false);
                 model.addAttribute("fullSlot", true);
-                model.addAttribute("image", spyService.getImage());
                 model.addAttribute("dataPlay", spyService.getKeywords());
             } else {
                 model.addAttribute("notSetup", false);
                 model.addAttribute("keyword", keyword);
                 model.addAttribute("removed", spyService.getRemoved());
-                model.addAttribute("image", spyService.getImage());
                 model.addAttribute("dataPlay", spyService.getKeywords());
             }
         } catch (Exception e) {
