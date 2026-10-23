@@ -10,6 +10,9 @@
     const volumeStorageKey = "spy-comm-volume-" + game + "-" + deviceId;
     const micEnabledStorageKey = "spy-comm-mic-enabled-" + game + "-" + deviceId;
     const listenMutedStorageKey = "spy-comm-listen-muted-" + game + "-" + deviceId;
+    const chatHistoryStorageKey = "spy-comm-chat-history-" + game + "-" + deviceId;
+    const viewModeStorageKey = "spy-comm-view-mode-" + game + "-" + deviceId;
+    const maxChatPerChannel = 250;
 
     let state = null;
     let ws = null;
@@ -23,43 +26,98 @@
     let readySeq = 0;
     let voiceStarting = false;
     let listenMuted = false;
+    let viewMode = loadViewModePreference();
+    let compactChatOpen = false;
+    let settingPanelOpen = false;
+    const unreadChannels = {};
     let voiceStatusBase = "Voice nghe đang bật. Mic đang tắt.";
     const remoteInstanceByDevice = new Map();
 
     const peerMap = new Map();
     const audioMap = new Map();
     const meterMap = new Map();
-    const chatHistory = { public: [], dead: [] };
+    const chatHistory = loadChatHistory();
     const volumePrefs = loadVolumePrefs();
     const persistedMicEnabled = loadMicEnabledPreference();
     listenMuted = loadListenMutedPreference();
 
     root.innerHTML = [
-        '<div class="card" style="display:flex;flex-direction:column;gap:10px;">',
+        "<style>",
+        ".comm-float-dock{position:fixed;top:12px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:1200;}",
+        ".comm-float-btn{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,0.25);background:rgba(15,23,42,0.92);color:#e2e8f0;font-size:19px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,0.35);padding:0;}",
+        ".comm-float-btn.active{border-color:rgba(96,165,250,0.85);background:rgba(30,41,59,0.98);}",
+        ".comm-float-btn.state-on{background:rgba(22,163,74,0.92);border-color:rgba(74,222,128,0.9);color:#ecfdf5;}",
+        ".comm-float-btn.state-off{background:rgba(220,38,38,0.92);border-color:rgba(252,165,165,0.9);color:#fff1f2;}",
+        ".comm-float-btn.has-unread{background:rgba(217,119,6,0.95);border-color:rgba(253,186,116,0.95);color:#fff7ed;animation:commPulse 1.2s ease-in-out infinite;}",
+        ".comm-float-btn.has-unread::after{content:'';position:absolute;top:5px;right:5px;width:10px;height:10px;border-radius:999px;background:#fef08a;box-shadow:0 0 0 2px rgba(15,23,42,0.95),0 0 10px rgba(254,240,138,0.9);}",
+        ".comm-channel-tabs{display:flex;gap:6px;flex-wrap:wrap;}",
+        ".comm-channel-tab{position:relative;border:1px solid var(--card-border);background:rgba(30,41,59,0.75);color:#cbd5e1;padding:6px 10px;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;}",
+        ".comm-channel-tab.active{background:rgba(37,99,235,0.85);border-color:rgba(96,165,250,0.9);color:#eff6ff;}",
+        ".comm-channel-tab.has-unread{background:rgba(217,119,6,0.92);border-color:rgba(253,186,116,0.95);color:#fffbeb;animation:commPulse 1.2s ease-in-out infinite;}",
+        ".comm-channel-tab.has-unread::after{content:'';position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:999px;background:#fef08a;box-shadow:0 0 0 2px rgba(15,23,42,0.95),0 0 8px rgba(254,240,138,0.8);}",
+        "@keyframes commPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}",
+        ".comm-mini-panel{position:fixed;top:12px;right:64px;width:min(340px,calc(100vw - 90px));border:1px solid var(--card-border);border-radius:12px;background:rgba(15,23,42,0.97);padding:10px;z-index:1190;box-shadow:0 18px 36px rgba(0,0,0,0.45);display:none;}",
+        ".comm-mini-title{font-size:0.82rem;font-weight:700;color:#93c5fd;margin-bottom:8px;}",
+        ".comm-setting-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:0.83rem;color:#e2e8f0;}",
+        ".comm-switch{position:relative;display:inline-block;width:46px;height:26px;}",
+        ".comm-switch input{opacity:0;width:0;height:0;}",
+        ".comm-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:rgba(30,41,59,0.9);border:1px solid var(--card-border);transition:.2s;border-radius:999px;}",
+        ".comm-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;top:3px;background:#94a3b8;transition:.2s;border-radius:50%;}",
+        ".comm-switch input:checked + .comm-slider{background:rgba(59,130,246,0.85);}",
+        ".comm-switch input:checked + .comm-slider:before{transform:translateX(20px);background:#fff;}",
+        "</style>",
+        '<div id="commExpandedWrap" class="card" style="display:flex;flex-direction:column;gap:10px;">',
         '<h3 style="margin:0 0 4px 0;text-align:center;">Chat & Voice</h3>',
         '<div id="commPolicyText" style="font-size:0.82rem;color:var(--text-muted);text-align:center;"></div>',
         '<div id="commParticipants" style="font-size:0.8rem;display:flex;flex-wrap:wrap;gap:6px;"></div>',
         '<div id="commControlRow" style="display:flex;gap:8px;align-items:center;">',
-        '<select id="commChannelSelect" class="input-text" style="flex:1;"></select>',
         '<button id="commVoiceBtn" class="btn btn-primary" style="width:auto;padding:8px 14px;">Bật Voice</button>',
         '<button id="commListenBtn" class="btn btn-primary" style="width:auto;padding:8px 14px;">Tắt âm</button>',
         '</div>',
         '<div id="commVoiceStatus" style="font-size:0.78rem;color:var(--text-muted);"></div>',
         '<div id="commVolumeList" style="display:flex;flex-direction:column;gap:6px;"></div>',
+        '<div id="commChannelTabs" class="comm-channel-tabs" style="display:none;margin-top:8px;margin-bottom:8px;"></div>',
         '<div id="commMessages" style="height:170px;overflow:auto;border:1px solid var(--card-border);border-radius:10px;padding:8px;background:rgba(15,23,42,0.45);font-size:0.82rem;"></div>',
         '<div id="commComposerRow" style="display:flex;gap:8px;">',
         '<input id="commInput" class="input-text" maxlength="220" placeholder="Nhập tin nhắn..." style="flex:1;" />',
         '<button id="commSendBtn" class="btn btn-primary" style="width:auto;padding:8px 14px;">Gửi</button>',
         "</div>",
         "</div>",
+        '<div id="commDock" class="comm-float-dock">',
+        '<button id="commDockSettingBtn" type="button" class="comm-float-btn" title="Cài đặt">⚙️</button>',
+        '<button id="commDockMicBtn" type="button" class="comm-float-btn" title="Bật/tắt mic">🎤</button>',
+        '<button id="commDockListenBtn" type="button" class="comm-float-btn" title="Bật/tắt âm">🔊</button>',
+        '<button id="commDockChatBtn" type="button" class="comm-float-btn" title="Hiển thị chat">💬</button>',
+        "</div>",
+        '<div id="commMiniChatPanel" class="comm-mini-panel">',
+        '<div class="comm-mini-title">Chat nhanh</div>',
+        '<div id="commMiniChannelTabs" class="comm-channel-tabs" style="display:none;margin-bottom:8px;"></div>',
+        '<div id="commMiniMessages" style="height:160px;overflow:auto;border:1px solid var(--card-border);border-radius:10px;padding:8px;background:rgba(15,23,42,0.45);font-size:0.82rem;"></div>',
+        '<div style="display:flex;gap:8px;margin-top:8px;">',
+        '<input id="commMiniInput" class="input-text" maxlength="220" placeholder="Nhập tin nhắn..." style="flex:1;" />',
+        '<button id="commMiniSendBtn" class="btn btn-primary" style="width:auto;padding:8px 12px;">Gửi</button>',
+        "</div>",
+        "</div>",
+        '<div id="commSettingPanel" class="comm-mini-panel">',
+        '<div class="comm-mini-title">Cài đặt hiển thị</div>',
+        '<div class="comm-setting-row">',
+        '<span id="commViewModeLabel">Đang phóng to</span>',
+        '<label class="comm-switch">',
+        '<input id="commViewModeToggle" type="checkbox" checked>',
+        '<span class="comm-slider"></span>',
+        "</label>",
+        "</div>",
+        "</div>",
         '<button id="commUnreadPopup" type="button" style="position:fixed;right:16px;bottom:18px;z-index:1000;display:none;padding:10px 14px;border-radius:12px;border:1px solid rgba(96,165,250,0.45);background:rgba(15,23,42,0.95);color:#93c5fd;font-weight:700;font-size:0.82rem;box-shadow:0 4px 18px rgba(0,0,0,0.35);">💬 Có tin nhắn mới</button>'
     ].join("");
 
     const els = {
+        expandedWrap: document.getElementById("commExpandedWrap"),
         policyText: document.getElementById("commPolicyText"),
         participants: document.getElementById("commParticipants"),
+        channelTabs: document.getElementById("commChannelTabs"),
+        miniChannelTabs: document.getElementById("commMiniChannelTabs"),
         controlRow: document.getElementById("commControlRow"),
-        channelSelect: document.getElementById("commChannelSelect"),
         voiceBtn: document.getElementById("commVoiceBtn"),
         listenBtn: document.getElementById("commListenBtn"),
         voiceStatus: document.getElementById("commVoiceStatus"),
@@ -67,33 +125,57 @@
         messages: document.getElementById("commMessages"),
         input: document.getElementById("commInput"),
         sendBtn: document.getElementById("commSendBtn"),
+        dock: document.getElementById("commDock"),
+        dockSettingBtn: document.getElementById("commDockSettingBtn"),
+        dockMicBtn: document.getElementById("commDockMicBtn"),
+        dockListenBtn: document.getElementById("commDockListenBtn"),
+        dockChatBtn: document.getElementById("commDockChatBtn"),
+        miniPanel: document.getElementById("commMiniChatPanel"),
+        miniMessages: document.getElementById("commMiniMessages"),
+        miniInput: document.getElementById("commMiniInput"),
+        miniSendBtn: document.getElementById("commMiniSendBtn"),
+        settingPanel: document.getElementById("commSettingPanel"),
+        viewModeToggle: document.getElementById("commViewModeToggle"),
+        viewModeLabel: document.getElementById("commViewModeLabel"),
         popup: document.getElementById("commUnreadPopup")
     };
     updateMicButton();
     updateListenButton();
     renderVoiceStatus();
+    applyViewMode();
+    renderMessages();
 
-    els.channelSelect.addEventListener("change", function () {
-        currentChannel = els.channelSelect.value || "public";
-        renderMessages();
-        refreshComposerState();
+    root.addEventListener("click", function (event) {
+        const tab = event.target.closest("[data-channel-tab]");
+        if (!tab) return;
+        event.stopPropagation();
+        const nextChannel = tab.dataset.channelTab || "public";
+        selectChannel(nextChannel);
     });
 
     els.sendBtn.addEventListener("click", sendChat);
     els.input.addEventListener("keydown", function (event) {
         if (event.key === "Enter") sendChat();
     });
-    root.addEventListener("click", hideUnreadPopup);
+    els.miniSendBtn.addEventListener("click", sendMiniChat);
+    els.miniInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") sendMiniChat();
+    });
+    root.addEventListener("click", function (event) {
+        if (event.target.closest("[data-channel-tab]")) return;
+        hideUnreadPopup();
+    });
     els.messages.addEventListener("click", hideUnreadPopup);
+    els.miniMessages.addEventListener("click", hideUnreadPopup);
     els.input.addEventListener("focus", hideUnreadPopup);
+    els.miniInput.addEventListener("focus", hideUnreadPopup);
     els.popup.addEventListener("click", function () {
         hideUnreadPopup();
-        const channels = Array.isArray(state && state.channels) ? state.channels : [];
-        if (channels.length > 1 && channels.some(function (c) { return c.key === "public"; })) {
-            currentChannel = "public";
-            els.channelSelect.value = "public";
-            refreshComposerState();
-            renderMessages();
+        selectChannel(getPreferredFocusChannel());
+        if (viewMode === "compact") {
+            openMiniChat();
+            els.miniMessages.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
         }
         els.messages.scrollIntoView({ behavior: "smooth", block: "center" });
     });
@@ -114,6 +196,62 @@
         Array.from(els.volumeList.querySelectorAll("input[data-volume-device]")).forEach(function (input) {
             input.disabled = listenMuted;
         });
+    });
+    els.dockMicBtn.addEventListener("click", async function (event) {
+        event.stopPropagation();
+        if (!micEnabled) {
+            await startVoice(false);
+            return;
+        }
+        stopVoice(true);
+    });
+    els.dockListenBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        listenMuted = !listenMuted;
+        saveListenMutedPreference(listenMuted);
+        updateListenButton();
+        applyListenMuteToAll();
+        renderVoiceStatus();
+        Array.from(els.volumeList.querySelectorAll("input[data-volume-device]")).forEach(function (input) {
+            input.disabled = listenMuted;
+        });
+    });
+    els.dockChatBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (compactChatOpen) {
+            closeMiniChat();
+            return;
+        }
+        openMiniChat();
+    });
+    els.dockSettingBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (settingPanelOpen) {
+            closeSettingPanel();
+            return;
+        }
+        openSettingPanel();
+    });
+    els.viewModeToggle.addEventListener("change", function () {
+        viewMode = els.viewModeToggle.checked ? "expanded" : "compact";
+        saveViewModePreference(viewMode);
+        applyViewMode();
+    });
+    document.addEventListener("click", function (event) {
+        const target = event.target;
+        if (target && target.closest && target.closest("[data-channel-tab]")) {
+            return;
+        }
+        const clickInSettingPanel = !!(els.settingPanel && els.settingPanel.contains(target));
+        const clickSettingButton = !!(els.dockSettingBtn && els.dockSettingBtn.contains(target));
+        if (!clickInSettingPanel && !clickSettingButton) {
+            closeSettingPanel();
+        }
+        const clickInChatPanel = !!(els.miniPanel && els.miniPanel.contains(target));
+        const clickChatButton = !!(els.dockChatBtn && els.dockChatBtn.contains(target));
+        if (!clickInChatPanel && !clickChatButton) {
+            closeMiniChat();
+        }
     });
 
     connectStomp();
@@ -219,10 +357,15 @@
             if (!chatHistory[channel]) chatHistory[channel] = [];
             const line = (payload.senderName || "Ẩn danh") + ": " + (payload.message || "");
             chatHistory[channel].push(line);
-            renderMessages();
-            if (channel !== currentChannel || document.activeElement !== els.input) {
+            trimChatHistory(channel);
+            saveChatHistory();
+            const canReadNow = isReadingChannelNow(channel);
+            if (!canReadNow) {
+                unreadChannels[channel] = true;
                 showUnreadPopup();
             }
+            renderMessages();
+            renderChannelTabs();
             return;
         }
 
@@ -249,18 +392,10 @@
 
         const channels = Array.isArray(state.channels) ? state.channels : [];
         const previous = currentChannel;
-        els.channelSelect.innerHTML = "";
-        channels.forEach(function (channel) {
-            const option = document.createElement("option");
-            option.value = channel.key;
-            option.textContent = channel.title + (channel.readOnly ? " (chỉ đọc)" : "");
-            els.channelSelect.appendChild(option);
-        });
         currentChannel = channels.some(function (c) { return c.key === previous; })
             ? previous
             : (channels[0] ? channels[0].key : "public");
-        els.channelSelect.value = currentChannel;
-        els.channelSelect.style.display = channels.length <= 1 ? "none" : "block";
+        renderChannelTabs();
 
         const participants = Array.isArray(state.participants) ? state.participants : [];
         els.participants.innerHTML = "";
@@ -274,6 +409,11 @@
         renderVolumeControls(participants);
         refreshComposerState();
         renderMessages();
+        if (isReadingChannelNow(currentChannel)) {
+            unreadChannels[currentChannel] = false;
+            renderChannelTabs();
+            updateUnreadPopupAndIcon();
+        }
     }
 
     function refreshComposerState() {
@@ -282,31 +422,99 @@
         const canSend = !!(selected && selected.canSend);
         els.input.disabled = !canSend;
         els.sendBtn.disabled = !canSend;
+        els.miniInput.disabled = !canSend;
+        els.miniSendBtn.disabled = !canSend;
         els.input.placeholder = canSend ? "Nhập tin nhắn..." : "Kênh hiện tại chỉ đọc";
+        els.miniInput.placeholder = canSend ? "Nhập tin nhắn..." : "Kênh hiện tại chỉ đọc";
     }
 
     function renderMessages() {
         const list = chatHistory[currentChannel] || [];
-        els.messages.innerHTML = list.map(function (line) {
+        const html = list.map(function (line) {
             return '<div style="margin-bottom:4px;word-break:break-word;">' + escapeHtml(line) + "</div>";
         }).join("");
+        els.messages.innerHTML = html;
+        els.miniMessages.innerHTML = html;
         els.messages.scrollTop = els.messages.scrollHeight;
+        els.miniMessages.scrollTop = els.miniMessages.scrollHeight;
     }
 
     function showUnreadPopup() {
         unreadPopupVisible = true;
         els.popup.style.display = "inline-flex";
+        updateUnreadPopupAndIcon();
     }
 
     function hideUnreadPopup() {
         if (!unreadPopupVisible) return;
         unreadPopupVisible = false;
         els.popup.style.display = "none";
+        updateUnreadPopupAndIcon();
+    }
+
+    function setChatUnreadIndicator(hasUnread) {
+        els.dockChatBtn.classList.toggle("has-unread", !!hasUnread);
+    }
+
+    function applyViewMode() {
+        const expanded = viewMode !== "compact";
+        els.expandedWrap.style.display = expanded ? "" : "none";
+        els.dockMicBtn.style.display = expanded ? "none" : "inline-flex";
+        els.dockListenBtn.style.display = expanded ? "none" : "inline-flex";
+        els.dockChatBtn.style.display = expanded ? "none" : "inline-flex";
+        els.viewModeToggle.checked = expanded;
+        els.viewModeLabel.textContent = expanded ? "Đang phóng to" : "Đang thu nhỏ";
+        if (expanded) {
+            unreadChannels[currentChannel] = false;
+            renderChannelTabs();
+            updateUnreadPopupAndIcon();
+        }
+        if (expanded) {
+            closeMiniChat();
+        }
+    }
+
+    function openMiniChat() {
+        if (viewMode !== "compact") return;
+        compactChatOpen = true;
+        els.miniPanel.style.display = "block";
+        els.dockChatBtn.classList.add("active");
+        closeSettingPanel();
+        unreadChannels[currentChannel] = false;
+        renderChannelTabs();
+        renderMessages();
+        hideUnreadPopup();
+    }
+
+    function closeMiniChat() {
+        compactChatOpen = false;
+        els.miniPanel.style.display = "none";
+        els.dockChatBtn.classList.remove("active");
+    }
+
+    function openSettingPanel() {
+        settingPanelOpen = true;
+        els.settingPanel.style.display = "block";
+        els.dockSettingBtn.classList.add("active");
+    }
+
+    function closeSettingPanel() {
+        settingPanelOpen = false;
+        els.settingPanel.style.display = "none";
+        els.dockSettingBtn.classList.remove("active");
     }
 
     function sendChat() {
+        sendChatFromInput(els.input);
+    }
+
+    function sendMiniChat() {
+        sendChatFromInput(els.miniInput);
+    }
+
+    function sendChatFromInput(inputEl) {
         if (!stompConnected || !state) return;
-        const text = (els.input.value || "").trim();
+        const text = (inputEl.value || "").trim();
         if (!text) return;
         sendFrame("SEND", { destination: "/app/comm.chat", "content-type": "application/json" }, JSON.stringify({
             game: game,
@@ -316,6 +524,80 @@
             senderName: myName
         }));
         els.input.value = "";
+        els.miniInput.value = "";
+    }
+
+    function getChannels() {
+        return Array.isArray(state && state.channels) ? state.channels : [];
+    }
+
+    function channelDisplayTitle(channel) {
+        const title = channel && channel.title ? String(channel.title) : "";
+        return title || "Kênh";
+    }
+
+    function renderChannelTabs() {
+        const channels = getChannels();
+        const hasManyChannels = channels.length > 1;
+        [els.channelTabs, els.miniChannelTabs].forEach(function (holder) {
+            if (!holder) return;
+            holder.style.display = hasManyChannels ? "flex" : "none";
+            if (!hasManyChannels) {
+                holder.innerHTML = "";
+                return;
+            }
+            holder.innerHTML = channels.map(function (channel) {
+                const key = channel.key;
+                const activeClass = key === currentChannel ? " active" : "";
+                const unreadClass = unreadChannels[key] ? " has-unread" : "";
+                const label = channelDisplayTitle(channel);
+                return '<button type="button" class="comm-channel-tab' + activeClass + unreadClass + '" data-channel-tab="' + escapeAttr(key) + '">' + escapeHtml(label) + "</button>";
+            }).join("");
+        });
+    }
+
+    function selectChannel(channelKey) {
+        const channels = getChannels();
+        const exists = channels.some(function (item) { return item.key === channelKey; });
+        currentChannel = exists ? channelKey : (channels[0] ? channels[0].key : "public");
+        if (isReadingChannelNow(currentChannel)) {
+            unreadChannels[currentChannel] = false;
+        }
+        renderChannelTabs();
+        refreshComposerState();
+        renderMessages();
+        updateUnreadPopupAndIcon();
+    }
+
+    function getPreferredFocusChannel() {
+        const channels = getChannels();
+        const unread = channels.find(function (channel) { return unreadChannels[channel.key]; });
+        if (unread) return unread.key;
+        const hasPublic = channels.some(function (channel) { return channel.key === "public"; });
+        if (hasPublic) return "public";
+        return channels[0] ? channels[0].key : "public";
+    }
+
+    function isReadingChannelNow(channelKey) {
+        if (channelKey !== currentChannel) return false;
+        if (viewMode === "compact") return compactChatOpen;
+        return true;
+    }
+
+    function hasAnyUnreadChannel() {
+        const channels = getChannels();
+        return channels.some(function (channel) { return !!unreadChannels[channel.key]; });
+    }
+
+    function updateUnreadPopupAndIcon() {
+        const hasUnread = hasAnyUnreadChannel();
+        if (!hasUnread) {
+            unreadPopupVisible = false;
+            els.popup.style.display = "none";
+        } else if (unreadPopupVisible) {
+            els.popup.style.display = "inline-flex";
+        }
+        setChatUnreadIndicator(hasUnread);
     }
 
     function renderVolumeControls(participants) {
@@ -581,6 +863,48 @@
         }
     }
 
+    function loadChatHistory() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(chatHistoryStorageKey) || "{}");
+            const normalized = {};
+            if (!parsed || typeof parsed !== "object") {
+                normalized.public = [];
+                normalized.dead = [];
+                return normalized;
+            }
+            Object.keys(parsed).forEach(function (key) {
+                const list = Array.isArray(parsed[key]) ? parsed[key] : [];
+                normalized[key] = list
+                    .filter(function (item) { return typeof item === "string"; })
+                    .slice(-maxChatPerChannel);
+            });
+            if (!normalized.public) normalized.public = [];
+            if (!normalized.dead) normalized.dead = [];
+            return normalized;
+        } catch (_) {
+            return { public: [], dead: [] };
+        }
+    }
+
+    function trimChatHistory(channel) {
+        if (!chatHistory[channel]) return;
+        if (chatHistory[channel].length > maxChatPerChannel) {
+            chatHistory[channel] = chatHistory[channel].slice(-maxChatPerChannel);
+        }
+    }
+
+    function saveChatHistory() {
+        localStorage.setItem(chatHistoryStorageKey, JSON.stringify(chatHistory));
+    }
+
+    function loadViewModePreference() {
+        return localStorage.getItem(viewModeStorageKey) === "compact" ? "compact" : "expanded";
+    }
+
+    function saveViewModePreference(nextMode) {
+        localStorage.setItem(viewModeStorageKey, nextMode === "compact" ? "compact" : "expanded");
+    }
+
     function saveVolumePrefs() {
         localStorage.setItem(volumeStorageKey, JSON.stringify(volumePrefs));
     }
@@ -689,10 +1013,18 @@
             els.voiceBtn.textContent = "Tắt Mic";
             els.voiceBtn.classList.remove("btn-danger");
             els.voiceBtn.classList.add("btn-success");
+            els.dockMicBtn.textContent = "🎤";
+            els.dockMicBtn.title = "Tắt mic";
+            els.dockMicBtn.classList.add("state-on");
+            els.dockMicBtn.classList.remove("state-off");
         } else {
             els.voiceBtn.textContent = "Bật Mic";
             els.voiceBtn.classList.remove("btn-success");
             els.voiceBtn.classList.add("btn-danger");
+            els.dockMicBtn.textContent = "🎙️";
+            els.dockMicBtn.title = "Bật mic";
+            els.dockMicBtn.classList.add("state-off");
+            els.dockMicBtn.classList.remove("state-on");
         }
     }
 
@@ -701,10 +1033,18 @@
             els.listenBtn.textContent = "Bật âm";
             els.listenBtn.classList.remove("btn-primary");
             els.listenBtn.classList.add("btn-danger");
+            els.dockListenBtn.textContent = "🔇";
+            els.dockListenBtn.title = "Bật âm";
+            els.dockListenBtn.classList.add("state-off");
+            els.dockListenBtn.classList.remove("state-on");
         } else {
             els.listenBtn.textContent = "Tắt âm";
             els.listenBtn.classList.remove("btn-danger");
             els.listenBtn.classList.add("btn-primary");
+            els.dockListenBtn.textContent = "🔊";
+            els.dockListenBtn.title = "Tắt âm";
+            els.dockListenBtn.classList.add("state-on");
+            els.dockListenBtn.classList.remove("state-off");
         }
     }
 
@@ -832,5 +1172,9 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
+    }
+
+    function escapeAttr(text) {
+        return escapeHtml(text).replace(/`/g, "&#96;");
     }
 })();

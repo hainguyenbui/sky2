@@ -18,12 +18,20 @@
         <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu chưa được setup</h2>
         <p class="desc">Vui lòng liên hệ Admin để thiết lập phòng chơi mới.</p>
         <a href="/" class="btn btn-primary" style="margin-top: 20px;">Về Trang Chủ</a>
+
+        <div id="spy-comm-root"
+             th:attr="data-game=${gameKey},data-device-id=${deviceId},data-player-name=${playerName}">
+        </div>
     </div>
     <div th:if="${fullSlot}" class="card" style="text-align: center;">
         <h2 style="color: var(--danger); margin-bottom: 10px;">Ván đấu đã ĐẦY</h2>
         <p class="desc">Vui lòng yêu cầu khứa admin SETUP lại.</p>
+
+        <div id="spy-comm-root"
+             th:attr="data-game=${gameKey},data-device-id=${deviceId},data-player-name=${playerName}">
+        </div>
     </div>
-    <th:block th:unless="${notSetup == true and fullSlot == true}">
+    <th:block th:unless="${notSetup == true or fullSlot == true}">
         <div class="card" style="text-align: center;">
             <h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.95rem;">TỪ KHÓA CỦA BẠN:</h3>
             <div class="reveal-box blurred" onclick="this.classList.toggle('blurred')">
@@ -32,6 +40,10 @@
                     <h2 style="font-size: 1.8rem; color: #60a5fa;" th:text="${keyword}"></h2>
                 </div>
             </div>
+        </div>
+
+        <div id="spy-comm-root"
+             th:attr="data-game=${gameKey},data-device-id=${deviceId},data-player-name=${playerName}">
         </div>
 
         <div class="card" style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
@@ -58,10 +70,6 @@
             <div class="qr-container">
                 <img th:src="${image}" alt="QR Code" class="qr-image">
             </div>
-        </div>
-
-        <div id="spy-comm-root"
-             th:attr="data-game=${gameKey},data-device-id=${deviceId},data-player-name=${playerName}">
         </div>
     </th:block>
 </div>

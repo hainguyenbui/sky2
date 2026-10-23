@@ -48,7 +48,7 @@
             <h3 style="margin-bottom: 14px; font-size: 1.1rem;">Danh sách vai trò</h3>
             <div class="item-list">
                 <th:block th:each="item : ${datas}">
-                    <div th:with="isSoi=${#lists.contains(idSoi, item.id)},isOutsider=${#lists.contains(idOutsider, item.id)},isNumberInput=${item.id == 1 or item.id == 30}"
+                    <div th:with="isSoi=${#lists.contains(idSoi, item.id)},isOutsider=${#lists.contains(idOutsider, item.id)},isNumberInput=${item.id == 1 or item.id == 30 or item.id == 31}"
                          th:class="'role-card ' + (${isSoi} ? 'role-card-soi' : (${isOutsider} ? 'role-card-other' : 'role-card-dan'))">
                         <div style="padding-right: 10px; text-align: left;">
                             <span class="role-title"
