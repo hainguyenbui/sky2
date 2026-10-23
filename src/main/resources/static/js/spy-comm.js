@@ -13,6 +13,60 @@
     const chatHistoryStorageKey = "spy-comm-chat-history-" + game + "-" + deviceId;
     const viewModeStorageKey = "spy-comm-view-mode-" + game + "-" + deviceId;
     const maxChatPerChannel = 250;
+    const chatEmojis = [
+                           "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
+                           "🫠", "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "☺️",
+                           "😚", "😙", "🥲", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗",
+                           "🤭", "🫢", "🫣", "🤫", "🤔", "🫡", "🤐", "🤨", "😐", "😑",
+                           "😶", "🫥", "😶‍🌫️", "😏", "😒", "🙄", "😬", "😮‍💨", "🤥", "🫨",
+                           "🙂‍↔️", "🙂‍↕️", "😌", "😔", "😪", "🤤", "😴", "🫩", "😷", "🤒",
+                           "🤕", "🤢", "🤮", "🤧", "🥵", "🥶", "🥴", "😵", "😵‍💫", "🤯",
+                           "🤠", "🥳", "🥸", "😎", "🤓", "🧐", "😕", "🫤", "😟", "🙁",
+                           "☹️", "😮", "😯", "😲", "😳", "🥺", "🥹", "😦", "😧", "😨",
+                           "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩",
+                           "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️",
+                           "💩", "🤡", "👹", "👺", "👻", "👽", "👾", "🤖", "🎃",
+                           "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾",
+                           "🙈", "🙉", "🙊",
+                            "👋", "🤚", "🖐️", "✋", "🖖", "🫱", "🫲", "🫳", "🫴",
+                               "🫷", "🫸", "👌", "🤌", "🤏", "✌️", "🤞", "🫰", "🤟",
+                               "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "🫵",
+                               "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "🫶",
+                               "👐", "🤲", "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾",
+                               "🦿", "🦵", "🦶", "👂", "🦻", "👃", "👀", "👁️", "🫦",
+                               "👄", "🫶", "💋", "🧠", "🫀", "🫁", "🦷", "🦴",
+                               "🐑", "🐐", "🐪", "🐫", "🦙", "🦒", "🐘", "🦣", "🦏",
+                                   "🦛", "🐭", "🐁", "🐀", "🐹", "🐰", "🐇", "🐿️", "🦫",
+                                   "🦔", "🦇", "🐻", "🐻‍❄️", "🐨", "🐼", "🦥", "🦦", "🦨",
+                                   "🦘", "🦡", "🐾", "🦃", "🐔", "🐓", "🐣", "🐤", "🐥",
+                                   "🐦", "🐧", "🕊️", "🦅", "🦆", "🦢", "🦉", "🦤", "🪶",
+                                   "🦩", "🦚", "🦜", "🪽", "🐦‍⬛", "🪿", "🐸", "🐊", "🐢",
+                                   "🦎", "🐍", "🐲", "🐉", "🦕", "🦖", "🐳", "🐋", "🐬",
+                                   "🦭", "🐟", "🐠", "🐡", "🦈", "🐙", "🐚", "🪸", "🪼",
+                                   "🦀", "🦞", "🦐", "🦑", "🦪", "🐌", "🦋", "🐛", "🐜",
+                                   "🐝", "🪲", "🐞", "🦗", "🪳", "🕷️", "🕸️", "🦂", "🦟",
+                                   "🪰", "🪱", "🦠", "💐", "🌸", "💮", "🪷", "🏵️", "🌹",
+                                   "🥀", "🌺", "🌻", "🌼", "🌷", "🪻", "🌱", "🪴", "🌲",
+                                   "🌳", "🌴", "🌵", "🌾", "🌿", "☘️", "🍀", "🍁", "🍂",
+                                   "🍃", "🪹", "🪺", "🍄", "🌰", "🪵", "🌍", "🌎", "🌏",
+                                   "🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘", "🌙",
+                                   "🌚", "🌛", "🌜", "☀️", "🌝", "🌞", "🪐", "⭐", "🌟",
+                                   "🌠", "🌌", "☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️",
+                                   "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "🌬️", "🌀", "🌈",
+                                   "🌂", "☂️", "☔", "⛱️", "⚡", "❄️", "☃️", "⛄",
+                                   "☄️", "🔥", "💧", "🌊"
+                       ];
+    const effectTokenPrefix = "__fx__:";
+    const screenEffects = [
+        { key: "punch", icon: "👊", label: "👊👊" },
+        { key: "punchCombo", icon: "🥊", label: "🥊🥊" },
+        { key: "heart", icon: "❤️", label: "❤️❤️" },
+        { key: "ant", icon: "🐜", label: "🐜🐜" },
+        { key: "fly", icon: "🪰", label: "🪰🪰" },
+        { key: "lightning", icon: "⚡", label: "⚡⚡" },
+        { key: "elephant", icon: "🐘", label: "🐘🐘" },
+        { key: "fall", icon: "🫠", label: "🫠🫠" }
+    ];
 
     let state = null;
     let ws = null;
@@ -29,6 +83,8 @@
     let viewMode = loadViewModePreference();
     let compactChatOpen = false;
     let settingPanelOpen = false;
+    let screenShakeTimer = 0;
+    let fallRestoreTimer = 0;
     const unreadChannels = {};
     let voiceStatusBase = "Voice nghe đang bật. Mic đang tắt.";
     const remoteInstanceByDevice = new Map();
@@ -65,6 +121,41 @@
         ".comm-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;top:3px;background:#94a3b8;transition:.2s;border-radius:50%;}",
         ".comm-switch input:checked + .comm-slider{background:rgba(59,130,246,0.85);}",
         ".comm-switch input:checked + .comm-slider:before{transform:translateX(20px);background:#fff;}",
+        ".comm-emoji-wrap{position:relative;display:flex;align-items:center;}",
+        ".comm-emoji-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--card-border);background:rgba(30,41,59,0.85);color:#fde68a;font-size:19px;cursor:pointer;}",
+        ".comm-emoji-btn:disabled{opacity:.55;cursor:not-allowed;}",
+        ".comm-emoji-picker{position:absolute;right:0;bottom:44px;display:none;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;padding:8px;border-radius:10px;border:1px solid var(--card-border);background:rgba(15,23,42,0.98);width:196px;max-height:168px;overflow-y:auto;overflow-x:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.45);z-index:1300;scrollbar-width:thin;scrollbar-color:rgba(148,163,184,0.7) rgba(15,23,42,0.65);}",
+        ".comm-emoji-picker.open{display:grid;}",
+        ".comm-emoji-picker::-webkit-scrollbar{width:8px;}",
+        ".comm-emoji-picker::-webkit-scrollbar-track{background:rgba(15,23,42,0.65);border-radius:999px;}",
+        ".comm-emoji-picker::-webkit-scrollbar-thumb{background:rgba(148,163,184,0.7);border-radius:999px;}",
+        ".comm-emoji-item{border:none;border-radius:8px;background:rgba(30,41,59,0.9);font-size:18px;line-height:1;padding:4px 0;cursor:pointer;}",
+        ".comm-emoji-item:hover{background:rgba(59,130,246,0.45);}",
+        ".comm-fx-wrap{position:relative;display:flex;align-items:center;}",
+        ".comm-fx-btn{width:38px;height:38px;border-radius:10px;border:1px solid rgba(248,113,113,0.55);background:rgba(127,29,29,0.75);color:#fecaca;font-size:18px;cursor:pointer;}",
+        ".comm-fx-btn:disabled{opacity:.55;cursor:not-allowed;}",
+        ".comm-fx-picker{position:absolute;right:0;bottom:44px;display:none;grid-template-columns:1fr;gap:6px;padding:8px;border-radius:10px;border:1px solid rgba(248,113,113,0.35);background:rgba(15,23,42,0.98);width:150px;max-height:200px;overflow-y:auto;overflow-x:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.45);z-index:1300;}",
+        ".comm-fx-picker.open{display:grid;}",
+        ".comm-fx-item{display:flex;align-items:center;gap:8px;border:none;border-radius:8px;background:rgba(127,29,29,0.35);color:#fee2e2;font-size:0.82rem;padding:8px 10px;cursor:pointer;text-align:left;}",
+        ".comm-fx-item:hover{background:rgba(239,68,68,0.45);}",
+        ".comm-fx-layer{position:fixed;inset:0;pointer-events:none;z-index:2500;overflow:hidden;}",
+        ".comm-screen-shake{animation:commScreenShake 0.45s ease;}",
+        ".comm-screen-shake-hard{animation:commScreenShakeHard 1.9s linear;}",
+        "@keyframes commScreenShake{0%{transform:translate(0,0);}15%{transform:translate(-8px,6px);}30%{transform:translate(8px,-6px);}45%{transform:translate(-6px,4px);}60%{transform:translate(6px,-4px);}75%{transform:translate(-4px,2px);}100%{transform:translate(0,0);}}",
+        "@keyframes commScreenShakeHard{0%{transform:translate(0,0);}10%{transform:translate(-12px,7px);}20%{transform:translate(11px,-8px);}30%{transform:translate(-10px,6px);}40%{transform:translate(9px,-7px);}50%{transform:translate(-8px,7px);}60%{transform:translate(8px,-6px);}70%{transform:translate(-7px,5px);}80%{transform:translate(6px,-4px);}90%{transform:translate(-4px,3px);}100%{transform:translate(0,0);}}",
+        ".comm-fx-punch{position:absolute;left:50%;top:50%;font-size:18vw;transform:translate(-50%,-50%) scale(0.2);animation:commFxPunch 0.62s ease-out forwards;filter:drop-shadow(0 0 24px rgba(248,113,113,0.7));}",
+        "@keyframes commFxPunch{0%{opacity:0;transform:translate(-50%,-50%) scale(0.2);}20%{opacity:1;}70%{opacity:1;transform:translate(-50%,-50%) scale(1.6);}100%{opacity:0;transform:translate(-50%,-50%) scale(3.2);}}",
+        ".comm-fx-heart{position:absolute;bottom:-40px;font-size:28px;animation:commFxHeart var(--dur,1.9s) ease-in forwards;}",
+        "@keyframes commFxHeart{0%{opacity:0;transform:translate(0,0) scale(0.8);}12%{opacity:1;}100%{opacity:0;transform:translate(var(--drift,0px),-120vh) scale(1.6);}}",
+        ".comm-fx-bug{position:absolute;font-size:30px;filter:drop-shadow(0 0 8px rgba(0,0,0,0.35));will-change:transform,left,top;}",
+        ".comm-fx-flash{position:absolute;inset:0;background:rgba(251,191,36,0.35);animation:commFxFlash 0.32s ease-out forwards;}",
+        "@keyframes commFxFlash{0%{opacity:0;}20%{opacity:1;}100%{opacity:0;}}",
+        ".comm-fx-bolt{position:absolute;top:-18vh;left:50%;font-size:20vw;transform:translateX(-50%);animation:commFxBolt 0.58s ease-out forwards;filter:drop-shadow(0 0 22px rgba(250,204,21,0.95));}",
+        "@keyframes commFxBolt{0%{opacity:0;transform:translateX(-50%) translateY(-30vh) scale(0.7);}15%{opacity:1;}55%{opacity:1;transform:translateX(-50%) translateY(40vh) scale(1);}100%{opacity:0;transform:translateX(-50%) translateY(70vh) scale(1.15);}}",
+        ".comm-fx-elephant{position:absolute;left:124vw;font-size:52px;animation:commFxElephant var(--dur,7.2s) linear forwards;animation-delay:var(--delay,0s);}",
+        "@keyframes commFxElephant{0%{transform:translateX(0);}100%{transform:translateX(-170vw);}}",
+        "body.comm-fall-mode .comm-fall-piece{transform-origin:center top;animation:commFxFallPiece 4.2s ease-in-out both !important;animation-delay:var(--fall-delay,0s) !important;}",
+        "@keyframes commFxFallPiece{0%{transform:translate(0,0) rotate(0deg);opacity:1;}18%{transform:translate(0,0) rotate(0deg);opacity:1;}52%{transform:translate(var(--fall-drift,0px),var(--fall-drop,42vh)) rotate(var(--fall-rot,8deg));opacity:0.16;}70%{transform:translate(var(--fall-drift,0px),var(--fall-drop,42vh)) rotate(var(--fall-rot,8deg));opacity:0.08;}100%{transform:translate(0,0) rotate(0deg);opacity:1;}}",
         "</style>",
         '<div id="commExpandedWrap" class="card" style="display:flex;flex-direction:column;gap:10px;">',
         '<h3 style="margin:0 0 4px 0;text-align:center;">Chat & Voice</h3>',
@@ -77,9 +168,17 @@
         '<div id="commVoiceStatus" style="font-size:0.78rem;color:var(--text-muted);"></div>',
         '<div id="commVolumeList" style="display:flex;flex-direction:column;gap:6px;"></div>',
         '<div id="commChannelTabs" class="comm-channel-tabs" style="display:none;margin-top:8px;margin-bottom:8px;"></div>',
-        '<div id="commMessages" style="height:170px;overflow:auto;border:1px solid var(--card-border);border-radius:10px;padding:8px;background:rgba(15,23,42,0.45);font-size:0.82rem;"></div>',
+        '<div id="commMessages" style="height:170px;overflow:auto;border:1px solid var(--card-border);border-radius:10px;padding:8px;background:rgba(15,23,42,0.45);font-size:0.82rem;text-align:left;"></div>',
         '<div id="commComposerRow" style="display:flex;gap:8px;">',
         '<input id="commInput" class="input-text" maxlength="220" placeholder="Nhập tin nhắn..." style="flex:1;" />',
+        '<div id="commEmojiWrap" class="comm-emoji-wrap">',
+        '<button id="commEmojiBtn" type="button" class="comm-emoji-btn" title="Chọn emoji">😊</button>',
+        '<div id="commEmojiPicker" class="comm-emoji-picker"></div>',
+        "</div>",
+        '<div id="commFxWrap" class="comm-fx-wrap">',
+        '<button id="commFxBtn" type="button" class="comm-fx-btn" title="Screen Shake Effect">💥</button>',
+        '<div id="commFxPicker" class="comm-fx-picker"></div>',
+        "</div>",
         '<button id="commSendBtn" class="btn btn-primary" style="width:auto;padding:8px 14px;">Gửi</button>',
         "</div>",
         "</div>",
@@ -92,9 +191,17 @@
         '<div id="commMiniChatPanel" class="comm-mini-panel">',
         '<div class="comm-mini-title">Chat nhanh</div>',
         '<div id="commMiniChannelTabs" class="comm-channel-tabs" style="display:none;margin-bottom:8px;"></div>',
-        '<div id="commMiniMessages" style="height:160px;overflow:auto;border:1px solid var(--card-border);border-radius:10px;padding:8px;background:rgba(15,23,42,0.45);font-size:0.82rem;"></div>',
+        '<div id="commMiniMessages" style="height:160px;overflow:auto;border:1px solid var(--card-border);border-radius:10px;padding:8px;background:rgba(15,23,42,0.45);font-size:0.82rem;text-align:left;"></div>',
         '<div style="display:flex;gap:8px;margin-top:8px;">',
         '<input id="commMiniInput" class="input-text" maxlength="220" placeholder="Nhập tin nhắn..." style="flex:1;" />',
+        '<div id="commMiniEmojiWrap" class="comm-emoji-wrap">',
+        '<button id="commMiniEmojiBtn" type="button" class="comm-emoji-btn" title="Chọn emoji">😊</button>',
+        '<div id="commMiniEmojiPicker" class="comm-emoji-picker"></div>',
+        "</div>",
+        '<div id="commMiniFxWrap" class="comm-fx-wrap">',
+        '<button id="commMiniFxBtn" type="button" class="comm-fx-btn" title="Screen Shake Effect">💥</button>',
+        '<div id="commMiniFxPicker" class="comm-fx-picker"></div>',
+        "</div>",
         '<button id="commMiniSendBtn" class="btn btn-primary" style="width:auto;padding:8px 12px;">Gửi</button>',
         "</div>",
         "</div>",
@@ -108,6 +215,7 @@
         "</label>",
         "</div>",
         "</div>",
+        '<div id="commFxLayer" class="comm-fx-layer"></div>',
         '<button id="commUnreadPopup" type="button" style="position:fixed;right:16px;bottom:18px;z-index:1000;display:none;padding:10px 14px;border-radius:12px;border:1px solid rgba(96,165,250,0.45);background:rgba(15,23,42,0.95);color:#93c5fd;font-weight:700;font-size:0.82rem;box-shadow:0 4px 18px rgba(0,0,0,0.35);">💬 Có tin nhắn mới</button>'
     ].join("");
 
@@ -134,11 +242,26 @@
         miniMessages: document.getElementById("commMiniMessages"),
         miniInput: document.getElementById("commMiniInput"),
         miniSendBtn: document.getElementById("commMiniSendBtn"),
+        emojiWrap: document.getElementById("commEmojiWrap"),
+        emojiBtn: document.getElementById("commEmojiBtn"),
+        emojiPicker: document.getElementById("commEmojiPicker"),
+        fxWrap: document.getElementById("commFxWrap"),
+        fxBtn: document.getElementById("commFxBtn"),
+        fxPicker: document.getElementById("commFxPicker"),
+        miniEmojiWrap: document.getElementById("commMiniEmojiWrap"),
+        miniEmojiBtn: document.getElementById("commMiniEmojiBtn"),
+        miniEmojiPicker: document.getElementById("commMiniEmojiPicker"),
+        miniFxWrap: document.getElementById("commMiniFxWrap"),
+        miniFxBtn: document.getElementById("commMiniFxBtn"),
+        miniFxPicker: document.getElementById("commMiniFxPicker"),
         settingPanel: document.getElementById("commSettingPanel"),
         viewModeToggle: document.getElementById("commViewModeToggle"),
         viewModeLabel: document.getElementById("commViewModeLabel"),
+        fxLayer: document.getElementById("commFxLayer"),
         popup: document.getElementById("commUnreadPopup")
     };
+    initEmojiPickers();
+    initFxPickers();
     updateMicButton();
     updateListenButton();
     renderVoiceStatus();
@@ -160,6 +283,37 @@
     els.miniSendBtn.addEventListener("click", sendMiniChat);
     els.miniInput.addEventListener("keydown", function (event) {
         if (event.key === "Enter") sendMiniChat();
+    });
+    els.emojiBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        toggleEmojiPicker(els.emojiPicker);
+    });
+    els.miniEmojiBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        toggleEmojiPicker(els.miniEmojiPicker);
+    });
+    els.fxBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        toggleFxPicker(els.fxPicker);
+    });
+    els.miniFxBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        toggleFxPicker(els.miniFxPicker);
+    });
+    root.addEventListener("click", function (event) {
+        const emojiItem = event.target.closest("[data-chat-emoji]");
+        if (!emojiItem) return;
+        event.stopPropagation();
+        const emoji = emojiItem.dataset.chatEmoji || "";
+        const isMini = !!(els.miniPanel && els.miniPanel.contains(emojiItem));
+        appendEmojiToInput(isMini ? els.miniInput : els.input, emoji);
+        closeEmojiPickers();
+    });
+    root.addEventListener("click", function (event) {
+        const fxItem = event.target.closest("[data-screen-fx]");
+        if (!fxItem) return;
+        event.stopPropagation();
+        sendScreenEffect(fxItem.dataset.screenFx || "");
     });
     root.addEventListener("click", function (event) {
         if (event.target.closest("[data-channel-tab]")) return;
@@ -251,6 +405,16 @@
         const clickChatButton = !!(els.dockChatBtn && els.dockChatBtn.contains(target));
         if (!clickInChatPanel && !clickChatButton) {
             closeMiniChat();
+        }
+        const clickEmojiMain = !!(els.emojiWrap && els.emojiWrap.contains(target));
+        const clickEmojiMini = !!(els.miniEmojiWrap && els.miniEmojiWrap.contains(target));
+        if (!clickEmojiMain && !clickEmojiMini) {
+            closeEmojiPickers();
+        }
+        const clickFxMain = !!(els.fxWrap && els.fxWrap.contains(target));
+        const clickFxMini = !!(els.miniFxWrap && els.miniFxWrap.contains(target));
+        if (!clickFxMain && !clickFxMini) {
+            closeFxPickers();
         }
     });
 
@@ -354,6 +518,11 @@
 
         if (payload.type === "chat") {
             const channel = payload.channel || "public";
+            const effectKey = parseScreenEffect(payload.message || "");
+            if (effectKey) {
+                playScreenEffect(effectKey);
+                return;
+            }
             if (!chatHistory[channel]) chatHistory[channel] = [];
             const line = (payload.senderName || "Ẩn danh") + ": " + (payload.message || "");
             chatHistory[channel].push(line);
@@ -424,14 +593,22 @@
         els.sendBtn.disabled = !canSend;
         els.miniInput.disabled = !canSend;
         els.miniSendBtn.disabled = !canSend;
+        els.emojiBtn.disabled = !canSend;
+        els.miniEmojiBtn.disabled = !canSend;
+        els.fxBtn.disabled = !canSend;
+        els.miniFxBtn.disabled = !canSend;
         els.input.placeholder = canSend ? "Nhập tin nhắn..." : "Kênh hiện tại chỉ đọc";
         els.miniInput.placeholder = canSend ? "Nhập tin nhắn..." : "Kênh hiện tại chỉ đọc";
+        if (!canSend) {
+            closeEmojiPickers();
+            closeFxPickers();
+        }
     }
 
     function renderMessages() {
         const list = chatHistory[currentChannel] || [];
         const html = list.map(function (line) {
-            return '<div style="margin-bottom:4px;word-break:break-word;">' + escapeHtml(line) + "</div>";
+            return '<div style="margin-bottom:4px;word-break:break-word;text-align:left;">' + escapeHtml(line) + "</div>";
         }).join("");
         els.messages.innerHTML = html;
         els.miniMessages.innerHTML = html;
@@ -525,6 +702,333 @@
         }));
         els.input.value = "";
         els.miniInput.value = "";
+        closeEmojiPickers();
+        closeFxPickers();
+    }
+
+    function initEmojiPickers() {
+        const html = chatEmojis.map(function (emoji) {
+            return '<button type="button" class="comm-emoji-item" data-chat-emoji="' + escapeAttr(emoji) + '">' + escapeHtml(emoji) + "</button>";
+        }).join("");
+        els.emojiPicker.innerHTML = html;
+        els.miniEmojiPicker.innerHTML = html;
+    }
+
+    function toggleEmojiPicker(pickerEl) {
+        const willOpen = !pickerEl.classList.contains("open");
+        closeEmojiPickers();
+        if (willOpen) {
+            pickerEl.classList.add("open");
+        }
+    }
+
+    function closeEmojiPickers() {
+        els.emojiPicker.classList.remove("open");
+        els.miniEmojiPicker.classList.remove("open");
+    }
+
+    function initFxPickers() {
+        const html = screenEffects.map(function (effect) {
+            return '<button type="button" class="comm-fx-item" data-screen-fx="' + escapeAttr(effect.key) + '">' +
+                '<span>' + escapeHtml(effect.icon) + "</span><span>" + escapeHtml(effect.label) + "</span></button>";
+        }).join("");
+        els.fxPicker.innerHTML = html;
+        els.miniFxPicker.innerHTML = html;
+    }
+
+    function toggleFxPicker(pickerEl) {
+        const willOpen = !pickerEl.classList.contains("open");
+        closeFxPickers();
+        closeEmojiPickers();
+        if (willOpen) {
+            pickerEl.classList.add("open");
+        }
+    }
+
+    function closeFxPickers() {
+        els.fxPicker.classList.remove("open");
+        els.miniFxPicker.classList.remove("open");
+    }
+
+    function sendScreenEffect(effectKey) {
+        const normalized = normalizeScreenEffect(effectKey);
+        if (!normalized || !stompConnected || !state) {
+            return;
+        }
+        const channels = Array.isArray(state.channels) ? state.channels : [];
+        const selected = channels.find(function (item) { return item.key === currentChannel; });
+        if (!(selected && selected.canSend)) {
+            return;
+        }
+        sendFrame("SEND", { destination: "/app/comm.chat", "content-type": "application/json" }, JSON.stringify({
+            game: game,
+            deviceId: deviceId,
+            channel: currentChannel,
+            message: effectTokenPrefix + normalized,
+            senderName: myName
+        }));
+        closeFxPickers();
+        closeEmojiPickers();
+    }
+
+    function normalizeScreenEffect(effectKey) {
+        const key = String(effectKey || "").trim();
+        if (!key) return "";
+        return screenEffects.some(function (effect) { return effect.key === key; }) ? key : "";
+    }
+
+    function parseScreenEffect(message) {
+        const text = String(message || "");
+        if (text.indexOf(effectTokenPrefix) !== 0) {
+            return "";
+        }
+        return normalizeScreenEffect(text.substring(effectTokenPrefix.length));
+    }
+
+    function playScreenEffect(effectKey) {
+        const normalized = normalizeScreenEffect(effectKey);
+        if (!normalized || !els.fxLayer) {
+            return;
+        }
+        if (normalized === "punch") {
+            runPunchEffect();
+            return;
+        }
+        if (normalized === "punchCombo") {
+            runPunchComboEffect();
+            return;
+        }
+        if (normalized === "heart") {
+            runHeartEffect();
+            return;
+        }
+        if (normalized === "ant") {
+            runBugEffect("🐜");
+            return;
+        }
+        if (normalized === "fly") {
+            runBugEffect("🪰");
+            return;
+        }
+        if (normalized === "lightning") {
+            runLightningEffect();
+            return;
+        }
+        if (normalized === "elephant") {
+            runElephantEffect();
+            return;
+        }
+        if (normalized === "fall") {
+            runFallEffect();
+        }
+    }
+
+    function runPunchEffect() {
+        shakeScreen(480, false);
+        const node = document.createElement("div");
+        node.className = "comm-fx-punch";
+        node.textContent = "👊";
+        els.fxLayer.appendChild(node);
+        window.setTimeout(function () {
+            if (node.parentNode) node.parentNode.removeChild(node);
+        }, 680);
+    }
+
+    function runPunchComboEffect() {
+        shakeScreen(1900, true);
+        const total = 12;
+        const width = Math.max(320, window.innerWidth);
+        const height = Math.max(240, window.innerHeight);
+        for (let i = 0; i < total; i++) {
+            window.setTimeout(function () {
+                const node = document.createElement("div");
+                node.className = "comm-fx-punch";
+                node.textContent = "👊";
+                const fontPx = Math.max(88, Math.min(width * 0.22, (width * (0.10 + Math.random() * 0.12))));
+                const padX = fontPx * 0.55;
+                const padY = fontPx * 0.55;
+                const x = padX + Math.random() * Math.max(1, width - (padX * 2));
+                const y = padY + Math.random() * Math.max(1, height - (padY * 2));
+                node.style.left = x.toFixed(1) + "px";
+                node.style.top = y.toFixed(1) + "px";
+                node.style.fontSize = fontPx.toFixed(1) + "px";
+                node.style.animationDuration = "1.9s";
+                els.fxLayer.appendChild(node);
+                window.setTimeout(function () {
+                    if (node.parentNode) node.parentNode.removeChild(node);
+                }, 2050);
+            }, i * 140);
+        }
+    }
+
+    function runHeartEffect() {
+        const count = 44 + Math.floor(Math.random() * 22);
+        for (let i = 0; i < count; i++) {
+            const node = document.createElement("div");
+            node.className = "comm-fx-heart";
+            node.textContent = i % 3 === 0 ? "💖" : "❤️";
+            node.style.left = (Math.random() * 100).toFixed(1) + "vw";
+            node.style.setProperty("--drift", ((Math.random() - 0.5) * 220).toFixed(0) + "px");
+            node.style.setProperty("--dur", (2.2 + Math.random() * 2.1).toFixed(2) + "s");
+            els.fxLayer.appendChild(node);
+            window.setTimeout(function () {
+                if (node.parentNode) node.parentNode.removeChild(node);
+            }, 4600);
+        }
+    }
+
+    function runBugEffect(emoji) {
+        const count = 3 + Math.floor(Math.random() * 3);
+        const width = Math.max(320, window.innerWidth);
+        const height = Math.max(240, window.innerHeight);
+        const lifeMs = 12000;
+        const bugSize = 34;
+        for (let i = 0; i < count; i++) {
+            const node = document.createElement("div");
+            node.className = "comm-fx-bug";
+            node.textContent = emoji;
+            els.fxLayer.appendChild(node);
+            let x = Math.random() * (width - bugSize);
+            let y = Math.random() * (height - bugSize);
+            let vx = (Math.random() * 12) - 6;
+            let vy = (Math.random() * 12) - 6;
+            node.style.left = x.toFixed(1) + "px";
+            node.style.top = y.toFixed(1) + "px";
+            const timer = window.setInterval(function () {
+                x += vx;
+                y += vy;
+                if (x < 0 || x > width - bugSize) {
+                    vx = -vx;
+                    x = Math.max(0, Math.min(width - bugSize, x));
+                }
+                if (y < 0 || y > height - bugSize) {
+                    vy = -vy;
+                    y = Math.max(0, Math.min(height - bugSize, y));
+                }
+                if (Math.random() < 0.25) {
+                    vx += (Math.random() - 0.5) * 2.8;
+                    vy += (Math.random() - 0.5) * 2.8;
+                    vx = Math.max(-8, Math.min(8, vx));
+                    vy = Math.max(-8, Math.min(8, vy));
+                }
+                node.style.left = x.toFixed(1) + "px";
+                node.style.top = y.toFixed(1) + "px";
+                node.style.transform = "scale(" + (0.85 + Math.random() * 0.45).toFixed(2) + ") rotate(" + ((Math.random() * 40) - 20).toFixed(0) + "deg)";
+            }, 110);
+            window.setTimeout(function () {
+                window.clearInterval(timer);
+                if (node.parentNode) node.parentNode.removeChild(node);
+            }, lifeMs);
+        }
+    }
+
+    function runLightningEffect() {
+        shakeScreen(760, false);
+        const flash = document.createElement("div");
+        flash.className = "comm-fx-flash";
+        const bolt = document.createElement("div");
+        bolt.className = "comm-fx-bolt";
+        bolt.textContent = "⚡";
+        const width = Math.max(320, window.innerWidth);
+        const boltSizePx = Math.max(90, Math.min(width * 0.22, width * 0.20));
+        const padX = boltSizePx * 0.55;
+        const x = padX + Math.random() * Math.max(1, width - (padX * 2));
+        bolt.style.left = x.toFixed(1) + "px";
+        bolt.style.fontSize = boltSizePx.toFixed(1) + "px";
+        els.fxLayer.appendChild(flash);
+        els.fxLayer.appendChild(bolt);
+        window.setTimeout(function () {
+            if (flash.parentNode) flash.parentNode.removeChild(flash);
+            if (bolt.parentNode) bolt.parentNode.removeChild(bolt);
+        }, 750);
+    }
+
+    function runElephantEffect() {
+        const count = 8;
+        const baseTop = 10;
+        const rangeTop = 72;
+        for (let i = 0; i < count; i++) {
+            const node = document.createElement("div");
+            node.className = "comm-fx-elephant";
+            node.textContent = "🐘";
+            node.style.top = (baseTop + Math.random() * rangeTop).toFixed(1) + "vh";
+            node.style.fontSize = (42 + Math.random() * 26).toFixed(0) + "px";
+            node.style.setProperty("--delay", (i * 0.34).toFixed(2) + "s");
+            node.style.setProperty("--dur", (7.5 + Math.random() * 2.5).toFixed(2) + "s");
+            els.fxLayer.appendChild(node);
+            window.setTimeout(function () {
+                if (node.parentNode) node.parentNode.removeChild(node);
+            }, 10800 + (i * 200));
+        }
+    }
+
+    function runFallEffect() {
+        const body = document.body;
+        if (!body) return;
+        body.classList.remove("comm-fall-mode");
+        if (fallRestoreTimer) {
+            window.clearTimeout(fallRestoreTimer);
+            fallRestoreTimer = 0;
+        }
+        const pieces = Array.from(body.querySelectorAll("*")).filter(function (el) {
+            if (!el || !el.tagName) return false;
+            const tag = String(el.tagName).toUpperCase();
+            if (tag === "SCRIPT" || tag === "STYLE" || tag === "META" || tag === "LINK") return false;
+            if (el.id === "commFxLayer") return false;
+            if (el.closest && el.closest("#commFxLayer")) return false;
+            return true;
+        });
+        pieces.forEach(function (el) {
+            el.classList.remove("comm-fall-piece");
+            el.style.removeProperty("--fall-delay");
+            el.style.removeProperty("--fall-drift");
+            el.style.removeProperty("--fall-drop");
+            el.style.removeProperty("--fall-rot");
+            void el.offsetWidth;
+            el.classList.add("comm-fall-piece");
+            el.style.setProperty("--fall-delay", (Math.random() * 1.25).toFixed(2) + "s");
+            el.style.setProperty("--fall-drift", (((Math.random() - 0.5) * 260)).toFixed(0) + "px");
+            el.style.setProperty("--fall-drop", (28 + (Math.random() * 44)).toFixed(1) + "vh");
+            el.style.setProperty("--fall-rot", (((Math.random() - 0.5) * 26)).toFixed(1) + "deg");
+        });
+        void body.offsetWidth;
+        body.classList.add("comm-fall-mode");
+        fallRestoreTimer = window.setTimeout(function () {
+            body.classList.remove("comm-fall-mode");
+            pieces.forEach(function (el) {
+                el.classList.remove("comm-fall-piece");
+                el.style.removeProperty("--fall-delay");
+                el.style.removeProperty("--fall-drift");
+                el.style.removeProperty("--fall-drop");
+                el.style.removeProperty("--fall-rot");
+            });
+            fallRestoreTimer = 0;
+        }, 5800);
+    }
+
+    function shakeScreen(durationMs, hardMode) {
+        const body = document.body;
+        if (!body) return;
+        body.classList.remove("comm-screen-shake");
+        body.classList.remove("comm-screen-shake-hard");
+        if (screenShakeTimer) {
+            window.clearTimeout(screenShakeTimer);
+            screenShakeTimer = 0;
+        }
+        void body.offsetWidth;
+        body.classList.add(hardMode ? "comm-screen-shake-hard" : "comm-screen-shake");
+        screenShakeTimer = window.setTimeout(function () {
+            body.classList.remove("comm-screen-shake");
+            body.classList.remove("comm-screen-shake-hard");
+            screenShakeTimer = 0;
+        }, Math.max(200, Number(durationMs) || 480));
+    }
+
+    function appendEmojiToInput(inputEl, emoji) {
+        if (!emoji || inputEl.disabled) return;
+        const current = String(inputEl.value || "");
+        inputEl.value = (current + emoji).slice(0, 220);
+        inputEl.focus();
     }
 
     function getChannels() {
