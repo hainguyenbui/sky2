@@ -698,11 +698,6 @@ public class MaSoiBlindService {
                         autoHistories.append(target.getNameMember()).append(" bị loại vì ").append(DAY_DEATH_REASONS.get(new Random().nextInt(DAY_DEATH_REASONS.size()))).append(" <br>");
                     });
                 }
-            } else if (action.getRoleId() == 32) {
-                nightDetails.append(actor.getNameMember()).append(" đã buộc ").append(action.getTargetName()).append(" nói thật <br>");
-                if (!Objects.equals(silentTarget, action.getDeviceId())) {
-                    autoHistories.append(action.getTargetName()).append(" phải nói thật <br>");
-                }
             } else if (action.getRoleId() == 46) {
                 nightDetails.append(actor.getNameMember()).append(" đã câm lặng ").append(action.getTargetName()).append(" <br>");
                 if (!Objects.equals(silentTarget, action.getDeviceId())) {
@@ -715,6 +710,16 @@ public class MaSoiBlindService {
                 if (!Objects.equals(silentTarget, action.getDeviceId())) {
                     autoHistories.append(action.getTargetName()).append(" đã bị đuổi ra khỏi làng TỐI TRỜ VỀ <br>");
                     maSoiService.NOT_SHOW_DAY.add(action.getTargetDeviceId());
+                }
+            }
+        }
+        for (NightActionDto action : actions) {
+            // Tách ra vì có trường hợp die do tho săn ghim chết theo
+            DataMember actor = findPlayer(action.getDeviceId()).orElse(new DataMember());
+             if (action.getRoleId() == 32) {
+                nightDetails.append(actor.getNameMember()).append(" đã buộc ").append(action.getTargetName()).append(" nói thật <br>");
+                if (!Objects.equals(silentTarget, action.getDeviceId()) && maSoiService.getDeadPls().stream().noneMatch(p -> Objects.equals(p.getIpData(), action.getTargetDeviceId()))) {
+                    autoHistories.append(action.getTargetName()).append(" phải nói thật <br>");
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.example.spyfall.service;
 
 import com.example.spyfall.common.Spy2;
+import com.example.spyfall.util.CommonUtils;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -61,11 +62,13 @@ public class SpyService {
             return null; // not set up
         }
         Collections.shuffle(dataWillPlay);
-        Spy2 yourLocation = dataWillPlay.get(0);
+        Integer randomSpy = CommonUtils.addToList(deviceId, dataWillPlay);
+        if (randomSpy == null) return null;
+        Spy2 yourLocation = dataWillPlay.get(randomSpy);
         yourLocation.setIpConfig(deviceId);
         yourLocation.setUserName(name);
         dataPlayer.add(yourLocation);
-        dataWillPlay.remove(0);
+        dataWillPlay.remove(randomSpy.intValue());
         spyCommService.upsertPlayer(SpyCommService.GAME_SPY, yourLocation);
         return yourLocation.getKeyword();
     }

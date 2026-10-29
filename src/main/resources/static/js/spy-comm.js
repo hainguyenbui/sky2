@@ -10,6 +10,8 @@
     const volumeStorageKey = "spy-comm-volume-" + game + "-" + deviceId;
     const micEnabledStorageKey = "spy-comm-mic-enabled-" + game + "-" + deviceId;
     const listenMutedStorageKey = "spy-comm-listen-muted-" + game + "-" + deviceId;
+    const micDeviceStorageKey = "spy-comm-mic-device-" + game + "-" + deviceId;
+    const speakerDeviceStorageKey = "spy-comm-speaker-device-" + game + "-" + deviceId;
     const chatHistoryStorageKey = "spy-comm-chat-history-" + game + "-" + deviceId;
     const viewModeStorageKey = "spy-comm-view-mode-" + game + "-" + deviceId;
     const maxChatPerChannel = 250;
@@ -80,6 +82,8 @@
     let readySeq = 0;
     let voiceStarting = false;
     let listenMuted = false;
+    let selectedMicDeviceId = loadMicDevicePreference();
+    let selectedSpeakerDeviceId = loadSpeakerDevicePreference();
     let viewMode = loadViewModePreference();
     let compactChatOpen = false;
     let settingPanelOpen = false;
@@ -92,6 +96,7 @@
     const peerMap = new Map();
     const audioMap = new Map();
     const meterMap = new Map();
+    const canSetSinkId = !!(window.HTMLMediaElement && window.HTMLMediaElement.prototype && typeof window.HTMLMediaElement.prototype.setSinkId === "function");
     const chatHistory = loadChatHistory();
     const volumePrefs = loadVolumePrefs();
     const persistedMicEnabled = loadMicEnabledPreference();
@@ -148,10 +153,14 @@
         ".comm-fx-heart{position:absolute;bottom:-40px;font-size:28px;animation:commFxHeart var(--dur,1.9s) ease-in forwards;}",
         "@keyframes commFxHeart{0%{opacity:0;transform:translate(0,0) scale(0.8);}12%{opacity:1;}100%{opacity:0;transform:translate(var(--drift,0px),-120vh) scale(1.6);}}",
         ".comm-fx-bug{position:absolute;font-size:30px;filter:drop-shadow(0 0 8px rgba(0,0,0,0.35));will-change:transform,left,top;}",
-        ".comm-fx-flash{position:absolute;inset:0;background:rgba(251,191,36,0.35);animation:commFxFlash 0.32s ease-out forwards;}",
+        ".comm-fx-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,rgba(255,255,220,0.82),rgba(251,191,36,0.42) 38%,rgba(15,23,42,0.12) 72%);animation:commFxFlash var(--dur,0.32s) ease-out forwards;}",
         "@keyframes commFxFlash{0%{opacity:0;}20%{opacity:1;}100%{opacity:0;}}",
         ".comm-fx-bolt{position:absolute;top:-18vh;left:50%;font-size:20vw;transform:translateX(-50%);animation:commFxBolt 0.58s ease-out forwards;filter:drop-shadow(0 0 22px rgba(250,204,21,0.95));}",
         "@keyframes commFxBolt{0%{opacity:0;transform:translateX(-50%) translateY(-30vh) scale(0.7);}15%{opacity:1;}55%{opacity:1;transform:translateX(-50%) translateY(40vh) scale(1);}100%{opacity:0;transform:translateX(-50%) translateY(70vh) scale(1.15);}}",
+        ".comm-fx-lightning-svg{position:absolute;inset:0;overflow:visible;filter:drop-shadow(0 0 10px rgba(253,224,71,0.95)) drop-shadow(0 0 22px rgba(250,204,21,0.72));animation:commFxLightning .45s steps(1,end) forwards;}",
+        "@keyframes commFxLightning{0%{opacity:0;}8%{opacity:1;}18%{opacity:.25;}24%{opacity:1;}38%{opacity:.45;}50%{opacity:1;}100%{opacity:0;}}",
+        ".comm-fx-impact{position:absolute;left:0;top:0;width:92px;height:92px;transform:translate(-50%,-50%);pointer-events:none;border-radius:999px;background:radial-gradient(circle,rgba(255,255,255,0.95) 0%,rgba(250,204,21,0.72) 34%,rgba(250,204,21,0) 70%);animation:commFxImpact .52s ease-out forwards;}",
+        "@keyframes commFxImpact{0%{opacity:0;transform:translate(-50%,-50%) scale(0.16);}25%{opacity:1;}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35);}}",
         ".comm-fx-elephant{position:absolute;left:124vw;font-size:52px;animation:commFxElephant var(--dur,7.2s) linear forwards;animation-delay:var(--delay,0s);}",
         "@keyframes commFxElephant{0%{transform:translateX(0);}100%{transform:translateX(-170vw);}}",
         "body.comm-fall-mode .comm-fall-piece{transform-origin:center top;animation:commFxFallPiece 4.2s ease-in-out both !important;animation-delay:var(--fall-delay,0s) !important;}",
@@ -159,6 +168,16 @@
         "</style>",
         '<div id="commExpandedWrap" class="card" style="display:flex;flex-direction:column;gap:10px;">',
         '<h3 style="margin:0 0 4px 0;text-align:center;">Chat & Voice</h3>',
+        '<div id="commDeviceRow" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">',
+        '<div style="display:flex;flex-direction:column;gap:4px;">',
+        '<span style="font-size:0.75rem;color:var(--text-muted);">Mic đầu vào</span>',
+        '<select id="commMicSelect" class="input-text" style="padding:7px 8px;"></select>',
+        "</div>",
+        '<div style="display:flex;flex-direction:column;gap:4px;">',
+        '<span style="font-size:0.75rem;color:var(--text-muted);">Loa đầu ra</span>',
+        '<select id="commSpeakerSelect" class="input-text" style="padding:7px 8px;"></select>',
+        "</div>",
+        "</div>",
         '<div id="commPolicyText" style="font-size:0.82rem;color:var(--text-muted);text-align:center;"></div>',
         '<div id="commParticipants" style="font-size:0.8rem;display:flex;flex-wrap:wrap;gap:6px;"></div>',
         '<div id="commControlRow" style="display:flex;gap:8px;align-items:center;">',
@@ -229,6 +248,8 @@
         voiceBtn: document.getElementById("commVoiceBtn"),
         listenBtn: document.getElementById("commListenBtn"),
         voiceStatus: document.getElementById("commVoiceStatus"),
+        micSelect: document.getElementById("commMicSelect"),
+        speakerSelect: document.getElementById("commSpeakerSelect"),
         volumeList: document.getElementById("commVolumeList"),
         messages: document.getElementById("commMessages"),
         input: document.getElementById("commInput"),
@@ -267,6 +288,12 @@
     renderVoiceStatus();
     applyViewMode();
     renderMessages();
+    refreshAudioDeviceOptions();
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === "function") {
+        navigator.mediaDevices.addEventListener("devicechange", function () {
+            refreshAudioDeviceOptions();
+        });
+    }
 
     root.addEventListener("click", function (event) {
         const tab = event.target.closest("[data-channel-tab]");
@@ -370,6 +397,19 @@
             input.disabled = listenMuted;
         });
     });
+    els.micSelect.addEventListener("change", async function () {
+        selectedMicDeviceId = String(els.micSelect.value || "");
+        saveMicDevicePreference(selectedMicDeviceId);
+        if (micEnabled) {
+            stopVoice(false);
+            await startVoice(false);
+        }
+    });
+    els.speakerSelect.addEventListener("change", function () {
+        selectedSpeakerDeviceId = String(els.speakerSelect.value || "");
+        saveSpeakerDevicePreference(selectedSpeakerDeviceId);
+        applyOutputDeviceToAll();
+    });
     els.dockChatBtn.addEventListener("click", function (event) {
         event.stopPropagation();
         if (compactChatOpen) {
@@ -450,7 +490,7 @@
 
     function connectStomp() {
         const protocol = location.protocol === "https:" ? "wss://" : "ws://";
-        ws = new WebSocket(protocol + location.host + "/ws", "v12.stomp");
+        ws = new WebSocket(protocol + location.host + "/stomp", "v12.stomp");
         ws.onopen = function () {
             sendFrame("CONNECT", { "accept-version": "1.2", "heart-beat": "10000,10000" }, "");
         };
@@ -923,24 +963,157 @@
     }
 
     function runLightningEffect() {
-        shakeScreen(760, false);
-        const flash = document.createElement("div");
-        flash.className = "comm-fx-flash";
-        const bolt = document.createElement("div");
-        bolt.className = "comm-fx-bolt";
-        bolt.textContent = "⚡";
+        shakeScreen(700, false);
+        playThunderSound(1);
         const width = Math.max(320, window.innerWidth);
-        const boltSizePx = Math.max(90, Math.min(width * 0.22, width * 0.20));
-        const padX = boltSizePx * 0.55;
-        const x = padX + Math.random() * Math.max(1, width - (padX * 2));
-        bolt.style.left = x.toFixed(1) + "px";
-        bolt.style.fontSize = boltSizePx.toFixed(1) + "px";
-        els.fxLayer.appendChild(flash);
-        els.fxLayer.appendChild(bolt);
-        window.setTimeout(function () {
-            if (flash.parentNode) flash.parentNode.removeChild(flash);
-            if (bolt.parentNode) bolt.parentNode.removeChild(bolt);
-        }, 750);
+        const height = Math.max(240, window.innerHeight);
+        const baseImpactX = width * (0.24 + Math.random() * 0.52);
+        const baseImpactY = height * (0.62 + Math.random() * 0.24);
+        for (let i = 0; i < 3; i++) {
+            window.setTimeout(function () {
+                const flash = document.createElement("div");
+                flash.className = "comm-fx-flash";
+                flash.style.setProperty("--dur", (0.16 + Math.random() * 0.1).toFixed(2) + "s");
+                els.fxLayer.appendChild(flash);
+
+                const impactX = baseImpactX + ((Math.random() - 0.5) * 70);
+                const impactY = baseImpactY + ((Math.random() - 0.5) * 34);
+                const startX = impactX + ((Math.random() - 0.5) * 220);
+                const strike = createLightningStrikeSvg(width, height, startX, impactX, impactY);
+                els.fxLayer.appendChild(strike);
+
+                const impact = document.createElement("div");
+                impact.className = "comm-fx-impact";
+                impact.style.left = impactX.toFixed(1) + "px";
+                impact.style.top = impactY.toFixed(1) + "px";
+                els.fxLayer.appendChild(impact);
+
+                window.setTimeout(function () {
+                    if (flash.parentNode) flash.parentNode.removeChild(flash);
+                    if (strike.parentNode) strike.parentNode.removeChild(strike);
+                    if (impact.parentNode) impact.parentNode.removeChild(impact);
+                }, 680);
+            }, i * 170);
+        }
+    }
+
+    function createLightningStrikeSvg(width, height, startX, impactX, impactY) {
+        const svgns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgns, "svg");
+        svg.setAttribute("class", "comm-fx-lightning-svg");
+        svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+        svg.setAttribute("width", String(width));
+        svg.setAttribute("height", String(height));
+
+        const mainPathD = buildLightningPath(startX, 0, impactX, impactY, 12, 30);
+        const mainGlow = document.createElementNS(svgns, "path");
+        mainGlow.setAttribute("d", mainPathD);
+        mainGlow.setAttribute("fill", "none");
+        mainGlow.setAttribute("stroke", "rgba(255,255,250,0.95)");
+        mainGlow.setAttribute("stroke-width", "5.2");
+        mainGlow.setAttribute("stroke-linecap", "round");
+        mainGlow.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(mainGlow);
+
+        const mainCore = document.createElementNS(svgns, "path");
+        mainCore.setAttribute("d", mainPathD);
+        mainCore.setAttribute("fill", "none");
+        mainCore.setAttribute("stroke", "rgba(147,197,253,0.95)");
+        mainCore.setAttribute("stroke-width", "2.1");
+        mainCore.setAttribute("stroke-linecap", "round");
+        mainCore.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(mainCore);
+
+        for (let i = 0; i < 2; i++) {
+            const startT = 0.28 + (Math.random() * 0.34);
+            const branchStartX = startX + ((impactX - startX) * startT);
+            const branchStartY = impactY * startT;
+            const branchEndX = branchStartX + ((Math.random() - 0.5) * 110);
+            const branchEndY = branchStartY + (70 + Math.random() * 85);
+            const branchD = buildLightningPath(branchStartX, branchStartY, branchEndX, branchEndY, 5, 16);
+            const branch = document.createElementNS(svgns, "path");
+            branch.setAttribute("d", branchD);
+            branch.setAttribute("fill", "none");
+            branch.setAttribute("stroke", "rgba(255,248,220,0.8)");
+            branch.setAttribute("stroke-width", "2.4");
+            branch.setAttribute("stroke-linecap", "round");
+            branch.setAttribute("stroke-linejoin", "round");
+            svg.appendChild(branch);
+        }
+        return svg;
+    }
+
+    function buildLightningPath(startX, startY, endX, endY, segments, jitterX) {
+        const parts = ["M " + startX.toFixed(1) + " " + startY.toFixed(1)];
+        for (let i = 1; i < segments; i++) {
+            const t = i / segments;
+            const y = startY + ((endY - startY) * t);
+            const baseX = startX + ((endX - startX) * t);
+            const x = baseX + ((Math.random() - 0.5) * jitterX * (1 - (t * 0.35)));
+            parts.push("L " + x.toFixed(1) + " " + y.toFixed(1));
+        }
+        parts.push("L " + endX.toFixed(1) + " " + endY.toFixed(1));
+        return parts.join(" ");
+    }
+
+    function playThunderSound(level) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const volume = Math.max(0.01, Math.min(1, Number(level) || 0.04));
+        let context = null;
+        try {
+            context = new Ctx();
+            const now = context.currentTime;
+            const master = context.createGain();
+            master.gain.setValueAtTime(0.0001, now);
+            master.gain.exponentialRampToValueAtTime(volume, now + 0.03);
+            master.gain.exponentialRampToValueAtTime(volume * 0.42, now + 0.26);
+            master.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
+            master.connect(context.destination);
+
+            const noiseBuffer = context.createBuffer(1, Math.floor(context.sampleRate * 1.2), context.sampleRate);
+            const noiseData = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < noiseData.length; i++) {
+                const t = i / noiseData.length;
+                noiseData[i] = (Math.random() * 2 - 1) * (1 - (t * 0.72));
+            }
+            const noise = context.createBufferSource();
+            noise.buffer = noiseBuffer;
+            const lowPass = context.createBiquadFilter();
+            lowPass.type = "lowpass";
+            lowPass.frequency.setValueAtTime(360, now);
+            lowPass.frequency.exponentialRampToValueAtTime(140, now + 1.1);
+            const highPass = context.createBiquadFilter();
+            highPass.type = "highpass";
+            highPass.frequency.setValueAtTime(28, now);
+            noise.connect(lowPass);
+            lowPass.connect(highPass);
+            highPass.connect(master);
+
+            const rumble = context.createOscillator();
+            rumble.type = "triangle";
+            rumble.frequency.setValueAtTime(66, now);
+            rumble.frequency.exponentialRampToValueAtTime(38, now + 0.95);
+            const rumbleGain = context.createGain();
+            rumbleGain.gain.setValueAtTime(volume * 0.34, now);
+            rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.05);
+            rumble.connect(rumbleGain);
+            rumbleGain.connect(master);
+
+            noise.start(now);
+            noise.stop(now + 1.2);
+            rumble.start(now);
+            rumble.stop(now + 1.08);
+            window.setTimeout(function () {
+                context.close().catch(function () {
+                });
+            }, 1400);
+        } catch (_) {
+            if (context) {
+                context.close().catch(function () {
+                });
+            }
+        }
     }
 
     function runElephantEffect() {
@@ -1334,6 +1507,7 @@
         }
         audio.srcObject = stream;
         audio.muted = listenMuted;
+        applyOutputDevice(audio);
         if (typeof audio.play === "function") {
             audio.play().catch(function () {
             });
@@ -1421,12 +1595,28 @@
         localStorage.setItem(micEnabledStorageKey, enabled ? "1" : "0");
     }
 
+    function loadMicDevicePreference() {
+        return localStorage.getItem(micDeviceStorageKey) || "";
+    }
+
+    function saveMicDevicePreference(deviceIdValue) {
+        localStorage.setItem(micDeviceStorageKey, deviceIdValue || "");
+    }
+
     function loadListenMutedPreference() {
         return localStorage.getItem(listenMutedStorageKey) === "1";
     }
 
     function saveListenMutedPreference(enabled) {
         localStorage.setItem(listenMutedStorageKey, enabled ? "1" : "0");
+    }
+
+    function loadSpeakerDevicePreference() {
+        return localStorage.getItem(speakerDeviceStorageKey) || "";
+    }
+
+    function saveSpeakerDevicePreference(deviceIdValue) {
+        localStorage.setItem(speakerDeviceStorageKey, deviceIdValue || "");
     }
 
     async function startVoice(autoMode) {
@@ -1460,6 +1650,7 @@
         } finally {
             voiceStarting = false;
         }
+        refreshAudioDeviceOptions();
         renderVoiceStatus();
         rebuildPeersForMicChange();
         startSignalRetryLoop();
@@ -1482,7 +1673,8 @@
 
     async function requestMicStream() {
         if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
-            return navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            const audioConstraint = selectedMicDeviceId ? { deviceId: { exact: selectedMicDeviceId } } : true;
+            return navigator.mediaDevices.getUserMedia({ audio: audioConstraint, video: false });
         }
         const legacyGetUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
         if (typeof legacyGetUserMedia === "function") {
@@ -1491,6 +1683,85 @@
             });
         }
         return null;
+    }
+
+    async function refreshAudioDeviceOptions() {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== "function") {
+            updateDeviceSelects([], []);
+            return;
+        }
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const micDevices = devices.filter(function (device) { return device.kind === "audioinput"; });
+            const speakerDevices = devices.filter(function (device) { return device.kind === "audiooutput"; });
+            updateDeviceSelects(micDevices, speakerDevices);
+        } catch (_) {
+            updateDeviceSelects([], []);
+        }
+    }
+
+    function updateDeviceSelects(micDevices, speakerDevices) {
+        populateDeviceSelect(els.micSelect, micDevices, selectedMicDeviceId, "Micro mặc định", "Mic");
+        selectedMicDeviceId = String(els.micSelect.value || "");
+        saveMicDevicePreference(selectedMicDeviceId);
+
+        if (!canSetSinkId) {
+            populateFixedSelect(els.speakerSelect, "Trình duyệt không hỗ trợ chọn loa");
+            els.speakerSelect.disabled = true;
+            return;
+        }
+
+        populateDeviceSelect(els.speakerSelect, speakerDevices, selectedSpeakerDeviceId, "Loa mặc định", "Loa");
+        selectedSpeakerDeviceId = String(els.speakerSelect.value || "");
+        saveSpeakerDevicePreference(selectedSpeakerDeviceId);
+        els.speakerSelect.disabled = false;
+        applyOutputDeviceToAll();
+    }
+
+    function populateDeviceSelect(selectEl, devices, selectedId, defaultLabel, fallbackPrefix) {
+        if (!selectEl) return;
+        selectEl.innerHTML = "";
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = defaultLabel;
+        selectEl.appendChild(defaultOption);
+
+        devices.forEach(function (device, index) {
+            const option = document.createElement("option");
+            option.value = device.deviceId || "";
+            option.textContent = device.label || (fallbackPrefix + " " + (index + 1));
+            selectEl.appendChild(option);
+        });
+
+        const preferred = String(selectedId || "");
+        const hasPreferred = Array.from(selectEl.options).some(function (option) {
+            return option.value === preferred;
+        });
+        selectEl.value = hasPreferred ? preferred : "";
+    }
+
+    function populateFixedSelect(selectEl, label) {
+        if (!selectEl) return;
+        selectEl.innerHTML = "";
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = label;
+        selectEl.appendChild(option);
+        selectEl.value = "";
+    }
+
+    function applyOutputDevice(audioElement) {
+        if (!audioElement || !canSetSinkId || typeof audioElement.setSinkId !== "function") {
+            return;
+        }
+        audioElement.setSinkId(selectedSpeakerDeviceId || "").catch(function () {
+        });
+    }
+
+    function applyOutputDeviceToAll() {
+        Array.from(audioMap.values()).forEach(function (audio) {
+            applyOutputDevice(audio);
+        });
     }
 
     function startSignalRetryLoop() {

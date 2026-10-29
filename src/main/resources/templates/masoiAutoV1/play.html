@@ -1439,7 +1439,7 @@
     function connectWs() {
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         wsSubscribed = false;
-        wsSocket = new WebSocket(protocol + window.location.host + '/ws');
+        wsSocket = new WebSocket(protocol + window.location.host + '/stomp');
         wsSocket.onopen = function() {
             sendStomp('CONNECT\naccept-version:1.2\nheart-beat:0,0\nhost:' + window.location.host + '\n\n');
             stopFallbackPolling();
